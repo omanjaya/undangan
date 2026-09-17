@@ -1,0 +1,78 @@
+---
+import InviteIcon from "./InviteIcon.astro";
+import {
+  approximateGoogleMapEmbedUrl,
+  googleMapEmbedUrl,
+  mapDirectionsUrl,
+} from "../../modules/invitations/domain/maps";
+import "../../styles/event-location.css";
+interface Props {
+  title: string;
+  date: string;
+  time: string;
+  venue: string;
+  address: string;
+  mapUrl: string;
+  mapEmbedUrl?: string;
+  index: number;
+}
+const { title, date, time, venue, address, mapUrl, mapEmbedUrl, index } =
+  Astro.props;
+const exactPreviewUrl = googleMapEmbedUrl(mapEmbedUrl);
+const previewUrl =
+  exactPreviewUrl ?? approximateGoogleMapEmbedUrl(venue, address);
+const directionsUrl = mapDirectionsUrl(mapUrl);
+---
+
+<article class="invite-event-card">
+  <div class="invite-event-heading">
+    <span class="invite-event-number" aria-hidden="true">
+      0{index}
+    </span>
+    <InviteIcon name={index === 1 ? "heart" : "calendar"} size={28} />
+    <p class="invite-event-kicker">Rangkaian acara</p>
+    <h3>{title}</h3>
+  </div>
+  <div class="invite-event-schedule" aria-label={`${date}, ${time}`}>
+    <p class="invite-event-date">{date}</p>
+    <p class="invite-event-time">{time}</p>
+  </div>
+  <span class="invite-short-rule" aria-hidden="true"></span>
+  <div class="invite-event-venue">
+    <p class="invite-event-venue-label">Lokasi acara</p>
+    <h4>{venue}</h4>
+    <p class="invite-event-address">{address}</p>
+  </div>
+  <div class="event-location">
+    {directionsUrl && (
+      <a
+        class="event-location-directions"
+        href={directionsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Buka lokasi ${venue} di peta (tab baru)`}
+      >
+        <InviteIcon name="pin" size={16} /> Buka lokasi
+        <InviteIcon name="arrow" size={16} />
+      </a>
+    )}
+    <div class="event-map">
+      <div class="event-map-frame">
+        <iframe
+          src={previewUrl}
+          title={`Peta lokasi ${venue}`}
+          width="600"
+          height="260"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen
+        ></iframe>
+      </div>
+      <p class="event-map-note">
+        {exactPreviewUrl
+          ? "Pin lokasi yang dibagikan tuan rumah."
+          : "Pratinjau perkiraan berdasarkan alamat. Gunakan tombol Buka lokasi untuk menuju pin yang dibagikan tuan rumah."}
+      </p>
+    </div>
+  </div>
+</article>

@@ -1,0 +1,197 @@
+---
+import { youtubeId } from "../../modules/invitations/domain/video";
+const { url } = Astro.props;
+const id = youtubeId(url);
+---
+
+{id && (
+  <div
+    class="youtube-film"
+    data-youtube-embed={`https://www.youtube-nocookie.com/embed/${id}?playsinline=1&rel=0&enablejsapi=1`}
+  >
+    <div class="youtube-stage">
+      <button type="button" class="youtube-open">
+        <span aria-hidden="true">▷</span> Buka video kami{" "}
+        <small>YouTube · sebuah cerita dalam gerak</small>
+      </button>
+    </div>
+    <p class="youtube-status" role="status" aria-live="polite"></p>
+    <a
+      href={`https://www.youtube.com/watch?v=${id}`}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Tonton di YouTube
+    </a>
+  </div>
+)}
+<script>
+  document.querySelectorAll<HTMLElement>(".youtube-film").forEach((root) => {
+    root.querySelector("button")?.addEventListener(
+      "click",
+      () => {
+        window.dispatchEvent(new CustomEvent("invitation:video-play"));
+        document
+          .querySelectorAll<HTMLMediaElement>("audio, video")
+          .forEach((media) => media.pause());
+        const frame = document.createElement("iframe");
+        const embedUrl = new URL(root.dataset.youtubeEmbed!);
+        embedUrl.searchParams.set("origin", location.origin);
+        frame.src = embedUrl.href;
+        frame.title = "Video pernikahan di YouTube";
+        frame.allow = "encrypted-media; picture-in-picture; fullscreen";
+        frame.allowFullscreen = true;
+        frame.referrerPolicy = "strict-origin-when-cross-origin";
+        const status = root.querySelector<HTMLElement>(".youtube-status");
+        if (status) status.textContent = "Menyiapkan pemutar video…";
+        let ready = false;
+        const readyTimeout = window.setTimeout(() => {
+          if (ready || !status) return;
+          status.textContent =
+            "Pemutar belum merespons. Anda tetap dapat membuka video di YouTube.";
+        }, 8000);
+        const receivePlayerEvent = (event: MessageEvent) => {
+          if (
+            event.origin !== "https://www.youtube-nocookie.com" ||
+            event.source !== frame.contentWindow
+          )
+            return;
+          let message: { event?: string; info?: number };
+          try {
+            message =
+              typeof event.data === "string"
+                ? JSON.parse(event.data)
+                : event.data;
+          } catch {
+            return;
+          }
+          if (!message || typeof message !== "object") return;
+          if (message.event === "onReady") {
+            ready = true;
+            window.clearTimeout(readyTimeout);
+            if (status) status.textContent = "";
+            frame.contentWindow?.postMessage(
+              JSON.stringify({
+                event: "command",
+                func: "addEventListener",
+                args: ["onStateChange"],
+              }),
+              event.origin,
+            );
+          }
+          if (message.event === "onStateChange" && message.info === 1)
+            window.dispatchEvent(new CustomEvent("invitation:video-play"));
+        };
+        window.addEventListener("message", receivePlayerEvent);
+        frame.addEventListener(
+          "load",
+          () => {
+            const target = "https://www.youtube-nocookie.com";
+            frame.contentWindow?.postMessage(
+              JSON.stringify({ event: "listening" }),
+              target,
+            );
+            frame.contentWindow?.postMessage(
+              JSON.stringify({
+                event: "command",
+                func: "addEventListener",
+                args: ["onReady"],
+              }),
+              target,
+            );
+            frame.contentWindow?.postMessage(
+              JSON.stringify({
+                event: "command",
+                func: "addEventListener",
+                args: ["onStateChange"],
+              }),
+              target,
+            );
+          },
+          { once: true },
+        );
+        frame.addEventListener(
+          "error",
+          () => {
+            window.clearTimeout(readyTimeout);
+            window.removeEventListener("message", receivePlayerEvent);
+            root.classList.add("is-error");
+            root.querySelector(".youtube-stage")!.innerHTML =
+              '<p class="youtube-fallback">Video belum dapat dimuat.<br>Gunakan tautan YouTube di bawah.</p>';
+            if (status) status.textContent = "";
+          },
+          { once: true },
+        );
+        root.querySelector(".youtube-stage")?.replaceChildren(frame);
+      },
+      { once: true },
+    );
+  });
+</script>
+<style>
+  .youtube-film {
+    margin-top: 40px;
+    text-align: center;
+  }
+  .youtube-stage {
+    aspect-ratio: 16/9;
+    background: var(--iv-surface, #eeefe6);
+    border: 1px solid var(--iv-line, #ccc);
+    overflow: hidden;
+  }
+  .youtube-stage :global(iframe) {
+    border: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .youtube-open {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font:
+      30px "Cormorant Garamond",
+      serif;
+  }
+  .youtube-open span {
+    font-size: 44px;
+  }
+  .youtube-open small {
+    font: 11px sans-serif;
+    letter-spacing: 1px;
+  }
+  .youtube-film > a {
+    display: inline-block;
+    padding: 15px;
+    font-size: 12px;
+    color: inherit;
+    text-underline-offset: 4px;
+  }
+  .youtube-status {
+    min-height: 1.5em;
+    margin: 10px 0 0;
+    font-size: 11px;
+    color: var(--iv-muted, #666);
+  }
+  .youtube-open:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -6px;
+  }
+  .youtube-fallback {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    margin: 0;
+    padding: 24px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+</style>

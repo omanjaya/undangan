@@ -1,0 +1,16 @@
+---
+interface Props {
+  class?: string;
+}
+const { class: className = "" } = Astro.props;
+---
+
+<span class:list={["gapura-art", className]} aria-hidden="true">
+  <img
+    src="/ornaments/candi-bentar.webp"
+    width="1536"
+    height="1024"
+    alt=""
+    decoding="async"
+  />
+</span>

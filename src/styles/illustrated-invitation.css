@@ -1,0 +1,535 @@
+/* No-photo invitations share content, but each theme owns a distinct composition. */
+.invitation[data-photo-mode="illustrated"] .invite-illustrated-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.invitation[data-photo-mode="illustrated"] .invite-artwork-initials {
+  top: 36%;
+  font-size: clamp(54px, 7vw, 76px);
+  letter-spacing: -3px;
+}
+.invitation[data-photo-mode="illustrated"] .invite-artwork > .invite-eyebrow {
+  top: 60%;
+  max-width: 65%;
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  text-align: center;
+}
+.invitation[data-photo-mode="illustrated"] .closing-portrait-monogram {
+  font-family: var(--iv-serif);
+}
+
+/* Jepun Ivory: a centered keepsake letter held inside a floral frame. */
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 34px;
+  min-height: 920px;
+  padding: 104px max(28px, 8vw) 112px;
+  text-align: center;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-hero-copy {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 670px);
+  padding: 52px clamp(22px, 6vw, 76px) 210px;
+  border: 1px solid var(--iv-line);
+  background: color-mix(in srgb, var(--iv-paper) 91%, transparent);
+  box-shadow: inset 0 0 0 8px color-mix(in srgb, var(--iv-gold) 8%, transparent);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-hero-copy
+  > .invite-eyebrow,
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-hero-date {
+  justify-content: center;
+  max-width: none;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-recipient {
+  width: fit-content;
+  margin: 28px auto 22px;
+  padding: 14px 24px;
+  border: 0;
+  border-block: 1px solid var(--iv-line);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-hero-visual {
+  z-index: 3;
+  width: min(74%, 360px);
+  max-width: none;
+  margin-top: -220px;
+  padding: 0;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-arch-frame {
+  height: 310px;
+  border-radius: 48% 48% 8px 8px;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-arch-frame::before {
+  inset: -8px;
+  border-radius: inherit;
+  border-color: var(--iv-gold);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-couple {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: clamp(18px, 4vw, 52px);
+  align-items: stretch;
+  max-width: 900px;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-couple
+  article {
+  padding: 42px 26px;
+  border-block: 1px solid var(--iv-gold);
+  background: color-mix(in srgb, var(--iv-paper) 72%, transparent);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-couple-ampersand {
+  align-self: center;
+  padding: 0;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-story {
+  grid-template-columns: minmax(230px, 0.7fr) minmax(0, 1.3fr);
+  gap: clamp(40px, 8vw, 110px);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-story-photo {
+  height: 360px;
+  border: 0;
+  border-radius: 50% 50% 0 0;
+  transform: none;
+  background: transparent;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+  .invite-story-copy
+  > p:not(.invite-eyebrow):not(.invite-story-signature) {
+  padding-left: 24px;
+  border-left: 1px solid var(--iv-gold);
+}
+
+/* Puri Emerald: a ceremonial gate, formal procession, and axial story. */
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr) minmax(0, 1fr);
+  gap: clamp(24px, 5vw, 72px);
+  align-items: center;
+  min-height: 860px;
+  padding: 96px max(32px, 6vw);
+  text-align: center;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-hero::before,
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-hero::after {
+  content: "";
+  height: 68%;
+  border-block: 1px solid color-mix(in srgb, var(--iv-gold) 70%, transparent);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--iv-gold) 10%, transparent),
+    transparent
+  );
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-hero-copy {
+  grid-column: 2;
+  grid-row: 1;
+  z-index: 2;
+  width: 100%;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-hero-visual {
+  grid-column: 1/-1;
+  grid-row: 1;
+  align-self: stretch;
+  width: min(100%, 920px);
+  max-width: none;
+  margin: auto;
+  padding: 0;
+  pointer-events: none;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-arch-frame {
+  height: 100%;
+  min-height: 650px;
+  border: 1px solid var(--iv-gold);
+  border-radius: 46% 46% 0 0;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-arch-frame::before {
+  inset: 12px;
+  border-radius: 45% 45% 0 0;
+  border-color: color-mix(in srgb, var(--iv-gold) 55%, transparent);
+  z-index: 1;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-artwork {
+  opacity: 0.28;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-photo-side,
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-date-stamp {
+  display: none;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-couple {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0;
+  max-width: 940px;
+  align-items: stretch;
+  border: 1px solid var(--iv-gold);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-couple
+  article {
+  padding: 52px 34px;
+  border: 0;
+  background: color-mix(in srgb, var(--iv-paper) 76%, transparent);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-couple-ampersand {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  min-width: 72px;
+  padding: 0;
+  border-inline: 1px solid var(--iv-gold);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-event-section {
+  display: block;
+  max-width: 980px;
+  text-align: center;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-event-copy
+  > p:not(.invite-eyebrow),
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-countdown {
+  justify-content: center;
+  max-width: 540px;
+  margin-inline: auto;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-event-list {
+  display: grid;
+  gap: 0;
+  margin-top: 56px;
+  border-top: 1px solid var(--iv-gold);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-event-card {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.7fr) minmax(210px, 1fr) minmax(
+      220px,
+      1.3fr
+    );
+  gap: 24px;
+  align-items: center;
+  padding: 34px 42px;
+  border: 0;
+  border-bottom: 1px solid var(--iv-gold);
+  background: transparent;
+  text-align: left;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-event-card
+  > svg,
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-event-number {
+  display: none;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-story {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  text-align: center;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-story-photo {
+  width: min(100%, 580px);
+  height: 270px;
+  border: 0;
+  border-block: 1px solid var(--iv-gold);
+  transform: none;
+  background: transparent;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-story-copy {
+  width: min(100%, 650px);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-story-copy
+  > p:not(.invite-eyebrow):not(.invite-story-signature) {
+  max-width: 600px;
+  margin-inline: auto;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+  .invite-story-copy
+  .invite-short-rule {
+  margin-inline: auto;
+}
+
+/* Senja Terracotta: offset paper pieces and an informal, organic rhythm. */
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-hero {
+  grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
+  gap: clamp(32px, 7vw, 110px);
+  align-items: center;
+  min-height: 780px;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-hero-copy {
+  order: 2;
+  padding: clamp(28px, 5vw, 64px);
+  border-radius: 72px 12px 72px 12px;
+  background: color-mix(in srgb, var(--iv-paper) 76%, transparent);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-hero-visual {
+  order: 1;
+  width: 100%;
+  max-width: 500px;
+  padding: 0;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-arch-frame,
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-arch-frame::before {
+  border-radius: 46% 46% 46% 14%;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-couple {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0;
+  max-width: 920px;
+  align-items: start;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-couple
+  article {
+  grid-column: 1 / span 7;
+  padding: 44px 32px;
+  border: 1px solid var(--iv-line);
+  border-radius: 64px 8px 64px 8px;
+  background: color-mix(in srgb, var(--iv-paper) 70%, transparent);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-couple
+  article:last-child {
+  grid-column: 6/-1;
+  margin-top: 90px;
+  border-radius: 8px 64px 8px 64px;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-couple-ampersand {
+  grid-column: 6 / span 2;
+  grid-row: 1;
+  z-index: 2;
+  align-self: end;
+  width: 70px;
+  margin: 0 auto -48px;
+  padding: 8px;
+  border-radius: 50%;
+  background: var(--iv-paper);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-event-section {
+  grid-template-columns: minmax(230px, 0.7fr) minmax(0, 1.3fr);
+  gap: clamp(36px, 7vw, 100px);
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-event-list {
+  display: grid;
+  gap: 28px;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-event-card {
+  border-radius: 80px 10px 80px 10px;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-event-card:nth-of-type(even) {
+  margin-left: clamp(0px, 5vw, 64px);
+  border-radius: 10px 80px 10px 80px;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-story {
+  grid-template-columns: minmax(0, 1.15fr) minmax(250px, 0.85fr);
+  gap: clamp(35px, 8vw, 120px);
+  align-items: start;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-story-photo {
+  grid-column: 2;
+  grid-row: 1;
+  height: 410px;
+  margin-top: 70px;
+  border: 0;
+  border-radius: 90px 12px 90px 12px;
+  transform: none;
+  background: transparent;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-story-copy {
+  grid-column: 1;
+  grid-row: 1;
+  padding: 72px 0 28px;
+}
+.invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+  .invite-story-copy
+  > p:not(.invite-eyebrow):not(.invite-story-signature) {
+  padding: 22px 26px;
+  border-left: 3px solid var(--iv-gold);
+  background: color-mix(in srgb, var(--iv-paper) 48%, transparent);
+}
+
+@media (max-width: 760px) {
+  .invitation[data-photo-mode="illustrated"][data-theme] .invite-hero {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 62px 22px 84px;
+    gap: 34px;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+    .invite-hero-copy {
+    width: 100%;
+    padding: 42px 18px 176px;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+    .invite-hero-visual {
+    width: min(76%, 280px);
+    margin-top: -190px;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="jepun-ivory"]
+    .invite-arch-frame {
+    height: 250px;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+    .invite-hero::before,
+  .invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+    .invite-hero::after {
+    display: none;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+    .invite-hero-copy {
+    order: 2;
+    padding: 28px 12px;
+    border-inline: 1px solid var(--iv-gold);
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+    .invite-hero-visual {
+    order: 1;
+    width: 100%;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+    .invite-arch-frame {
+    height: 390px;
+    min-height: 0;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+    .invite-hero-copy {
+    order: 2;
+    padding: 38px 22px;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+    .invite-hero-visual {
+    order: 1;
+    width: min(100%, 330px);
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme] .invite-couple {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    width: 100%;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme]
+    .invite-couple
+    article {
+    width: 100%;
+    margin: 0;
+    padding: 32px 20px;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme]
+    .invite-couple-ampersand {
+    align-self: center;
+    min-width: 0;
+    width: auto;
+    margin: 0;
+    padding: 0 14px;
+    border: 0;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+    .invite-event-card {
+    display: block;
+    padding: 34px 18px;
+    text-align: center;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="senja-terracotta"]
+    .invite-event-card:nth-of-type(even) {
+    margin-left: 0;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme] .invite-story {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding-inline: 22px;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme] .invite-story-photo {
+    order: 1;
+    width: min(100%, 300px);
+    height: 270px;
+    margin: 0 auto;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme] .invite-story-copy {
+    order: 2;
+    width: 100%;
+    padding: 24px 0;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme]
+    .invite-story-copy
+    > p:not(.invite-eyebrow):not(.invite-story-signature) {
+    padding: 18px;
+    border: 0;
+    border-inline: 1px solid var(--iv-line);
+  }
+}
+
+@media (max-width: 390px) {
+  .invitation[data-photo-mode="illustrated"][data-theme] .invite-hero,
+  .invitation[data-photo-mode="illustrated"][data-theme] .invite-story {
+    padding-inline: 18px;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme] .invite-hero-copy {
+    max-width: 100%;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme="puri-emerald"]
+    .invite-arch-frame {
+    height: 340px;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme] .invite-event-section {
+    padding-inline: 18px;
+  }
+  .invitation[data-photo-mode="illustrated"][data-theme] .invite-event-card {
+    min-width: 0;
+  }
+}

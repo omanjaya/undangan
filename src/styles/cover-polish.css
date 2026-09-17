@@ -1,0 +1,194 @@
+/* Generated cover artwork keeps each theme distinct before the opening gesture. */
+.invitation .invite-cover {
+  padding: 44px 24px;
+}
+.invitation .invite-cover:before {
+  inset: 20px;
+  z-index: 1;
+  border-color: color-mix(in srgb, var(--iv-gold) 35%, transparent);
+}
+.invitation .invite-cover:after {
+  display: none;
+}
+.invitation .invite-cover-art {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  height: 100%;
+  width: min(100%, 1100px);
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 0;
+}
+.invitation .invite-cover-inner {
+  width: min(560px, 80vw);
+  padding: 28px 24px;
+  background: radial-gradient(
+    ellipse,
+    var(--iv-paper) 25%,
+    color-mix(in srgb, var(--iv-paper) 90%, transparent) 56%,
+    transparent 74%
+  );
+}
+.invite-cover-seal {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 22px auto;
+  border: 1px solid var(--iv-gold);
+  border-radius: 50%;
+  font-family: var(--iv-serif);
+  font-size: 20px;
+  letter-spacing: -1px;
+  color: var(--iv-gold);
+}
+.invitation .invite-cover-names {
+  font-size: clamp(48px, 6vw, 78px);
+  line-height: 1.15;
+}
+.invitation .invite-cover-date {
+  font-size: 11px;
+  line-height: 1.6;
+  letter-spacing: 2px;
+}
+.invite-cover-guest {
+  margin: 24px auto;
+  padding: 16px 12px;
+  width: fit-content;
+  max-width: 100%;
+  min-width: min(280px, 100%);
+  border-block: 1px solid var(--iv-line);
+  background: color-mix(in srgb, var(--iv-paper) 86%, transparent);
+}
+.invite-cover-guest .invite-eyebrow {
+  font-size: 8px;
+  line-height: 1.7;
+  letter-spacing: 1.4px;
+}
+.invitation .invite-cover-recipient {
+  margin: 8px 0 0 !important;
+  font-size: clamp(22px, 3vw, 28px);
+  line-height: 1.35;
+}
+.invitation .invite-cover .invite-short-rule {
+  display: none;
+}
+.invitation .invite-cover-note {
+  line-height: 1.7;
+}
+.invitation .invite-hero-date {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  line-height: 1.7;
+}
+.invite-hero-time {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  margin-top: 8px;
+  color: var(--iv-gold);
+}
+.invite-hero-venue {
+  display: block;
+  font-family: var(--iv-serif);
+  font-size: 25px;
+  letter-spacing: 0;
+  margin-top: 10px;
+}
+.invitation[data-theme="puri-emerald"] .invite-cover-seal {
+  border-radius: 0;
+  outline: 1px solid var(--iv-line);
+  outline-offset: 5px;
+}
+.invitation[data-theme="senja-terracotta"] .invite-cover-inner {
+  border-radius: 45% 45% 4px 4px;
+}
+.invitation[data-ornament-density="minimal"] .invite-cover-art {
+  opacity: 0.45;
+}
+@media (min-width: 1000px) {
+  .invitation[data-theme="jepun-ivory"] .invite-hero {
+    gap: 70px;
+  }
+  .invitation[data-theme="senja-terracotta"] .invite-hero-visual {
+    transform: translateY(30px);
+  }
+}
+@media (max-width: 760px) {
+  .invitation .invite-cover {
+    padding: 36px 18px;
+  }
+  .invitation .invite-cover-art {
+    width: 140%;
+    max-width: none;
+    object-fit: cover;
+  }
+  .invitation .invite-cover-inner {
+    width: 100%;
+    padding: 20px 24px;
+  }
+  .invitation .invite-cover-names {
+    font-size: clamp(42px, 12vw, 60px);
+  }
+  .invitation .invite-cover-names em {
+    font-size: 0.46em;
+    margin: 7px auto;
+  }
+  .invite-cover-seal {
+    margin: 16px auto;
+    width: 38px;
+    height: 38px;
+    font-size: 17px;
+  }
+  .invite-cover-guest {
+    margin: 22px auto;
+  }
+  .invitation .invite-cover:before {
+    inset: 12px;
+  }
+  .invitation .invite-cover-date {
+    margin-top: 16px !important;
+    font-size: 10px;
+  }
+  .invitation .invite-hero-date {
+    font-size: 12px;
+  }
+  .invite-hero-venue {
+    font-size: 24px;
+  }
+  .invitation[data-theme="puri-emerald"] .invite-cover-art {
+    width: 170%;
+  }
+}
+@media (max-height: 650px) {
+  .invitation .invite-cover {
+    padding-block: 24px;
+  }
+  .invitation .invite-cover-inner {
+    padding-block: 12px;
+  }
+  .invite-cover-seal {
+    display: none;
+  }
+  .invitation .invite-cover-names {
+    font-size: 42px;
+    margin-top: 14px;
+  }
+  .invitation .invite-cover-names em {
+    display: inline;
+    margin: 0;
+  }
+  .invite-cover-guest {
+    margin: 16px auto;
+  }
+}
+.invitation .invite-cover-note {
+  background: color-mix(in srgb, var(--iv-paper) 94%, transparent);
+  border-radius: 20px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 12px;
+  margin-inline: auto !important;
+}

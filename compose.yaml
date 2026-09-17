@@ -1,0 +1,67 @@
+name: undanganonline
+
+services:
+  web:
+    build:
+      context: .
+      target: development
+    init: true
+    ports:
+      - "${WEB_BIND_ADDRESS:-0.0.0.0}:${WEB_PORT:-4321}:4321"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 4321
+      UPLOAD_DIR: /app/.data/uploads
+      UPLOAD_STORAGE_MB: ${UPLOAD_STORAGE_MB:-1024}
+      DATABASE_URL: postgresql://undangan:${POSTGRES_PASSWORD:-undangan_local}@db:5432/undangan
+      OWNER_EMAIL: ${OWNER_EMAIL:-owner@undangan.local}
+      OWNER_PASSWORD: ${OWNER_PASSWORD:-demo-undangan-2026}
+    volumes:
+      - app_data:/app/.data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4321/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+        - action: sync
+          path: ./public
+          target: /app/public
+        - action: sync
+          path: ./db
+          target: /app/db
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./package-lock.json
+        - action: sync+restart
+          path: ./astro.config.mjs
+          target: /app/astro.config.mjs
+        - action: sync+restart
+          path: ./tsconfig.json
+          target: /app/tsconfig.json
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: undangan
+      POSTGRES_USER: undangan
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-undangan_local}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U undangan -d undangan"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+  app_data:

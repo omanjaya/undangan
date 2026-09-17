@@ -1,0 +1,69 @@
+---
+interface Props {
+  theme: string;
+  mode: "photos" | "illustrated";
+}
+const { theme, mode } = Astro.props;
+---
+
+<nav class="theme-preview-switch" aria-label="Mode contoh undangan">
+  <a href="/#koleksi" aria-label="Kembali ke koleksi">
+    Koleksi
+  </a>
+  <span aria-hidden="true"></span>
+  <a
+    href={`/themes/${theme}`}
+    aria-current={mode === "photos" ? "page" : undefined}
+  >
+    Dengan Foto
+  </a>
+  <a
+    href={`/themes/${theme}/tanpa-foto`}
+    aria-current={mode === "illustrated" ? "page" : undefined}
+  >
+    Tanpa Foto
+  </a>
+</nav>
+<style>
+  .theme-preview-switch {
+    position: relative;
+    z-index: 110;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 8px 12px;
+    background: #f8f6f0;
+    color: #354333;
+    border-bottom: 1px solid #dddccc;
+    font: 11px var(--sans, sans-serif);
+  }
+  .theme-preview-switch a {
+    padding: 8px 12px;
+    border-radius: 20px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .theme-preview-switch a[aria-current] {
+    background: #354333;
+    color: #fff;
+  }
+  .theme-preview-switch span {
+    width: 1px;
+    height: 18px;
+    background: #d7d8c9;
+  }
+  :global(body:has(.theme-preview-switch) .invite-cover) {
+    top: 52px;
+  }
+  @media (max-width: 380px) {
+    .theme-preview-switch {
+      gap: 2px;
+      font-size: 10px;
+    }
+    .theme-preview-switch a {
+      padding-inline: 9px;
+    }
+  }
+</style>

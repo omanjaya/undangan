@@ -1,0 +1,667 @@
+<dialog
+  class="gallery-lightbox"
+  data-gallery-lightbox
+  aria-label="Tampilan penuh galeri foto"
+>
+  <div class="gallery-lightbox__stage" data-lightbox-stage>
+    <div class="gallery-lightbox__topbar">
+      <p
+        class="gallery-lightbox__counter"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <span data-lightbox-current>1</span>
+        <span aria-hidden="true"> / </span>
+        <span class="sr-only">dari</span>
+        <span data-lightbox-total>1</span>
+      </p>
+      <button
+        class="gallery-lightbox__control gallery-lightbox__close"
+        type="button"
+        data-lightbox-close
+        aria-label="Tutup galeri"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m6 6 12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="gallery-lightbox__viewport" data-lightbox-viewport>
+      <div
+        class="gallery-lightbox__loading"
+        data-lightbox-loading
+        role="status"
+      >
+        <span aria-hidden="true"></span>
+        Memuat foto
+      </div>
+      <div
+        class="gallery-lightbox__error"
+        data-lightbox-error
+        role="status"
+        hidden
+      >
+        <p>Foto belum dapat dimuat.</p>
+        <button type="button" data-lightbox-retry>
+          Coba lagi
+        </button>
+      </div>
+      <img data-lightbox-image alt="" draggable="false" />
+    </div>
+
+    <button
+      class="gallery-lightbox__control gallery-lightbox__previous"
+      type="button"
+      data-lightbox-previous
+      aria-label="Foto sebelumnya"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m15 5-7 7 7 7"></path>
+      </svg>
+    </button>
+    <button
+      class="gallery-lightbox__control gallery-lightbox__next"
+      type="button"
+      data-lightbox-next
+      aria-label="Foto berikutnya"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m9 5 7 7-7 7"></path>
+      </svg>
+    </button>
+
+    <div class="gallery-lightbox__zoom" aria-label="Kontrol perbesaran">
+      <button type="button" data-lightbox-zoom-out aria-label="Perkecil foto">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 12h10"></path>
+        </svg>
+      </button>
+      <button
+        type="button"
+        data-lightbox-zoom-reset
+        aria-label="Atur ulang perbesaran"
+      >
+        <span data-lightbox-zoom-label>100%</span>
+      </button>
+      <button type="button" data-lightbox-zoom-in aria-label="Perbesar foto">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 7v10M7 12h10"></path>
+        </svg>
+      </button>
+    </div>
+    <p class="gallery-lightbox__hint">Geser untuk melihat foto lain</p>
+  </div>
+</dialog>
+
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>(
+    "[data-gallery-lightbox]",
+  );
+
+  if (dialog && !dialog.dataset.ready) {
+    dialog.dataset.ready = "true";
+    const triggers = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        ".invite-gallery-item[data-full-image]",
+      ),
+    ).filter((button) => Boolean(button.dataset.fullImage));
+    const image = dialog.querySelector<HTMLImageElement>(
+      "[data-lightbox-image]",
+    );
+    const viewport = dialog.querySelector<HTMLElement>(
+      "[data-lightbox-viewport]",
+    );
+    const loading = dialog.querySelector<HTMLElement>(
+      "[data-lightbox-loading]",
+    );
+    const error = dialog.querySelector<HTMLElement>("[data-lightbox-error]");
+    const current = dialog.querySelector<HTMLElement>(
+      "[data-lightbox-current]",
+    );
+    const total = dialog.querySelector<HTMLElement>("[data-lightbox-total]");
+    const previous = dialog.querySelector<HTMLButtonElement>(
+      "[data-lightbox-previous]",
+    );
+    const next = dialog.querySelector<HTMLButtonElement>(
+      "[data-lightbox-next]",
+    );
+    const zoomLabel = dialog.querySelector<HTMLElement>(
+      "[data-lightbox-zoom-label]",
+    );
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    let activeIndex = 0;
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let opener: HTMLElement | null = null;
+    let scrollY = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let pinchDistance = 0;
+    let pinchScale = 1;
+    let multiTouchGesture = false;
+    let panPointerId: number | null = null;
+    let panPointerX = 0;
+    let panPointerY = 0;
+    let previousBodyStyles: {
+      position: string;
+      top: string;
+      width: string;
+      overflow: string;
+    } | null = null;
+
+    if (total) total.textContent = String(triggers.length);
+    if (!triggers.length) dialog.remove();
+
+    const constrainTranslation = () => {
+      if (!image || !viewport || scale === 1) {
+        translateX = 0;
+        translateY = 0;
+        return;
+      }
+      const maximumX = Math.max(
+        0,
+        (image.offsetWidth * scale - viewport.clientWidth) / 2,
+      );
+      const maximumY = Math.max(
+        0,
+        (image.offsetHeight * scale - viewport.clientHeight) / 2,
+      );
+      translateX = Math.min(maximumX, Math.max(-maximumX, translateX));
+      translateY = Math.min(maximumY, Math.max(-maximumY, translateY));
+    };
+
+    const setTransform = () => {
+      if (!image) return;
+      constrainTranslation();
+      image.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;
+      if (zoomLabel) zoomLabel.textContent = `${Math.round(scale * 100)}%`;
+      viewport?.classList.toggle("is-zoomed", scale > 1);
+    };
+
+    const setScale = (value: number) => {
+      scale = Math.min(4, Math.max(1, value));
+      if (scale === 1) translateX = translateY = 0;
+      setTransform();
+    };
+
+    const resetView = () => {
+      scale = 1;
+      translateX = translateY = 0;
+      setTransform();
+    };
+
+    const loadPhoto = (index: number) => {
+      if (!image || !triggers.length) return;
+      activeIndex = (index + triggers.length) % triggers.length;
+      resetView();
+      image.hidden = true;
+      if (loading) loading.hidden = false;
+      if (error) error.hidden = true;
+      if (current) current.textContent = String(activeIndex + 1);
+      const trigger = triggers[activeIndex];
+      image.alt = trigger.dataset.alt || `Foto galeri ${activeIndex + 1}`;
+      image.src = trigger.dataset.fullImage || "";
+      const hasMultiple = triggers.length > 1;
+      if (previous) previous.hidden = !hasMultiple;
+      if (next) next.hidden = !hasMultiple;
+    };
+
+    const lockPage = () => {
+      scrollY = window.scrollY;
+      previousBodyStyles = {
+        position: document.body.style.position,
+        top: document.body.style.top,
+        width: document.body.style.width,
+        overflow: document.body.style.overflow,
+      };
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
+    };
+
+    const unlockPage = () => {
+      document.body.style.position = previousBodyStyles?.position ?? "";
+      document.body.style.top = previousBodyStyles?.top ?? "";
+      document.body.style.width = previousBodyStyles?.width ?? "";
+      document.body.style.overflow = previousBodyStyles?.overflow ?? "";
+      previousBodyStyles = null;
+      window.scrollTo({ top: scrollY, behavior: "instant" });
+    };
+
+    const open = (index: number, trigger: HTMLElement) => {
+      opener = trigger;
+      lockPage();
+      loadPhoto(index);
+      dialog.showModal();
+      dialog.querySelector<HTMLButtonElement>("[data-lightbox-close]")?.focus();
+    };
+
+    const close = () => dialog.close();
+
+    triggers.forEach((trigger, index) =>
+      trigger.addEventListener("click", () => open(index, trigger)),
+    );
+    image?.addEventListener("load", () => {
+      if (loading) loading.hidden = true;
+      if (error) error.hidden = true;
+      image.hidden = false;
+    });
+    image?.addEventListener("error", () => {
+      if (loading) loading.hidden = true;
+      image.hidden = true;
+      if (error) error.hidden = false;
+    });
+    dialog
+      .querySelector("[data-lightbox-close]")
+      ?.addEventListener("click", close);
+    dialog
+      .querySelector("[data-lightbox-retry]")
+      ?.addEventListener("click", () => loadPhoto(activeIndex));
+    previous?.addEventListener("click", () => loadPhoto(activeIndex - 1));
+    next?.addEventListener("click", () => loadPhoto(activeIndex + 1));
+    dialog
+      .querySelector("[data-lightbox-zoom-in]")
+      ?.addEventListener("click", () => setScale(scale + 0.5));
+    dialog
+      .querySelector("[data-lightbox-zoom-out]")
+      ?.addEventListener("click", () => setScale(scale - 0.5));
+    dialog
+      .querySelector("[data-lightbox-zoom-reset]")
+      ?.addEventListener("click", resetView);
+
+    dialog.addEventListener("close", () => {
+      unlockPage();
+      resetView();
+      opener?.focus({ preventScroll: true });
+      opener = null;
+    });
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) close();
+    });
+    dialog.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        loadPhoto(activeIndex - 1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        loadPhoto(activeIndex + 1);
+      } else if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        setScale(scale + 0.5);
+      } else if (event.key === "-") {
+        event.preventDefault();
+        setScale(scale - 0.5);
+      } else if (event.key === "0") {
+        event.preventDefault();
+        resetView();
+      } else if (event.key === "Tab") {
+        const focusable = Array.from(
+          dialog.querySelectorAll<HTMLElement>(
+            "button:not([hidden]):not([disabled]), [href], [tabindex]:not([tabindex='-1'])",
+          ),
+        ).filter(
+          (element) =>
+            element.getClientRects().length > 0 &&
+            element.getAttribute("aria-hidden") !== "true",
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    });
+
+    viewport?.addEventListener(
+      "wheel",
+      (event) => {
+        event.preventDefault();
+        setScale(scale + (event.deltaY < 0 ? 0.25 : -0.25));
+      },
+      { passive: false },
+    );
+    viewport?.addEventListener("dblclick", () => setScale(scale > 1 ? 1 : 2));
+    viewport?.addEventListener("touchstart", (event) => {
+      if (event.touches.length === 1) {
+        multiTouchGesture = false;
+        touchStartX = event.touches[0].clientX;
+        touchStartY = event.touches[0].clientY;
+      } else if (event.touches.length === 2) {
+        multiTouchGesture = true;
+        pinchDistance = Math.hypot(
+          event.touches[0].clientX - event.touches[1].clientX,
+          event.touches[0].clientY - event.touches[1].clientY,
+        );
+        pinchScale = scale;
+      }
+    });
+    viewport?.addEventListener(
+      "touchmove",
+      (event) => {
+        if (event.touches.length === 2 && pinchDistance) {
+          event.preventDefault();
+          const distance = Math.hypot(
+            event.touches[0].clientX - event.touches[1].clientX,
+            event.touches[0].clientY - event.touches[1].clientY,
+          );
+          setScale(pinchScale * (distance / pinchDistance));
+        } else if (event.touches.length === 1 && scale > 1) {
+          event.preventDefault();
+          translateX += event.touches[0].clientX - touchStartX;
+          translateY += event.touches[0].clientY - touchStartY;
+          touchStartX = event.touches[0].clientX;
+          touchStartY = event.touches[0].clientY;
+          setTransform();
+        }
+      },
+      { passive: false },
+    );
+    viewport?.addEventListener("touchend", (event) => {
+      if (!event.touches.length && scale === 1 && !multiTouchGesture) {
+        const touch = event.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+          loadPhoto(activeIndex + (deltaX < 0 ? 1 : -1));
+        }
+      }
+      pinchDistance = 0;
+      if (!event.touches.length) multiTouchGesture = false;
+    });
+
+    viewport?.addEventListener("pointerdown", (event) => {
+      if (
+        scale <= 1 ||
+        (event.pointerType !== "mouse" && event.pointerType !== "pen") ||
+        (event.pointerType === "mouse" && event.button !== 0)
+      )
+        return;
+      event.preventDefault();
+      panPointerId = event.pointerId;
+      panPointerX = event.clientX;
+      panPointerY = event.clientY;
+      viewport.setPointerCapture(event.pointerId);
+      viewport.classList.add("is-panning");
+    });
+    viewport?.addEventListener("pointermove", (event) => {
+      if (panPointerId !== event.pointerId) return;
+      translateX += event.clientX - panPointerX;
+      translateY += event.clientY - panPointerY;
+      panPointerX = event.clientX;
+      panPointerY = event.clientY;
+      setTransform();
+    });
+    const endPointerPan = (event: PointerEvent) => {
+      if (panPointerId !== event.pointerId) return;
+      panPointerId = null;
+      viewport?.classList.remove("is-panning");
+      if (viewport?.hasPointerCapture(event.pointerId))
+        viewport.releasePointerCapture(event.pointerId);
+    };
+    viewport?.addEventListener("pointerup", endPointerPan);
+    viewport?.addEventListener("pointercancel", endPointerPan);
+    viewport?.addEventListener("lostpointercapture", endPointerPan);
+
+    if (reducedMotion) dialog.classList.add("is-reduced-motion");
+  }
+</script>
+
+<style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .gallery-lightbox {
+    box-sizing: border-box;
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    color: #f7f3e9;
+    background: #10130f;
+  }
+  .gallery-lightbox[open] {
+    display: block;
+    animation: gallery-lightbox-in 220ms ease-out;
+  }
+  .gallery-lightbox::backdrop {
+    background: #10130f;
+  }
+  .gallery-lightbox__stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+  .gallery-lightbox__topbar {
+    position: absolute;
+    z-index: 4;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: max(18px, env(safe-area-inset-top))
+      max(18px, env(safe-area-inset-right)) 18px
+      max(18px, env(safe-area-inset-left));
+    background: linear-gradient(#10130fcc, transparent);
+    pointer-events: none;
+  }
+  .gallery-lightbox__counter {
+    margin: 0;
+    font:
+      500 12px/1.2 system-ui,
+      sans-serif;
+    letter-spacing: 0.16em;
+  }
+  .gallery-lightbox__control,
+  .gallery-lightbox__zoom button {
+    display: grid;
+    place-items: center;
+    border: 1px solid #ffffff42;
+    color: inherit;
+    background: #10130fa8;
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+  }
+  .gallery-lightbox__control {
+    position: absolute;
+    z-index: 5;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+  }
+  .gallery-lightbox__control svg,
+  .gallery-lightbox__zoom svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+  }
+  .gallery-lightbox__control:focus-visible,
+  .gallery-lightbox__zoom button:focus-visible,
+  .gallery-lightbox__error button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+  }
+  .gallery-lightbox__close {
+    position: relative;
+    top: auto;
+    right: auto;
+    pointer-events: auto;
+  }
+  .gallery-lightbox__previous {
+    left: max(18px, env(safe-area-inset-left));
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .gallery-lightbox__next {
+    right: max(18px, env(safe-area-inset-right));
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .gallery-lightbox__viewport {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+  .gallery-lightbox__viewport.is-zoomed {
+    cursor: grab;
+    touch-action: none;
+  }
+  .gallery-lightbox__viewport.is-panning {
+    cursor: grabbing;
+  }
+  .gallery-lightbox__viewport.is-panning img {
+    transition: none;
+  }
+  .gallery-lightbox__viewport img {
+    display: block;
+    width: auto;
+    max-width: calc(100vw - 160px);
+    height: auto;
+    max-height: calc(100dvh - 140px);
+    object-fit: contain;
+    user-select: none;
+    transition: transform 180ms ease;
+    will-change: transform;
+  }
+  .gallery-lightbox__loading,
+  .gallery-lightbox__error {
+    position: absolute;
+    z-index: 2;
+    text-align: center;
+    font:
+      400 13px/1.5 system-ui,
+      sans-serif;
+    letter-spacing: 0.04em;
+  }
+  .gallery-lightbox__loading[hidden],
+  .gallery-lightbox__error[hidden] {
+    display: none;
+  }
+  .gallery-lightbox__loading span {
+    display: block;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto 14px;
+    border: 1px solid #ffffff45;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: gallery-lightbox-spin 800ms linear infinite;
+  }
+  .gallery-lightbox__error p {
+    margin: 0 0 15px;
+  }
+  .gallery-lightbox__error button {
+    border: 1px solid #ffffff66;
+    border-radius: 999px;
+    padding: 10px 18px;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+  }
+  .gallery-lightbox__zoom {
+    position: absolute;
+    z-index: 5;
+    left: 50%;
+    bottom: max(22px, env(safe-area-inset-bottom));
+    display: flex;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: 0 12px 36px #0008;
+  }
+  .gallery-lightbox__zoom button {
+    min-width: 44px;
+    height: 42px;
+    border-width: 0 0 0 1px;
+    border-radius: 0;
+    font:
+      500 11px/1 system-ui,
+      sans-serif;
+  }
+  .gallery-lightbox__zoom button:first-child {
+    border-left: 0;
+  }
+  .gallery-lightbox__zoom button:nth-child(2) {
+    min-width: 62px;
+  }
+  .gallery-lightbox__hint {
+    display: none;
+  }
+  @keyframes gallery-lightbox-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes gallery-lightbox-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (max-width: 700px) {
+    .gallery-lightbox__viewport img {
+      max-width: 100vw;
+      max-height: calc(100dvh - 150px);
+    }
+    .gallery-lightbox__previous,
+    .gallery-lightbox__next {
+      top: auto;
+      bottom: max(20px, env(safe-area-inset-bottom));
+      transform: none;
+      width: 44px;
+      height: 44px;
+    }
+    .gallery-lightbox__zoom {
+      bottom: max(21px, env(safe-area-inset-bottom));
+    }
+    .gallery-lightbox__hint {
+      display: block;
+      position: absolute;
+      left: 50%;
+      bottom: calc(max(21px, env(safe-area-inset-bottom)) + 55px);
+      margin: 0;
+      transform: translateX(-50%);
+      color: #ffffffa3;
+      font:
+        400 10px/1.2 system-ui,
+        sans-serif;
+      white-space: nowrap;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gallery-lightbox[open],
+    .gallery-lightbox__loading span {
+      animation: none;
+    }
+    .gallery-lightbox__viewport img {
+      transition: none;
+    }
+  }
+</style>

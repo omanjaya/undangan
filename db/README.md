@@ -1,0 +1,15 @@
+# Persistence and identity in this first working version
+
+Run `npm run db:migrate` then `npm run db:seed` with `DATABASE_URL` set. Both commands preserve existing data. Seed creates the Amara & Raka invitation; it does not reset drafts or responses.
+
+The implemented schema is `app_state`, a PostgreSQL JSONB aggregate holding the invitation, revisions, responses, wishes and hashed session tokens. All mutations lock the row and commit atomically. This provides publish snapshots, optimistic draft versions, and consistent RSVP updates in this small single-owner release. It is intentionally not the full normalized schema proposed in PLANNING.md. Splitting workspaces and responses into indexed relational tables is required before expanding account onboarding or scaling writes.
+
+Without `DATABASE_URL`, nonproduction uses `.data/state.json`, written via atomic rename and an in-process queue. Use one process only in this mode. Production refuses this fallback. The file includes guest information and session hashes; keep it private and out of source control.
+
+Owner credentials are configured in environment (`OWNER_EMAIL`, `OWNER_PASSWORD`). Only nonproduction has documented demo credentials. Authentication compares credential digests in constant time, generates 256-bit opaque sessions, stores only their SHA-256 hashes, expires them after 24 hours, and revokes them on logout. At most 20 active owner sessions are retained. This is a limited environment-provisioned owner login, not a multi-user authentication service; password reset, email verification, MFA and account onboarding are not implemented. Move to a maintained authentication library before adding those capabilities.
+
+Mutations require a matching Origin; set `APP_URL` to the public URL behind a reverse proxy. Production cookies use Secure, HttpOnly and SameSite=Lax. Rate limits are in-process per client address; configure proxy address trust carefully and use ingress/shared limiting for multiple replicas.
+
+Public RSVP is deliberately open in this version. A random browser cookie identifies repeat submissions so they update the same response. It does not verify guest identity, does not synchronize across devices, and can be reset by clearing cookies. Each response is limited to five attendees. Wishes remain private until an owner approves them. Invitations are public after publishing; preview requires an owner session and matching workspace. Guest token authorization and private invitations from the plan remain future work.
+
+The application exports only approved wishes publicly. User text must remain rendered as text by the presentation layer. Owner uploads are signature-validated, images are decoded and converted to WebP with metadata removed, and all filenames are server-generated. Anonymous media reads require a current published reference; private drafts and unreferenced assets are not public. Uploads use persistent local storage with a configurable quota. Video and audio are not transcoded. Credential rotation invalidates existing sessions.

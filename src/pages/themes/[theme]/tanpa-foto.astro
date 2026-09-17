@@ -1,0 +1,25 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import EditorialBotanical from "../../../components/invitation/EditorialBotanical.astro";
+import ThemePreviewNav from "../../../components/invitation/ThemePreviewNav.astro";
+import { themes } from "../../../modules/invitations/domain/themes";
+import { themePreviewContent } from "../../../modules/invitations/domain/theme-preview";
+export const prerender = true;
+export function getStaticPaths() {
+  return themes.map((theme) => ({
+    params: { theme: theme.id },
+    props: { theme },
+  }));
+}
+const { theme } = Astro.props;
+const content = themePreviewContent(theme.id, "illustrated");
+---
+
+<BaseLayout
+  title={`${theme.name} — Tanpa Foto · Temu`}
+  description={theme.description}
+  noindex
+>
+  <ThemePreviewNav theme={theme.id} mode="illustrated" />
+  <EditorialBotanical content={content} slug="contoh-tema" preview sample />
+</BaseLayout>

@@ -1,0 +1,297 @@
+/* Shared guest-page refinement layer. Loaded after invitation.css. */
+.invite-event-heading > svg {
+  margin: 0 auto 14px;
+  color: var(--iv-gold);
+}
+
+.invite-event-kicker,
+.invite-event-venue-label,
+.invite-rsvp-form-heading p {
+  color: var(--iv-muted) !important;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9px !important;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.invite-event-heading h3 {
+  margin: 5px 0 22px;
+}
+
+.invite-event-schedule {
+  padding: 18px 14px 16px;
+  border-block: 1px solid var(--iv-line);
+}
+
+.invite-event-card .invite-event-date {
+  font-family: var(--iv-serif);
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.2;
+}
+
+.invite-event-card .invite-event-time {
+  margin-top: 7px;
+  color: var(--iv-gold);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.invite-event-venue-label {
+  margin-bottom: 7px !important;
+}
+
+.invite-event-card h4 {
+  line-height: 1.25;
+}
+
+.invite-event-address {
+  max-width: 30ch;
+  margin-top: 8px !important;
+  line-height: 1.7;
+}
+
+.invite-rsvp-form {
+  padding: clamp(26px, 4vw, 44px);
+  border: 1px solid var(--iv-line);
+  background: color-mix(in srgb, var(--iv-paper) 84%, transparent);
+  box-shadow: 0 22px 60px color-mix(in srgb, var(--iv-ink) 8%, transparent);
+}
+
+.invite-rsvp-form-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--iv-line);
+}
+
+.invite-rsvp-form-heading > svg {
+  color: var(--iv-gold);
+}
+
+.invite-rsvp-form-heading h3 {
+  margin-top: 2px;
+  font-size: 25px;
+  line-height: 1.15;
+}
+
+.invite-form-field {
+  position: relative;
+}
+
+.invite-rsvp-form input:not([type="hidden"]),
+.invite-rsvp-form select,
+.invite-rsvp-form textarea {
+  border-width: 0 0 1px;
+  padding-inline: 0;
+  background: transparent;
+  border-radius: 0;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.invite-rsvp-form textarea {
+  min-height: 92px;
+}
+
+.invite-rsvp-form input:not([type="hidden"]):focus,
+.invite-rsvp-form select:focus,
+.invite-rsvp-form textarea:focus {
+  border-color: var(--iv-gold);
+  outline: 0;
+}
+
+.invite-rsvp-form .invite-button {
+  margin-top: 3px;
+}
+
+.invite-form-status:not(:empty) {
+  padding: 11px 13px;
+  border-left: 2px solid var(--iv-olive);
+  background: color-mix(in srgb, var(--iv-olive) 8%, transparent);
+}
+
+.invite-form-status[data-error="true"] {
+  border-color: currentColor;
+}
+
+/* One lead image establishes the moment; the remaining photographs support it. */
+.invite-gallery {
+  grid-template-columns: repeat(12, 1fr);
+  align-items: stretch;
+}
+
+.invite-gallery-item,
+.invite-gallery-item:nth-child(2),
+.invite-gallery-item:nth-child(3) {
+  height: 250px;
+  border-radius: 0;
+  grid-column: span 5;
+}
+
+.invite-gallery-item:first-child {
+  grid-column: span 7;
+  grid-row: span 2;
+  height: 524px;
+}
+
+.invite-gallery-item:nth-child(n + 4) {
+  grid-column: span 4;
+}
+
+.invite-gallery-item:only-child {
+  grid-column: 2 / -2;
+}
+
+/* Theme personalities: soft ivory, formal emerald, organic terracotta. */
+.invitation[data-theme="jepun-ivory"] .invite-event-card,
+.invitation:not([data-theme="puri-emerald"]):not(
+    [data-theme="senja-terracotta"]
+  )
+  .invite-event-card,
+.invitation[data-theme="jepun-ivory"] .invite-rsvp-form,
+.invitation:not([data-theme="puri-emerald"]):not(
+    [data-theme="senja-terracotta"]
+  )
+  .invite-rsvp-form {
+  border-radius: 2px;
+  box-shadow: 0 18px 55px rgba(73, 68, 52, 0.07);
+}
+
+.invitation[data-theme="puri-emerald"] .invite-event-card {
+  border-color: color-mix(in srgb, var(--iv-gold) 58%, transparent);
+  box-shadow:
+    inset 0 0 0 5px var(--iv-surface),
+    inset 0 0 0 6px color-mix(in srgb, var(--iv-gold) 35%, transparent);
+}
+
+.invitation[data-theme="puri-emerald"] .invite-rsvp-form {
+  border-color: color-mix(in srgb, var(--iv-gold) 60%, transparent);
+  background: var(--iv-surface);
+  box-shadow:
+    inset 0 0 0 5px var(--iv-surface),
+    inset 0 0 0 6px color-mix(in srgb, var(--iv-gold) 35%, transparent);
+}
+
+.invitation[data-theme="puri-emerald"] .invite-gallery-item:first-child {
+  border-radius: 240px 240px 0 0;
+}
+
+.invitation[data-theme="senja-terracotta"] .invite-rsvp-form {
+  border-radius: 80px 8px 80px 8px;
+  padding: clamp(34px, 5vw, 52px);
+  background: color-mix(in srgb, var(--iv-paper) 70%, var(--iv-surface));
+  box-shadow: 12px 15px 0 color-mix(in srgb, var(--iv-gold) 15%, transparent);
+}
+
+.invitation[data-theme="senja-terracotta"] .invite-gallery-item:first-child {
+  border-radius: 46% 46% 8px 8px;
+}
+
+.invitation[data-theme="senja-terracotta"] .invite-gallery-item:nth-child(2n) {
+  border-radius: 42px 4px 42px 4px;
+}
+
+@media (max-width: 760px) {
+  .invite-event-heading > svg {
+    margin-bottom: 12px;
+  }
+
+  .invite-event-heading h3 {
+    margin-bottom: 18px;
+  }
+
+  .invite-rsvp-form {
+    padding: 26px 22px 24px;
+  }
+
+  .invitation[data-theme="senja-terracotta"] .invite-rsvp-form {
+    padding: 32px 22px;
+    border-radius: 52px 6px 52px 6px;
+  }
+
+  .invite-gallery {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .invite-gallery-item,
+  .invite-gallery-item:nth-child(2),
+  .invite-gallery-item:nth-child(3),
+  .invite-gallery-item:nth-child(n + 4) {
+    grid-column: auto;
+    grid-row: auto;
+    height: 170px;
+  }
+
+  .invite-gallery-item:first-child,
+  .invite-gallery-item:only-child {
+    grid-column: 1 / -1;
+    height: min(118vw, 440px);
+  }
+
+  .invite-mobile-nav {
+    left: 50%;
+    right: auto;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: min(calc(100% - 32px), 390px);
+    min-height: 54px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--iv-paper) 92%, transparent);
+    box-shadow: 0 10px 32px color-mix(in srgb, var(--iv-ink) 14%, transparent);
+    padding: 4px 8px;
+    backdrop-filter: blur(14px);
+  }
+
+  .invite-mobile-nav a {
+    min-width: 0;
+    min-height: 44px;
+    flex: 1;
+    gap: 1px;
+    opacity: 0.82;
+  }
+
+  .invite-mobile-nav a + a {
+    border-left: 1px solid color-mix(in srgb, var(--iv-line) 70%, transparent);
+  }
+
+  .invite-mobile-nav svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .invite-mobile-nav span {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (max-width: 390px) {
+  .invite-event-card {
+    padding-inline: 20px;
+  }
+
+  .invite-event-card .invite-event-date {
+    font-size: 21px;
+  }
+
+  .invite-rsvp-form-heading h3 {
+    font-size: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invite-rsvp-form input,
+  .invite-rsvp-form select,
+  .invite-rsvp-form textarea {
+    transition: none;
+  }
+}

@@ -1,0 +1,132 @@
+---
+import InviteIcon from "./InviteIcon.astro";
+const { slug } = Astro.props as { slug: string };
+---
+
+<form class="invite-rsvp-form" id="rsvp-form" action="/api/rsvp" method="post">
+  <input type="hidden" name="slug" value={slug} />
+  <div class="invite-rsvp-form-heading">
+    <InviteIcon name="heart" size={22} />
+    <div>
+      <p>Balasan Anda</p>
+      <h3>Konfirmasi kehadiran</h3>
+    </div>
+  </div>
+  <div class="invite-form-field">
+    <label for="guest-name">Nama lengkap</label>
+    <input
+      id="guest-name"
+      name="name"
+      autocomplete="name"
+      placeholder="Tuliskan nama Anda"
+      required
+      minlength="2"
+      maxlength="100"
+    />
+  </div>
+  <div class="invite-form-row">
+    <div class="invite-form-field">
+      <label for="attendance">Konfirmasi kehadiran</label>
+      <select id="attendance" name="attendance" required>
+        <option value="attending">Dengan senang hati, hadir</option>
+        <option value="declined">Maaf, belum bisa hadir</option>
+      </select>
+    </div>
+    <div class="invite-form-field">
+      <label for="attendee-count">Jumlah tamu</label>
+      <select id="attendee-count" name="attendeeCount">
+        <option value="1">1 orang</option>
+        <option value="2">2 orang</option>
+        <option value="3">3 orang</option>
+        <option value="4">4 orang</option>
+        <option value="5">5 orang</option>
+      </select>
+    </div>
+  </div>
+  <div class="invite-form-field">
+    <label for="guest-message">
+      Doa & ucapan <span class="invite-optional">(opsional)</span>
+    </label>
+    <textarea
+      id="guest-message"
+      name="message"
+      placeholder="Bagikan doa dan harapan hangat Anda…"
+      rows="4"
+      maxlength="1000"
+    ></textarea>
+  </div>
+  <p class="invite-form-note">
+    Ucapan akan ditampilkan setelah disetujui oleh pasangan. Konfirmasi dapat
+    diperbarui dari browser yang sama.
+  </p>
+  <button class="invite-button" type="submit">
+    <span>Kirim konfirmasi</span>
+    <InviteIcon name="arrow" size={18} />
+  </button>
+  <p
+    id="rsvp-status"
+    class="invite-form-status"
+    role="status"
+    aria-live="polite"
+  ></p>
+</form>
+<script>
+  const form = document.querySelector<HTMLFormElement>("#rsvp-form");
+  const attendance = document.querySelector<HTMLSelectElement>("#attendance");
+  const attendeeCount =
+    document.querySelector<HTMLSelectElement>("#attendee-count");
+  attendance?.addEventListener("change", () => {
+    if (attendeeCount) attendeeCount.disabled = attendance.value === "declined";
+  });
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = form.querySelector<HTMLButtonElement>(
+      'button[type="submit"]',
+    );
+    const status = document.querySelector<HTMLElement>("#rsvp-status");
+    if (!button || !status) return;
+    const data = new FormData(form);
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    status.textContent = "Mengirim konfirmasi…";
+    delete status.dataset.error;
+    try {
+      const response = await fetch("/api/rsvp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: data.get("slug"),
+          name: data.get("name"),
+          attendance: data.get("attendance"),
+          attendeeCount:
+            data.get("attendance") === "declined"
+              ? 0
+              : Number(data.get("attendeeCount")),
+          message: data.get("message"),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(
+          typeof result.error === "string"
+            ? result.error
+            : "Konfirmasi belum tersimpan. Silakan coba kembali.",
+        );
+      status.textContent =
+        data.get("attendance") === "attending"
+          ? `Konfirmasi tersimpan — kehadiran ${data.get("attendeeCount")} orang tercatat.`
+          : "Konfirmasi tersimpan. Terima kasih sudah memberi kabar.";
+      form.dataset.submitted = "true";
+      button.querySelector("span")!.textContent = "Perbarui konfirmasi";
+    } catch (error) {
+      status.dataset.error = "true";
+      status.textContent =
+        error instanceof Error
+          ? error.message
+          : "Tidak dapat terhubung. Silakan coba kembali.";
+    } finally {
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+    }
+  });
+</script>

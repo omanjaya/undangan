@@ -1,0 +1,89 @@
+.event-location {
+  margin-top: 28px;
+}
+
+.invitation .event-location-directions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 13px 18px;
+  border: 1px solid var(--iv-olive, #4c593f);
+  background: var(--iv-olive, #4c593f);
+  color: var(--iv-paper, #fff);
+  font-family: var(--iv-sans, sans-serif);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.event-location-directions:hover {
+  border-color: var(--iv-gold, #9a865a);
+  background: color-mix(in srgb, var(--iv-olive, #4c593f) 88%, white);
+  transform: translateY(-1px);
+}
+
+.event-location-directions:focus-visible {
+  outline: 2px solid var(--iv-gold, #9a865a);
+  outline-offset: 4px;
+}
+
+.event-map {
+  margin-top: 12px;
+  text-align: left;
+}
+
+.invite-event-card .event-map-note {
+  margin: 0;
+  color: var(--iv-muted, #737b65);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.event-map-frame {
+  margin: 16px 0 10px;
+  width: 100%;
+  height: 260px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--iv-surface, #eeefe6);
+  border: 1px solid var(--iv-line, #cbd0bd);
+}
+
+.invitation[data-theme="puri-emerald"] .event-location-directions {
+  border-color: var(--iv-gold);
+  background: var(--iv-gold);
+  color: #142f2b;
+}
+
+.invitation[data-theme="senja-terracotta"] .event-location-directions {
+  border-radius: 999px;
+}
+
+@media (max-width: 480px) {
+  .event-map-frame {
+    height: 220px;
+  }
+}
+
+.event-map-frame iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-location-directions {
+    transition: none;
+  }
+}

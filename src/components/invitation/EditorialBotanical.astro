@@ -1,0 +1,846 @@
+---
+import { presentationContent } from "../../modules/invitations/domain/presentation";
+import GalleryLightbox from "./GalleryLightbox.astro";
+import InvitationMotion from "./InvitationMotion.astro";
+import ClosingPortrait from "./ClosingPortrait.astro";
+import PhotoSlideshow from "./PhotoSlideshow.astro";
+import YoutubeVideo from "./YoutubeVideo.astro";
+import FloralDivider from "./FloralDivider.astro";
+import Gapura from "./Gapura.astro";
+import InviteIcon from "./InviteIcon.astro";
+import SacredVerse from "./SacredVerse.astro";
+import "@fontsource/noto-serif-balinese/balinese-400.css";
+import EventCard from "./EventCard.astro";
+import RsvpForm from "./RsvpForm.astro";
+import Guestbook from "./Guestbook.astro";
+import type { InvitationContent } from "../../modules/invitations/domain/invitation";
+import "../../styles/invitation.css";
+import "../../styles/guest-polish.css";
+import "../../styles/cover-polish.css";
+import "../../styles/illustrated-invitation.css";
+import "@fontsource/cormorant-garamond/latin-400.css";
+import "@fontsource/cormorant-garamond/latin-400-italic.css";
+import "@fontsource/cinzel/latin-400.css";
+interface Props {
+  content: InvitationContent;
+  slug: string;
+  preview?: boolean;
+  sample?: boolean;
+}
+const {
+  content: savedContent,
+  slug,
+  preview = false,
+  sample = false,
+} = Astro.props;
+const content = presentationContent(savedContent);
+const illustrated = content.photoMode === "illustrated";
+const theme = content.theme ?? "jepun-ivory";
+const coverArt = `/ornaments/covers/${theme === "puri-emerald" ? "emerald" : theme === "senja-terracotta" ? "terracotta" : "ivory"}-cover.webp`;
+const ornamentDensity =
+  (
+    content as InvitationContent & {
+      ornamentDensity?: "minimal" | "medium" | "full";
+    }
+  ).ornamentDensity || "medium";
+const densityCorner =
+  theme === "puri-emerald"
+    ? "/ornaments/theme-pack/emerald-foliage-corner.webp"
+    : theme === "senja-terracotta"
+      ? "/ornaments/theme-pack/terracotta-floral-spray.webp"
+      : "/ornaments/theme-pack/ivory-floral-crescent.webp";
+const imageFocus =
+  (
+    content as InvitationContent & {
+      imageFocus?: Record<string, { x: number; y: number }>;
+    }
+  ).imageFocus || {};
+const focusStyle = (slot: string) => {
+  const focus = imageFocus[slot] || { x: 50, y: 50 };
+  return `object-position:${focus.x}% ${focus.y}%`;
+};
+const date = new Date(content.date);
+const dateLabel = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Asia/Makassar",
+}).format(date);
+const dayLabel = new Intl.DateTimeFormat("id-ID", {
+  weekday: "long",
+  timeZone: "Asia/Makassar",
+}).format(date);
+
+const initials = `${content.bride.charAt(0)}${content.groom.charAt(0)}`;
+const events = content.events?.length
+  ? content.events
+  : [
+      {
+        title: content.ceremonyTitle || "Pawiwahan",
+        date: content.date,
+        endDate: undefined as string | undefined,
+        venue: content.venue,
+        address: content.address,
+        mapUrl: content.mapUrl,
+        mapEmbedUrl: "",
+      },
+    ];
+const formatEvent = (value: string) =>
+  new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Makassar",
+  }).format(new Date(value));
+const clockLabel = (value: string) =>
+  new Intl.DateTimeFormat("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Makassar",
+  }).format(new Date(value));
+const formatTime = (value: string, endValue?: string) =>
+  endValue
+    ? `${clockLabel(value)} – ${clockLabel(endValue)} WITA`
+    : `${clockLabel(value)} WITA — selesai`;
+const heroEndDate = events.find(
+  (event) => Date.parse(event.date) === date.getTime(),
+)?.endDate;
+const calendarStart = date
+  .toISOString()
+  .replace(/[-:]/g, "")
+  .replace(/\.\d{3}/, "");
+const calendarEnd = new Date(
+  heroEndDate ? Date.parse(heroEndDate) : date.getTime() + 3 * 60 * 60 * 1000,
+)
+  .toISOString()
+  .replace(/[-:]/g, "")
+  .replace(/\.\d{3}/, "");
+const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Pernikahan ${content.bride} & ${content.groom}`)}&dates=${calendarStart}/${calendarEnd}&details=${encodeURIComponent(content.opening)}&location=${encodeURIComponent(`${content.venue}, ${content.address}`)}`;
+---
+
+<div
+  class="invitation"
+  data-theme={theme}
+  data-photo-mode={illustrated ? "illustrated" : "photos"}
+  data-font={content.fontPreset || "cormorant"}
+  data-ornament-density={ornamentDensity}
+  data-preview={String(preview)}
+  data-sample={String(sample)}
+>
+  <div class="invite-cover" hidden>
+    <img
+      class="invite-cover-art"
+      src={coverArt}
+      alt=""
+      aria-hidden="true"
+      width="1024"
+      height="1536"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <div class="invite-cover-inner">
+      <span class="invite-eyebrow">
+        UNDANGAN {content.ceremonyTitle || "PAWIWAHAN"}
+      </span>
+      <span class="invite-cover-seal" aria-hidden="true">
+        {initials}
+      </span>
+      <p class="invite-cover-names">
+        {content.bride}
+        <em>&</em>
+        {content.groom}
+      </p>
+      <p class="invite-cover-date">{dateLabel}</p>
+      <span class="invite-short-rule"></span>
+      <div class="invite-cover-guest">
+        <p class="invite-eyebrow">KEPADA YTH. BAPAK / IBU / SAHABAT</p>
+        <p class="invite-cover-recipient" data-recipient>
+          Tamu undangan
+        </p>
+      </div>
+      <button class="invite-button" data-open-invitation>
+        Buka undangan <InviteIcon name="arrow" size={18} />
+      </button>
+      <p class="invite-cover-note">Dengan bahagia, kami mengundang Anda.</p>
+    </div>
+  </div>
+  {content.musicUrl && (
+    <>
+      <audio
+        id="invite-audio"
+        src={content.musicUrl}
+        preload="none"
+        loop
+      ></audio>
+      <button
+        class="invite-music-toggle"
+        aria-label="Putar musik"
+        aria-pressed="false"
+        title={content.musicTitle || "Musik undangan"}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.4"
+          aria-hidden="true"
+        >
+          <path d="M9 18V5l12-2v13M9 8l12-2" />
+          <ellipse cx="6" cy="18" rx="3" ry="3" />
+          <ellipse cx="18" cy="16" rx="3" ry="3" />
+        </svg>
+        <span data-music-label>Putar musik</span>
+      </button>
+    </>
+  )}
+  <div class="invite-content">
+    {preview && (
+      <div class="invite-preview-banner">
+        {sample
+          ? illustrated
+            ? "Contoh Tanpa Foto — komposisi ornamen dan monogram."
+            : "Contoh Dengan Foto — unggah foto sendiri di editor; contoh ini memakai ilustrasi pengganti."
+          : "Pratinjau draft — perubahan ini belum terlihat oleh tamu."}
+        <a href="/dashboard">
+          Kembali ke editor <InviteIcon name="arrow" size={16} />
+        </a>
+      </div>
+    )}
+    <header class="invite-header">
+      <a
+        href="#home"
+        class="invite-monogram"
+        aria-label={`${content.bride} dan ${content.groom}, kembali ke awal`}
+      >
+        {initials}
+        <span aria-hidden="true">.</span>
+      </a>
+      <nav aria-label="Navigasi undangan">
+        <a href="#couple">Mempelai</a>
+        <a href="#event">Acara</a>
+        {(content.galleryPhotos?.length > 0 ||
+          content.videoUrl ||
+          content.youtubeUrl) && <a href="#moments">Momen</a>}
+      </nav>
+      <a class="invite-header-rsvp" href="#rsvp">
+        Konfirmasi hadir <InviteIcon name="arrow" size={16} />
+      </a>
+    </header>
+    <main>
+      <section class="invite-hero" id="home" aria-labelledby="wedding-title">
+        <img
+          class="invite-density-corner"
+          src={densityCorner}
+          alt=""
+          width="768"
+          height="768"
+          loading="lazy"
+          decoding="async"
+          aria-hidden="true"
+        />
+        <div class="invite-hero-copy">
+          <p class="invite-eyebrow">
+            <span></span> PAWIWAHAN · BALI
+          </p>
+          <h1 id="wedding-title">
+            {content.bride}
+            <span class="invite-ampersand">&</span>
+            {content.groom}
+          </h1>
+          <p class="invite-hero-date">
+            {dayLabel}, {dateLabel}
+            <span class="invite-hero-time">
+              {formatTime(content.date, heroEndDate)}
+            </span>
+            <span class="invite-hero-venue">{content.venue}</span>
+          </p>
+          <div class="invite-recipient">
+            <span>KEPADA YTH. BAPAK / IBU / SAHABAT</span>
+            <p data-recipient>Tamu undangan</p>
+          </div>
+          <a class="invite-button" href="#event">
+            Lihat detail acara <InviteIcon name="arrow" size={18} />
+          </a>
+          <p class="invite-hero-footnote">Bersama, dalam doa dan restu.</p>
+        </div>
+        <div class="invite-hero-visual">
+          <div class="invite-arch-frame">
+            {content.heroPhoto ? (
+              <div class="invite-parallax-clip">
+                <img
+                  class="invite-hero-image"
+                  src={content.heroPhoto}
+                  width="800"
+                  height="1000"
+                  alt={`Potret ${content.bride} dan ${content.groom}`}
+                  fetchpriority="high"
+                  loading="eager"
+                  decoding="async"
+                  style={focusStyle("heroPhoto")}
+                />
+              </div>
+            ) : (
+              <div class="invite-artwork">
+                {illustrated ? (
+                  <img
+                    class="invite-illustrated-frame"
+                    src={coverArt}
+                    alt=""
+                    aria-hidden="true"
+                    width="1024"
+                    height="1536"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <Gapura class="invite-artwork-gate" />
+                )}
+                <p class="invite-artwork-initials">{initials}</p>
+                <span class="invite-eyebrow">SEBUAH JANJI, SELAMANYA</span>
+              </div>
+            )}
+          </div>
+          <span class="invite-photo-side">
+            DENGAN RESTU KELUARGA & ORANG TERKASIH
+          </span>
+          <div class="invite-date-stamp">
+            <span>
+              {new Intl.DateTimeFormat("en", {
+                month: "short",
+                timeZone: "Asia/Makassar",
+              }).format(date)}
+            </span>
+            <strong>
+              {new Intl.DateTimeFormat("en", {
+                day: "2-digit",
+                timeZone: "Asia/Makassar",
+              }).format(date)}
+            </strong>
+            <span>
+              {new Intl.DateTimeFormat("en", {
+                year: "numeric",
+                timeZone: "Asia/Makassar",
+              }).format(date)}
+            </span>
+          </div>
+        </div>
+        <a href="#couple" class="invite-scroll-label">
+          SCROLL TO DISCOVER <InviteIcon name="arrow" size={17} />
+        </a>
+      </section>
+
+      <section
+        class="invite-intro invite-section"
+        id="couple"
+        aria-labelledby="couple-title"
+      >
+        <p class="invite-eyebrow">DENGAN PENUH RASA SYUKUR</p>
+        {content.balineseGreeting && (
+          <p class="invite-balinese" lang="ban-Bali">
+            {content.balineseGreeting}
+          </p>
+        )}
+        <h2 id="couple-title">{content.greeting || "Om Swastyastu"}</h2>
+        <p class="invite-opening">{content.opening}</p>
+        <div class="invite-couple">
+          <article>
+            {content.bridePhoto ? (
+              <img
+                class="invite-couple-portrait"
+                src={content.bridePhoto}
+                loading="lazy"
+                decoding="async"
+                style={focusStyle("bridePhoto")}
+                alt={content.brideFullName}
+                width="400"
+                height="500"
+              />
+            ) : (
+              !illustrated && (
+                <div class="invite-initial-medallion">
+                  {content.bride.charAt(0)}
+                </div>
+              )
+            )}
+            <p class="invite-eyebrow">MEMPELAI WANITA</p>
+            <h3>{content.brideFullName}</h3>
+            <p>{content.brideParents}</p>
+            <p class="invite-family-address">{content.brideAddress}</p>
+          </article>
+          <span class="invite-couple-ampersand" aria-hidden="true">
+            &
+          </span>
+          <article>
+            {content.groomPhoto ? (
+              <img
+                class="invite-couple-portrait"
+                src={content.groomPhoto}
+                loading="lazy"
+                decoding="async"
+                style={focusStyle("groomPhoto")}
+                alt={content.groomFullName}
+                width="400"
+                height="500"
+              />
+            ) : (
+              !illustrated && (
+                <div class="invite-initial-medallion">
+                  {content.groom.charAt(0)}
+                </div>
+              )
+            )}
+            <p class="invite-eyebrow">MEMPELAI PRIA</p>
+            <h3>{content.groomFullName}</h3>
+            <p>{content.groomParents}</p>
+            <p class="invite-family-address">{content.groomAddress}</p>
+          </article>
+        </div>
+        <div class="invite-flourish" aria-hidden="true">
+          <span></span>
+          <InviteIcon name="heart" size={18} />
+          <span></span>
+        </div>
+        <p class="invite-love-note">
+          Merupakan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan
+          hadir dan memberikan doa restu.
+        </p>
+      </section>
+
+      <FloralDivider theme={content.theme} />
+      {content.vedaQuote === "rigveda-10-191-4" && <SacredVerse />}
+
+      <section
+        class="invite-event-section"
+        id="event"
+        aria-labelledby="event-title"
+      >
+        <div class="invite-event-copy">
+          <p class="invite-eyebrow">SAVE THE DATE</p>
+          <h2 id="event-title">
+            Hari yang
+            <br />
+            kami <em>nantikan.</em>
+          </h2>
+          <p>
+            Sebuah awal yang indah menjadi semakin berarti dengan kehadiran
+            orang-orang terkasih.
+          </p>
+          <div
+            class="invite-countdown"
+            data-wedding-date={content.date}
+            aria-label="Hitung mundur menuju pernikahan"
+          >
+            <div>
+              <strong data-days>—</strong>
+              <span>HARI</span>
+            </div>
+            <span class="invite-countdown-colon">:</span>
+            <div>
+              <strong data-hours>—</strong>
+              <span>JAM</span>
+            </div>
+            <span class="invite-countdown-colon">:</span>
+            <div>
+              <strong data-minutes>—</strong>
+              <span>MENIT</span>
+            </div>
+          </div>
+          <p class="invite-countdown-message" hidden>
+            Hari istimewa telah tiba. Terima kasih atas doa dan cinta Anda.
+          </p>
+          <a
+            class="invite-calendar-link"
+            href={calendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <InviteIcon name="calendar" size={17} /> Simpan di kalender{" "}
+            <InviteIcon name="plus" size={16} />
+          </a>
+        </div>
+        <div class="invite-event-list">
+          {content.balineseDate && (
+            <p class="invite-balinese-date">{content.balineseDate}</p>
+          )}
+          {events.map((event, index) => (
+            <EventCard
+              title={event.title}
+              date={formatEvent(event.date)}
+              time={formatTime(event.date, event.endDate)}
+              venue={event.venue}
+              address={event.address}
+              mapUrl={event.mapUrl}
+              mapEmbedUrl={event.mapEmbedUrl}
+              index={index + 1}
+            />
+          ))}
+        </div>
+      </section>
+
+      {content.story && (
+        <section
+          class="invite-story invite-section"
+          aria-labelledby="story-title"
+        >
+          <div class="invite-story-photo">
+            {content.storyPhoto ? (
+              <img
+                src={content.storyPhoto}
+                loading="lazy"
+                decoding="async"
+                style={focusStyle("storyPhoto")}
+                width="800"
+                height="1000"
+                alt={`Cerita ${content.bride} dan ${content.groom}`}
+              />
+            ) : (
+              <div class="invite-story-art">
+                <img
+                  src={
+                    illustrated ? densityCorner : "/ornaments/bali-garden.webp"
+                  }
+                  alt=""
+                  width="960"
+                  height="640"
+                  loading="lazy"
+                  decoding="async"
+                  class="invite-story-garden"
+                />
+                <span>{initials}</span>
+              </div>
+            )}
+            <span>CERITA KAMI, SELAMANYA</span>
+          </div>
+          <div class="invite-story-copy">
+            <p class="invite-eyebrow">AWAL DARI SELAMANYA</p>
+            <h2 id="story-title">
+              Semesta punya
+              <br />
+              <em>cara yang indah.</em>
+            </h2>
+            <span class="invite-short-rule" aria-hidden="true"></span>
+            <p>{content.story}</p>
+            <p class="invite-story-signature">
+              {content.bride} & {content.groom}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {(!illustrated || content.illustrationSlideshow) && (
+        <PhotoSlideshow
+          photos={[
+            ...new Set(
+              [content.heroPhoto, ...content.galleryPhotos].filter(Boolean),
+            ),
+          ]}
+          theme={content.theme}
+        />
+      )}
+      {(content.galleryPhotos?.length > 0 ||
+        content.videoUrl ||
+        content.youtubeUrl) && (
+        <section
+          class="invite-gallery-section invite-section"
+          id="moments"
+          aria-labelledby="moments-title"
+        >
+          <div class="invite-gallery-heading">
+            <div>
+              <p class="invite-eyebrow">POTONGAN CERITA KAMI</p>
+              <h2 id="moments-title">
+                Untuk <em>dikenang.</em>
+              </h2>
+            </div>
+            <p>Kenangan yang tinggal selamanya.</p>
+          </div>
+          <div class="invite-gallery">
+            {(content.galleryPhotos || []).map((photo, index) => (
+              <button
+                class="invite-gallery-item"
+                type="button"
+                data-full-image={photo}
+                data-alt={`Momen ${index + 1}, ${content.bride} dan ${content.groom}`}
+                aria-label={`Perbesar foto ${index + 1}`}
+              >
+                <img
+                  src={photo}
+                  width="650"
+                  height="800"
+                  loading="lazy"
+                  alt={`Momen ${index + 1}, ${content.bride} dan ${content.groom}`}
+                />
+                <span class="invite-gallery-expand">
+                  <InviteIcon name="plus" size={20} />
+                </span>
+              </button>
+            ))}
+          </div>
+          {content.youtubeUrl && <YoutubeVideo url={content.youtubeUrl} />}
+          {content.videoUrl && !content.youtubeUrl && (
+            <>
+              <video
+                class="invite-video"
+                controls
+                playsinline
+                preload="none"
+                poster={content.heroPhoto || undefined}
+                aria-label={`Video ${content.bride} dan ${content.groom}`}
+              >
+                <source src={content.videoUrl} />
+                <track kind="captions" label="Tanpa dialog" />
+                Browser Anda tidak mendukung pemutaran video.
+              </video>
+              <p class="invite-video-fallback" hidden role="status">
+                Video belum dapat diputar.{" "}
+                <a href={content.videoUrl} target="_blank">
+                  Buka video
+                </a>
+              </p>
+            </>
+          )}
+        </section>
+      )}
+      <section
+        class="invite-rsvp-section invite-section"
+        id="rsvp"
+        aria-labelledby="rsvp-title"
+      >
+        <div class="invite-rsvp-copy">
+          <p class="invite-eyebrow">KEHADIRAN ANDA BEGITU BERARTI</p>
+          <h2 id="rsvp-title">
+            Sampai jumpa
+            <br />
+            <em>di hari bahagia.</em>
+          </h2>
+          <p>
+            Kehadiran dan doa Anda adalah hadiah terindah bagi kami. Kabari kami
+            jika Anda dapat merayakan hari ini bersama.
+          </p>
+        </div>
+        {preview ? (
+          <div class="invite-preview-rsvp">
+            <InviteIcon name="heart" size={28} />
+            <h3>Konfirmasi kehadiran</h3>
+            <p>
+              Formulir RSVP tersedia untuk tamu setelah undangan dipublikasikan.
+            </p>
+          </div>
+        ) : (
+          <RsvpForm slug={slug} />
+        )}
+      </section>
+
+      <section
+        class="invite-wishes-section invite-section"
+        aria-labelledby="wishes-title"
+      >
+        <p class="invite-eyebrow">DOA DARI ORANG TERKASIH</p>
+        <h2 id="wishes-title">
+          Titipan <em>doa & cinta.</em>
+        </h2>
+        {!preview && <Guestbook slug={slug} />}
+      </section>
+      <footer class="invite-footer">
+        <ClosingPortrait
+          photo={
+            content.storyPhoto || content.heroPhoto || content.galleryPhotos[0]
+          }
+          focus={
+            content.storyPhoto
+              ? imageFocus.storyPhoto
+              : content.heroPhoto
+                ? imageFocus.heroPhoto
+                : undefined
+          }
+          bride={content.bride}
+          groom={content.groom}
+          ornament={densityCorner}
+        />
+        <p class="invite-eyebrow">DENGAN SEGENAP CINTA</p>
+        <h2>
+          {content.bride} <em>&</em> {content.groom}
+        </h2>
+        <p>Terima kasih telah menjadi bagian dari cerita kami.</p>
+        <p class="invite-closing">
+          {content.closing || "Om Shanti Shanti Shanti Om"}
+        </p>
+        <span class="invite-footer-date">{dateLabel}</span>
+        <a href="/" class="invite-brand-credit">
+          Dibuat dengan sepenuh hati · Temu
+        </a>
+      </footer>
+    </main>
+    <GalleryLightbox />
+    <nav class="invite-mobile-nav" aria-label="Navigasi cepat">
+      <a href={content.mapUrl} target="_blank" rel="noopener noreferrer">
+        <InviteIcon name="pin" size={18} />
+        <span>Lokasi</span>
+      </a>
+      <a href={calendarUrl} target="_blank" rel="noopener noreferrer">
+        <InviteIcon name="calendar" size={18} />
+        <span>Kalender</span>
+      </a>
+      <a href="#rsvp">
+        <InviteIcon name="check" size={18} />
+        <span>RSVP</span>
+      </a>
+    </nav>
+  </div>
+</div>
+<InvitationMotion />
+<script>
+  const invitation = document.querySelector<HTMLElement>(".invitation");
+  const cover = document.querySelector<HTMLElement>(".invite-cover");
+  const pageContent = document.querySelector<HTMLElement>(".invite-content");
+  const audio = document.querySelector<HTMLAudioElement>("#invite-audio");
+  const musicButton = document.querySelector<HTMLButtonElement>(
+    ".invite-music-toggle",
+  );
+  const reducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  const recipient = new URLSearchParams(location.search)
+    .get("to")
+    ?.trim()
+    .slice(0, 120);
+  if (recipient)
+    document
+      .querySelectorAll("[data-recipient]")
+      .forEach((node) => (node.textContent = recipient));
+  const updateMusic = () => {
+    const playing = !!audio && !audio.paused;
+    musicButton?.setAttribute("aria-pressed", String(playing));
+    musicButton?.setAttribute(
+      "aria-label",
+      playing ? "Jeda musik" : "Putar musik",
+    );
+    const label = musicButton?.querySelector("[data-music-label]");
+    if (label) label.textContent = playing ? "Jeda musik" : "Putar musik";
+  };
+  musicButton?.addEventListener("click", () => {
+    if (!audio) return;
+    if (audio.paused) void audio.play().catch(updateMusic);
+    else audio.pause();
+  });
+  audio?.addEventListener("play", updateMusic);
+  audio?.addEventListener("pause", updateMusic);
+  audio?.addEventListener("error", () => {
+    updateMusic();
+    if (musicButton) {
+      musicButton.title = "Musik belum dapat diputar";
+      musicButton.setAttribute(
+        "aria-label",
+        "Musik belum dapat diputar, coba lagi",
+      );
+    }
+  });
+  window.addEventListener("invitation:video-play", () => audio?.pause());
+  audio?.addEventListener("play", () => {
+    document
+      .querySelectorAll<HTMLVideoElement>("video")
+      .forEach((video) => video.pause());
+    document
+      .querySelectorAll<HTMLIFrameElement>(".youtube-stage iframe")
+      .forEach((frame) =>
+        frame.contentWindow?.postMessage(
+          JSON.stringify({ event: "command", func: "pauseVideo", args: [] }),
+          "https://www.youtube-nocookie.com",
+        ),
+      );
+  });
+  document.querySelectorAll("video").forEach((video) => {
+    video.addEventListener("play", () => audio?.pause());
+    video.addEventListener("error", () => {
+      video.hidden = true;
+      const fallback = video.nextElementSibling;
+      if (fallback instanceof HTMLElement) fallback.hidden = false;
+    });
+  });
+
+  document
+    .querySelectorAll<HTMLImageElement>(
+      ".invite-content img:not([aria-hidden='true']):not([data-lightbox-image])",
+    )
+    .forEach((image) => {
+      const parent = image.parentElement;
+      if (!parent) return;
+      parent.classList.add("invite-image-shell");
+      const settle = (failed = false) => {
+        parent.classList.add(failed ? "is-image-error" : "is-image-loaded");
+        if (failed && image.alt) image.hidden = true;
+      };
+      if (image.complete) settle(!image.naturalWidth);
+      else {
+        image.addEventListener("load", () => settle(), { once: true });
+        image.addEventListener("error", () => settle(true), { once: true });
+      }
+    });
+  const showCover = !(
+    invitation?.dataset.preview === "true" &&
+    invitation.dataset.sample !== "true"
+  );
+  if (cover && pageContent && showCover) {
+    cover.hidden = false;
+    pageContent.inert = true;
+    if (musicButton) musicButton.hidden = true;
+    document.documentElement.classList.add("invite-locked");
+    const openButton = cover.querySelector<HTMLButtonElement>(
+      "[data-open-invitation]",
+    );
+    openButton?.focus({ preventScroll: true });
+    openButton?.addEventListener(
+      "click",
+      () => {
+        // Audio starts only inside the guest's explicit opening gesture.
+        if (audio) void audio.play().catch(updateMusic);
+        cover.classList.add("is-opening");
+        pageContent.inert = false;
+        document.documentElement.classList.remove("invite-locked");
+        if (musicButton) musicButton.hidden = false;
+        window.setTimeout(
+          () => {
+            cover.hidden = true;
+            const title = document.querySelector<HTMLElement>("#wedding-title");
+            title?.setAttribute("tabindex", "-1");
+            title?.focus({ preventScroll: true });
+          },
+          reducedMotion ? 0 : 800,
+        );
+      },
+      { once: true },
+    );
+  } else {
+    if (cover) cover.hidden = true;
+  }
+
+  const countdown = document.querySelector<HTMLElement>(".invite-countdown");
+  if (countdown) {
+    const updateCountdown = () => {
+      const milliseconds =
+        new Date(countdown.dataset.weddingDate ?? "").getTime() - Date.now();
+      if (milliseconds <= 0) {
+        countdown.hidden = true;
+        const message = document.querySelector<HTMLElement>(
+          ".invite-countdown-message",
+        );
+        if (message) message.hidden = false;
+        return;
+      }
+      const values = {
+        days: Math.floor(milliseconds / 86400000),
+        hours: Math.floor(milliseconds / 3600000) % 24,
+        minutes: Math.floor(milliseconds / 60000) % 60,
+      };
+      Object.entries(values).forEach(([key, value]) => {
+        const node = countdown.querySelector(`[data-${key}]`);
+        if (node) node.textContent = String(value).padStart(2, "0");
+      });
+    };
+    updateCountdown();
+    window.setInterval(updateCountdown, 60000);
+  }
+</script>

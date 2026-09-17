@@ -1,0 +1,61 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import EditorialBotanical from "../../components/invitation/EditorialBotanical.astro";
+import { getInvitation } from "../../server/services";
+import { getActor } from "../../server/auth";
+export const prerender = false;
+const preview = Astro.url.searchParams.get("preview") === "1";
+const invitation = await getInvitation(Astro.params.slug ?? "");
+let permitted = true;
+if (preview) {
+  const actor = await getActor(Astro.request);
+  permitted =
+    !!actor && !!invitation && actor.workspaceId === invitation.workspaceId;
+}
+const content =
+  invitation && permitted
+    ? preview
+      ? invitation.draft
+      : invitation.status === "published"
+        ? invitation.published
+        : null
+    : null;
+if (content && invitation && Astro.params.slug !== invitation.slug) {
+  const canonical = new URL(Astro.url);
+  canonical.pathname = `/i/${encodeURIComponent(invitation.slug)}`;
+  return Astro.redirect(canonical.pathname + canonical.search, 308);
+}
+if (!content) Astro.response.status = 404;
+Astro.response.headers.set("Cache-Control", "private, no-store");
+Astro.response.headers.set("Referrer-Policy", "no-referrer");
+---
+
+<BaseLayout
+  title={
+    content
+      ? `${content.bride} & ${content.groom} — Undangan Pernikahan`
+      : "Undangan tidak ditemukan"
+  }
+  description={content?.opening ?? "Undangan belum tersedia."}
+  shareImage={
+    !preview && content
+      ? `/api/og/${encodeURIComponent(invitation!.slug)}.png`
+      : undefined
+  }
+  noindex
+>
+  {content ? (
+    <EditorialBotanical
+      content={content}
+      slug={invitation!.slug}
+      preview={preview}
+    />
+  ) : (
+    <main style="min-height:80vh;display:grid;place-content:center;text-align:center;padding:32px">
+      <p>TEMU</p>
+      <h1>Undangan belum tersedia.</h1>
+      <p>Tautan mungkin tidak berlaku atau undangan belum dipublikasikan.</p>
+      <a href="/">Kembali ke beranda</a>
+    </main>
+  )}
+</BaseLayout>

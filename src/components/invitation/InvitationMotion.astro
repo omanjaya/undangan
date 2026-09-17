@@ -1,0 +1,246 @@
+<style is:global>
+  .invitation.im-ready .im-reveal {
+    opacity: 0;
+    translate: 0 var(--im-reveal-distance, 22px);
+    transition:
+      opacity 700ms ease var(--im-delay, 0ms),
+      translate 850ms cubic-bezier(0.2, 0.65, 0.3, 1) var(--im-delay, 0ms);
+  }
+
+  .invitation.im-ready .im-reveal.im-visible {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .invitation.im-ready .im-parallax {
+    translate: 0 var(--im-shift, 0px);
+  }
+
+  .invitation.im-ready .im-photo {
+    scale: 1.08;
+  }
+
+  .invitation .invite-parallax-clip {
+    height: 100%;
+    overflow: hidden;
+    border-radius: inherit;
+  }
+
+  .invitation.im-ready .im-motion-active {
+    will-change: translate;
+  }
+
+  @media (max-width: 760px) {
+    .invitation.im-ready .im-reveal {
+      --im-reveal-distance: 14px;
+    }
+
+    .invitation.im-ready .im-photo {
+      scale: 1.06;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .invitation.im-ready :is(.im-reveal, .im-parallax) {
+      opacity: 1;
+      translate: none;
+      transition: none;
+    }
+
+    .invitation.im-ready .im-photo {
+      scale: none;
+    }
+  }
+</style>
+
+<script>
+  type MotionRoot = HTMLElement & { __invitationMotionCleanup?: () => void };
+
+  const invitation = document.querySelector<MotionRoot>(".invitation");
+
+  if (invitation) {
+    invitation.__invitationMotionCleanup?.();
+
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const controller = new AbortController();
+    const { signal } = controller;
+    let revealObserver: IntersectionObserver | undefined;
+    let visibilityObserver: IntersectionObserver | undefined;
+    let frame = 0;
+
+    const revealGroups = [
+      ".invite-hero-copy",
+      ".invite-intro",
+      ".invite-event-copy",
+      ".invite-event-list",
+      ".invite-story-copy",
+      ".invite-gallery-heading",
+      ".invite-rsvp-copy",
+      ".invite-wishes-section",
+      ".invite-footer",
+    ];
+    const revealSelector = [
+      ":scope > .invite-eyebrow",
+      ":scope > .invite-balinese",
+      ":scope > h1",
+      ":scope > h2",
+      ":scope > .invite-hero-date",
+      ":scope > .invite-recipient",
+      ":scope > .invite-button",
+      ":scope > .invite-hero-footnote",
+      ":scope > .invite-opening",
+      ":scope > .invite-couple",
+      ":scope > .invite-flourish",
+      ":scope > .invite-love-note",
+      ":scope > .invite-countdown",
+      ":scope > .invite-countdown-message",
+      ":scope > .invite-calendar-link",
+      ":scope > .invite-story-signature",
+      ":scope > p",
+      ":scope > div",
+    ].join(",");
+
+    const revealItems = Array.from(
+      new Set(
+        revealGroups.flatMap((selector) =>
+          Array.from(
+            invitation.querySelectorAll<HTMLElement>(selector),
+          ).flatMap((group) =>
+            Array.from(group.querySelectorAll<HTMLElement>(revealSelector)),
+          ),
+        ),
+      ),
+    );
+
+    revealItems.forEach((item, index) => {
+      item.classList.add("im-reveal");
+      item.style.setProperty("--im-delay", `${(index % 5) * 75}ms`);
+    });
+
+    const parallaxItems = [
+      ...invitation.querySelectorAll<HTMLElement>(
+        ".invite-hero-image, .invite-story-photo > img, .closing-portrait-photo",
+      ),
+      ...invitation.querySelectorAll<HTMLElement>(
+        ".invite-density-corner, .invite-story-garden, .floral-divider, .closing-portrait-back, .closing-portrait-front",
+      ),
+    ];
+    const photoItems = new Set(
+      invitation.querySelectorAll<HTMLElement>(
+        ".invite-hero-image, .invite-story-photo > img, .closing-portrait-photo",
+      ),
+    );
+    const visibleParallax = new Set<HTMLElement>();
+
+    parallaxItems.forEach((item) => {
+      item.classList.add("im-parallax");
+      if (photoItems.has(item)) item.classList.add("im-photo");
+    });
+
+    const updateParallax = () => {
+      frame = 0;
+      const viewportHeight = window.innerHeight || 1;
+      const mobile = window.matchMedia("(max-width: 760px)").matches;
+
+      visibleParallax.forEach((item) => {
+        const photo = photoItems.has(item);
+        const anchor = photo ? item.parentElement || item : item;
+        const rect = anchor.getBoundingClientRect();
+        const previousShift = photo
+          ? 0
+          : Number.parseFloat(item.style.getPropertyValue("--im-shift")) || 0;
+        const progress =
+          (rect.top - previousShift + rect.height / 2 - viewportHeight / 2) /
+          viewportHeight;
+        const distance = mobile ? (photo ? 9 : 5) : photo ? 18 : 11;
+        const shift = Math.max(
+          -distance,
+          Math.min(distance, -progress * distance),
+        );
+        item.style.setProperty("--im-shift", `${shift.toFixed(2)}px`);
+      });
+    };
+
+    const requestParallax = () => {
+      if (!frame && visibleParallax.size)
+        frame = requestAnimationFrame(updateParallax);
+    };
+
+    const disableMotion = () => {
+      revealObserver?.disconnect();
+      visibilityObserver?.disconnect();
+      visibleParallax.clear();
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
+      invitation.classList.remove("im-ready");
+      revealItems.forEach((item) => item.classList.remove("im-visible"));
+      parallaxItems.forEach((item) => {
+        item.classList.remove("im-motion-active");
+        item.style.removeProperty("--im-shift");
+      });
+    };
+
+    const enableMotion = () => {
+      invitation.classList.add("im-ready");
+
+      revealObserver = new IntersectionObserver(
+        (entries, observer) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add("im-visible");
+            observer.unobserve(entry.target);
+          });
+        },
+        { threshold: 0.08, rootMargin: "0px 0px -24px" },
+      );
+      revealItems.forEach((item) => revealObserver?.observe(item));
+
+      visibilityObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const item = entry.target as HTMLElement;
+            if (entry.isIntersecting) {
+              visibleParallax.add(item);
+              item.classList.add("im-motion-active");
+            } else {
+              visibleParallax.delete(item);
+              item.classList.remove("im-motion-active");
+            }
+          });
+          requestParallax();
+        },
+        { rootMargin: "15% 0px" },
+      );
+      parallaxItems.forEach((item) => visibilityObserver?.observe(item));
+    };
+
+    const syncPreference = () => {
+      disableMotion();
+      if (!media.matches && "IntersectionObserver" in window) enableMotion();
+    };
+
+    window.addEventListener("scroll", requestParallax, {
+      passive: true,
+      signal,
+    });
+    window.addEventListener("resize", requestParallax, {
+      passive: true,
+      signal,
+    });
+    media.addEventListener("change", syncPreference, { signal });
+    syncPreference();
+
+    invitation.__invitationMotionCleanup = () => {
+      disableMotion();
+      controller.abort();
+      revealItems.forEach((item) => {
+        item.classList.remove("im-reveal");
+        item.style.removeProperty("--im-delay");
+      });
+      parallaxItems.forEach((item) =>
+        item.classList.remove("im-parallax", "im-photo"),
+      );
+      delete invitation.__invitationMotionCleanup;
+    };
+  }
+</script>

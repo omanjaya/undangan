@@ -1,0 +1,384 @@
+---
+export const prerender = true;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Icon from "../components/Icon.astro";
+import "../styles/landing.css";
+import { themes } from "../modules/invitations/domain/themes";
+const collections = themes.map((theme, index) => ({
+  ...theme,
+  art: ["ivory", "emerald", "terracotta"][index],
+  mood: ["Lembut & abadi", "Anggun & megah", "Hangat & intim"][index],
+}));
+const features = [
+  {
+    icon: "edit",
+    title: "Setiap detail, milik kalian.",
+    text: "Nama, cerita, foto, musik, hingga aksara Bali. Personalisasikan dalam satu ruang yang rapi.",
+  },
+  {
+    icon: "phone",
+    title: "Dekat, di setiap layar.",
+    text: "Undangan yang nyaman dibaca di ponsel. Lokasi, jadwal, dan RSVP mudah ditemukan tamu.",
+  },
+  {
+    icon: "users",
+    title: "Bahagia tanpa banyak repot.",
+    text: "Simpan perubahan sebagai draft, periksa preview, lalu terbitkan. Kelola kehadiran dan ucapan dari dashboard.",
+  },
+];
+const faqs = [
+  [
+    "Apakah harus memakai foto?",
+    "Tidak. Pilih mode Tanpa Foto untuk komposisi monogram, tipografi, dan ornamen khusus tema. Foto yang sudah diunggah tetap tersimpan jika ingin dipakai kembali.",
+  ],
+  [
+    "Apa saja yang bisa dipersonalisasi?",
+    "Nama pasangan dan keluarga, cerita, jadwal WITA, lokasi, tema, font, kepadatan ornamen, foto, video, musik, serta sapaan penerima.",
+  ],
+  [
+    "Bisa melihat hasil sebelum dibagikan?",
+    "Bisa. Editor menyediakan preview desktop dan ponsel. Perubahan tersimpan sebagai draft dan baru terlihat oleh tamu setelah diterbitkan.",
+  ],
+  [
+    "Bagaimana tamu mengonfirmasi kehadiran?",
+    "Tamu mengisi nama dan kehadiran melalui formulir RSVP. Respons tampil di dashboard, sedangkan ucapan baru tampil di undangan setelah disetujui pemilik.",
+  ],
+];
+---
+
+<BaseLayout
+  title="Temu — Undangan Pawiwahan, dirangkai dengan rasa."
+  description="Tiga nuansa undangan Pawiwahan Bali. Personalisasikan cerita, ornamen, foto, musik, dan detail hari bahagia dalam satu ruang."
+>
+  <a class="landing-skip" href="#main">
+    Lewati ke konten
+  </a>
+  <header class="landing-header shell">
+    <a class="landing-brand" href="/" aria-label="Temu beranda">
+      temu<span>.</span>
+    </a>
+    <nav aria-label="Navigasi utama">
+      <a href="#koleksi">Koleksi</a>
+      <a href="#pengalaman">Pengalaman</a>
+      <a href="#cara-kerja">Cara kerja</a>
+    </nav>
+    <a class="header-entry" href="/dashboard">
+      Ruang undangan <Icon name="arrow" size={17} />
+    </a>
+  </header>
+  <main id="main">
+    <section class="landing-hero shell" aria-labelledby="hero-title">
+      <div class="hero-editorial">
+        <p class="eyebrow">
+          <span class="tiny-rule"></span> UNDANGAN PAWIWAHAN · BALI
+        </p>
+        <h1 id="hero-title">
+          Sebuah cerita.
+          <br />
+          Satu janji.
+          <br />
+          <em>Selamanya.</em>
+        </h1>
+        <p class="hero-description">
+          Kabar bahagia, dirangkai dengan rasa. Undangan yang berakar pada
+          tradisi dan terasa sepenuhnya seperti kalian.
+        </p>
+        <div class="hero-actions">
+          <a class="landing-button" href="#koleksi">
+            Temukan desain kalian <Icon name="arrow" size={19} />
+          </a>
+          <a class="quiet-link" href="/themes/jepun-ivory">
+            Lihat contoh <Icon name="eye" size={17} />
+          </a>
+        </div>
+        <div class="hero-footnote">
+          <Icon name="check" size={15} />
+          <span>Dengan atau tanpa foto. Tetap istimewa.</span>
+        </div>
+      </div>
+      <div class="hero-showcase">
+        <div class="showcase-orbit" aria-hidden="true"></div>
+        <span class="showcase-edition">THE PAWIWAHAN COLLECTION / 01</span>
+        <a
+          class="showcase-card"
+          href="/themes/jepun-ivory"
+          aria-label="Lihat contoh undangan Jepun Ivory"
+        >
+          <img
+            src="/ornaments/covers/ivory-cover.webp"
+            alt=""
+            width="960"
+            height="1440"
+            fetchpriority="high"
+            decoding="async"
+          />
+          <span class="showcase-kicker">THE WEDDING OF</span>
+          <span class="showcase-monogram" aria-hidden="true">
+            AW
+          </span>
+          <span class="showcase-names">
+            Ayu <i>&</i> Wira
+          </span>
+          <span class="showcase-date">20 SEPTEMBER 2026</span>
+          <span class="showcase-salutation">Om Swastyastu</span>
+          <span class="showcase-open">
+            Buka undangan <Icon name="arrow" size={15} />
+          </span>
+        </a>
+        <div class="showcase-caption">
+          <span>
+            <small>01 / KOLEKSI PILIHAN</small>Jepun Ivory
+          </span>
+          <a href="/themes/jepun-ivory" aria-label="Jelajahi Jepun Ivory">
+            <Icon name="arrow" size={22} />
+          </a>
+        </div>
+        <span class="showcase-side">SEBUAH UNDANGAN. SEBUAH KENANGAN.</span>
+      </div>
+    </section>
+    <div class="landing-ribbon">
+      <span>Berakar tradisi</span>
+      <Icon name="spark" size={16} />
+      <span>Dirancang personal</span>
+      <Icon name="spark" size={16} />
+      <span>Dibagikan dengan cinta</span>
+    </div>
+    <section id="koleksi" class="landing-collection shell section-pad">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">01 / PILIH SUASANANYA</p>
+          <h2>
+            Tiga nuansa.
+            <br />
+            <em>Sama bermaknanya.</em>
+          </h2>
+        </div>
+        <p>
+          Lembut, megah, atau hangat.
+          <br />
+          Temukan desain yang paling dekat
+          <br class="desktop-break" /> dengan cerita kalian.
+        </p>
+      </div>
+      <div class="collection-grid">
+        {collections.map((theme, index) => (
+          <article class={`collection-card collection-${theme.art}`}>
+            <a
+              href={`/themes/${theme.id}`}
+              aria-label={`Lihat tema ${theme.name}`}
+            >
+              <div class="collection-art">
+                <img
+                  src={`/ornaments/covers/${theme.art}-cover.webp`}
+                  alt=""
+                  width="960"
+                  height="1440"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span class="collection-number">0{index + 1}</span>
+                <span class="collection-greeting">PAWIWAHAN</span>
+                <span class="collection-names">
+                  Ayu <i>&</i> Wira
+                </span>
+                <span class="collection-date">20 . 09 . 2026</span>
+                <span class="collection-preview">
+                  Lihat undangan <Icon name="arrow" size={16} />
+                </span>
+              </div>
+              <div class="collection-meta">
+                <div>
+                  <small>{theme.mood}</small>
+                  <h3>{theme.name}</h3>
+                </div>
+                <span class="circle-arrow">
+                  <Icon name="arrow" size={19} />
+                </span>
+              </div>
+              <p class="collection-description">{theme.description}</p>
+            </a>
+            <div
+              class="collection-mode-links"
+              aria-label={`Preview ${theme.name}`}
+            >
+              <a href={`/themes/${theme.id}`}>
+                Dengan Foto <Icon name="arrow" size={14} />
+              </a>
+              <a href={`/themes/${theme.id}/tanpa-foto`}>
+                Tanpa Foto <Icon name="arrow" size={14} />
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+      <p class="collection-note">
+        <Icon name="spark" size={17} /> Setiap tema sudah dilengkapi ornamen,
+        aksara Bali, dan pilihan tipografi.
+      </p>
+    </section>
+    <section id="pengalaman" class="experience-section">
+      <div class="shell experience-layout">
+        <div class="experience-art" aria-hidden="true">
+          <img
+            src="/ornaments/theme-pack/ivory-floral-crescent.webp"
+            alt=""
+            width="768"
+            height="768"
+            loading="lazy"
+          />
+          <span>
+            A <i>&</i> W
+          </span>
+          <small>TANPA FOTO, PENUH CERITA.</small>
+        </div>
+        <div class="experience-copy">
+          <p class="eyebrow">YANG PERSONAL TAK SELALU BERUPA FOTO</p>
+          <h2>
+            Cukup nama kalian.
+            <br />
+            <em>Dan sebuah cerita.</em>
+          </h2>
+          <p>
+            Monogram yang sederhana. Bunga yang dipilih dengan rasa. Ruang untuk
+            kata-kata yang berarti. Mode tanpa foto menghadirkan keindahan
+            dengan caranya sendiri.
+          </p>
+          <a class="quiet-link" href="/dashboard#editor-design">
+            Personalisasikan undangan <Icon name="arrow" size={18} />
+          </a>
+          <div class="experience-tags">
+            <span>Monogram personal</span>
+            <span>Ornamen per tema</span>
+            <span>Musik pilihan kalian</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="fitur" class="shell section-pad landing-features">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">02 / INDAH SEKALIGUS MEMUDAHKAN</p>
+          <h2>
+            Dipikirkan hingga
+            <br />
+            <em>detail terkecil.</em>
+          </h2>
+        </div>
+        <p>
+          Untuk kalian yang mempersiapkan.
+          <br />
+          Untuk mereka yang merayakan.
+        </p>
+      </div>
+      <div class="feature-grid">
+        {features.map((feature, index) => (
+          <article>
+            <div class="feature-top">
+              <Icon name={feature.icon} size={27} />
+              <span>0{index + 1}</span>
+            </div>
+            <h3>{feature.title}</h3>
+            <p>{feature.text}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+    <section id="cara-kerja" class="shell process-section">
+      <div>
+        <p class="eyebrow">03 / DARI CERITA, JADI UNDANGAN</p>
+        <h2>
+          Pelan-pelan disusun.
+          <br />
+          <em>Bahagia dibagikan.</em>
+        </h2>
+        <a href="/dashboard" class="quiet-link">
+          Buka ruang undangan <Icon name="arrow" size={18} />
+        </a>
+      </div>
+      <ol>
+        {[
+          [
+            "Pilih nuansanya",
+            "Mulai dari tema yang paling terasa seperti kalian.",
+          ],
+          [
+            "Lengkapi ceritanya",
+            "Isi detail acara, pilih media, lalu periksa hasilnya di preview.",
+          ],
+          [
+            "Bagikan bahagianya",
+            "Terbitkan dan bagikan tautan personal kepada orang tersayang.",
+          ],
+        ].map(([title, description], index) => (
+          <li>
+            <span>0{index + 1}</span>
+            <div>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+    <section class="shell faq-section" id="pertanyaan">
+      <div>
+        <p class="eyebrow">SEBELUM MEMULAI</p>
+        <h2>
+          Mungkin kalian
+          <br />
+          <em>ingin tahu.</em>
+        </h2>
+      </div>
+      <div class="faq-list">
+        {faqs.map(([question, answer]) => (
+          <details>
+            <summary>
+              {question}
+              <Icon name="plus" size={18} />
+            </summary>
+            <p>{answer}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+    <section class="landing-closing">
+      <img
+        src="/ornaments/covers/ivory-cover.webp"
+        alt=""
+        width="960"
+        height="1440"
+        loading="lazy"
+      />
+      <div>
+        <p class="eyebrow">UNTUK AWAL YANG BERARTI</p>
+        <h2>
+          Hari istimewa kalian,
+          <br />
+          <em>dimulai dari sini.</em>
+        </h2>
+        <a class="landing-button light" href="/dashboard">
+          Mulai merangkai undangan <Icon name="arrow" size={19} />
+        </a>
+        <p class="closing-note">
+          Simpan sebagai draft. Sempurnakan saat kalian siap.
+        </p>
+      </div>
+    </section>
+  </main>
+  <footer class="landing-footer shell">
+    <a class="landing-brand" href="/">
+      temu<span>.</span>
+    </a>
+    <p>
+      Dirangkai dengan rasa.
+      <br />
+      Dibagikan dengan cinta.
+    </p>
+    <nav aria-label="Navigasi footer">
+      <a href="#koleksi">Koleksi desain</a>
+      <a href="#pertanyaan">Pertanyaan umum</a>
+      <a href="/dashboard">Ruang undangan</a>
+    </nav>
+    <small>© {new Date().getFullYear()} Temu</small>
+  </footer>
+</BaseLayout>

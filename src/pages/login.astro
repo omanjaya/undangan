@@ -1,0 +1,184 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Icon from "../components/Icon.astro";
+import { getActor } from "../server/auth";
+if (await getActor(Astro.request)) return Astro.redirect("/dashboard");
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const demo =
+  process.env.NODE_ENV !== "production" && !process.env.OWNER_PASSWORD;
+---
+
+<BaseLayout title="Masuk — Temu" noindex>
+  <main class="login-shell">
+    <a href="/" class="login-brand">
+      temu.
+    </a>
+    <section class="login-card">
+      <span class="kicker">RUANG UNTUK CERITA KALIAN</span>
+      <h1>
+        Selamat datang
+        <br />
+        <em>kembali.</em>
+      </h1>
+      <p>Masuk untuk merangkai dan membagikan hari istimewa kalian.</p>
+      <form id="login-form">
+        <label>
+          Email
+          <input
+            required
+            type="email"
+            name="email"
+            autocomplete="username"
+            value={demo ? "owner@undangan.local" : ""}
+          />
+        </label>
+        <label>
+          Kata sandi
+          <input
+            required
+            type="password"
+            name="password"
+            autocomplete="current-password"
+            value={demo ? "demo-undangan-2026" : ""}
+          />
+        </label>
+        <p id="login-error" role="alert"></p>
+        <button type="submit">
+          Masuk ke ruang undangan <Icon name="arrow" size={18} />
+        </button>
+      </form>
+      {demo && (
+        <aside>
+          Mode demo lokal. Akun contoh sudah diisi agar Anda bisa menjelajahi
+          editor.
+        </aside>
+      )}
+      <a class="back" href="/">
+        Kembali ke beranda
+      </a>
+    </section>
+    <span class="login-bottom">CERITA INDAH DIMULAI DARI SINI.</span>
+  </main>
+</BaseLayout>
+<style>
+  .login-shell {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background:
+      radial-gradient(ellipse at 10% 20%, #e1e6d4 0, transparent 50%),
+      var(--paper);
+  }
+  .login-brand {
+    font: 52px var(--serif);
+    letter-spacing: -3px;
+    margin-bottom: 35px;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 430px;
+    padding: 35px;
+    background: #fffdf8;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+  }
+  .kicker {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--muted);
+  }
+  h1 {
+    font: 44px/1.1 var(--serif);
+    margin: 20px 0;
+  }
+  h1 em {
+    font-style: normal;
+    color: var(--olive);
+  }
+  .login-card > p {
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--muted);
+  }
+  label {
+    display: block;
+    font-size: 11px;
+    margin-top: 20px;
+  }
+  input {
+    display: block;
+    width: 100%;
+    margin-top: 9px;
+    padding: 13px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: #fff;
+    font-size: 13px;
+  }
+  button {
+    width: 100%;
+    background: var(--olive);
+    color: white;
+    border: 0;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+  aside {
+    font-size: 10px;
+    line-height: 1.8;
+    background: #eff1e7;
+    padding: 12px;
+    margin-top: 20px;
+    color: #6c785d;
+  }
+  .back {
+    display: block;
+    text-align: center;
+    font-size: 10px;
+    margin-top: 25px;
+    color: var(--muted);
+  }
+  #login-error {
+    font-size: 11px;
+    color: #a14737;
+    line-height: 1.6;
+    margin: 12px 0;
+  }
+  .login-bottom {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-top: 30px;
+  }
+</style>
+<script>
+  const form = document.querySelector<HTMLFormElement>("#login-form");
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const button = form.querySelector("button")!;
+    const error = document.querySelector<HTMLElement>("#login-error")!;
+    button.disabled = true;
+    error.textContent = "";
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      window.location.href = "/dashboard";
+    } catch (e) {
+      error.textContent =
+        e instanceof Error ? e.message : "Tidak dapat masuk. Coba lagi.";
+      button.disabled = false;
+    }
+  });
+</script>

@@ -1,0 +1,25 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import EditorialBotanical from "../../components/invitation/EditorialBotanical.astro";
+import { themePreviewContent } from "../../modules/invitations/domain/theme-preview";
+import ThemePreviewNav from "../../components/invitation/ThemePreviewNav.astro";
+import { themes } from "../../modules/invitations/domain/themes";
+export function getStaticPaths() {
+  return themes.map((theme) => ({
+    params: { theme: theme.id },
+    props: { theme },
+  }));
+}
+export const prerender = true;
+const { theme } = Astro.props;
+const content = themePreviewContent(theme.id);
+---
+
+<BaseLayout
+  title={`${theme.name} — Koleksi Pawiwahan Temu`}
+  description={theme.description}
+  noindex
+>
+  <ThemePreviewNav theme={theme.id} mode="photos" />
+  <EditorialBotanical content={content} slug="contoh-tema" preview sample />
+</BaseLayout>

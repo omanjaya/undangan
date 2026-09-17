@@ -1,0 +1,57 @@
+---
+interface Props {
+  theme: string;
+}
+const { theme } = Astro.props;
+---
+
+<div class:list={["floral-divider", theme]} aria-hidden="true">
+  <span></span>
+  <img
+    src={
+      theme === "puri-emerald"
+        ? "/ornaments/candi-bentar.webp"
+        : "/ornaments/bali-garden.webp"
+    }
+    alt=""
+    width="320"
+    height="160"
+    loading="lazy"
+  />
+  <span></span>
+</div>
+<style>
+  .floral-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    max-width: 680px;
+    margin: 20px auto;
+    padding: 0 24px;
+    pointer-events: none;
+  }
+  .floral-divider span {
+    height: 1px;
+    flex: 1;
+    background: currentColor;
+    opacity: 0.18;
+  }
+  .floral-divider img {
+    width: 180px;
+    height: 100px;
+    object-fit: contain;
+  }
+  .floral-divider.puri-emerald img {
+    width: 130px;
+  }
+  @media (max-width: 600px) {
+    .floral-divider {
+      gap: 16px;
+    }
+    .floral-divider img {
+      width: 140px;
+      height: 80px;
+    }
+  }
+</style>

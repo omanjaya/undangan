@@ -1,0 +1,63 @@
+---
+const { slug } = Astro.props as { slug: string };
+---
+
+<div
+  id="guestbook"
+  class="invite-guestbook"
+  data-slug={slug}
+  aria-live="polite"
+>
+  <p class="invite-guestbook-empty">Memuat doa dan ucapan…</p>
+</div>
+<noscript>
+  <p>
+    Aktifkan JavaScript untuk melihat ucapan. Formulir konfirmasi tetap dapat
+    digunakan.
+  </p>
+</noscript>
+<script>
+  const guestbook = document.querySelector<HTMLElement>("#guestbook");
+  if (guestbook) {
+    fetch(
+      `/api/wishes?slug=${encodeURIComponent(guestbook.dataset.slug ?? "")}`,
+    )
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Gagal memuat ucapan.");
+        return response.json();
+      })
+      .then(
+        (data: {
+          wishes: { name: string; message: string; createdAt: string }[];
+        }) => {
+          guestbook.replaceChildren();
+          if (!data.wishes.length) {
+            const empty = document.createElement("p");
+            empty.className = "invite-guestbook-empty";
+            empty.textContent =
+              "Jadilah yang pertama menitipkan doa untuk perjalanan kami.";
+            guestbook.append(empty);
+          }
+          data.wishes.forEach((wish) => {
+            const card = document.createElement("article");
+            card.className = "invite-wish";
+            const name = document.createElement("h3");
+            name.textContent = wish.name;
+            const message = document.createElement("p");
+            message.textContent = wish.message;
+            const date = document.createElement("time");
+            date.dateTime = wish.createdAt;
+            date.textContent = new Intl.DateTimeFormat("id-ID", {
+              dateStyle: "long",
+            }).format(new Date(wish.createdAt));
+            card.append(name, message, date);
+            guestbook.append(card);
+          });
+        },
+      )
+      .catch(() => {
+        guestbook.textContent =
+          "Ucapan belum dapat dimuat. Silakan muat ulang halaman.";
+      });
+  }
+</script>

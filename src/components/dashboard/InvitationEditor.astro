@@ -1,0 +1,539 @@
+---
+import type { Invitation } from "../../modules/invitations/domain/invitation";
+import Icon from "../Icon.astro";
+import { themes } from "../../modules/invitations/domain/themes";
+interface Props {
+  invitation: Invitation;
+}
+const { invitation } = Astro.props;
+const c = invitation.draft;
+const dateLocal = (date: string) =>
+  new Date(new Date(date).getTime() + 8 * 3600000).toISOString().slice(0, 16);
+const groups = [
+  {
+    title: "Mempelai & keluarga",
+    intro:
+      "Nama, keluarga, dan asal kedua mempelai ditampilkan bersama foto masing-masing.",
+    fields: [
+      ["bride", "Nama panggilan perempuan", 80],
+      ["groom", "Nama panggilan laki-laki", 80],
+      ["brideFullName", "Nama lengkap perempuan", 150],
+      ["groomFullName", "Nama lengkap laki-laki", 150],
+      ["brideParents", "Keterangan orang tua perempuan", 300],
+      ["groomParents", "Keterangan orang tua laki-laki", 300],
+      ["brideAddress", "Asal / alamat perempuan", 300],
+      ["groomAddress", "Asal / alamat laki-laki", 300],
+    ],
+  },
+  {
+    title: "Acara utama",
+    intro:
+      "Semua waktu menggunakan WITA (UTC+8). Tanggal Bali dapat diisi sesuai penanggalan keluarga.",
+    fields: [
+      ["ceremonyTitle", "Nama acara utama", 100],
+      ["balineseDate", "Tanggal / penanggalan Bali (opsional)", 200],
+      ["venue", "Tempat acara", 180],
+      ["address", "Alamat lengkap", 300],
+      ["mapUrl", "Tautan peta HTTPS", 2000],
+      ["mapEmbedUrl", "Tautan embed Google Maps (opsional)", 4096],
+    ],
+  },
+] as const;
+const words = [
+  ["greeting", "Salam pembuka (Latin)", 120, 2],
+  [
+    "balineseGreeting",
+    "Aksara Bali pembuka (kosongkan untuk sembunyikan)",
+    200,
+    2,
+  ],
+  ["opening", "Kalimat undangan", 1000, 3],
+  ["story", "Cerita kalian", 2000, 5],
+  ["closing", "Salam / kalimat penutup", 200, 3],
+] as const;
+const slots = [
+  ["heroPhoto", "Foto sampul", "image"],
+  ["bridePhoto", "Foto perempuan", "image"],
+  ["groomPhoto", "Foto laki-laki", "image"],
+  ["storyPhoto", "Foto cerita", "image"],
+  ["videoUrl", "Film pernikahan", "video"],
+  ["musicUrl", "Musik latar", "audio"],
+] as const;
+---
+
+<form
+  id="editor-form"
+  data-slug={invitation.slug}
+  data-version={invitation.lockVersion}
+  data-content={JSON.stringify(c)}
+>
+  <nav class="editor-shortcuts" aria-label="Bagian editor">
+    <a href="#editor-design">Desain</a>
+    <a href="#editor-details">Mempelai & acara</a>
+    <a href="#editor-media">Foto & media</a>
+    <a href="#editor-words">Kata-kata</a>
+  </nav>
+  <section class="editor-panel" id="editor-design">
+    <div class="panel-heading">
+      <span class="dash-kicker">01 / ARAH VISUAL</span>
+      <h3>Pilih suasana kalian.</h3>
+      <p>Tiga desain Bali dengan komposisi, warna, dan ornamen berbeda.</p>
+    </div>
+    <div class="theme-picker">
+      {themes.map((t) => (
+        <div class="theme-option">
+          <label>
+            <input
+              type="radio"
+              name="theme"
+              value={t.id}
+              checked={(c.theme || "jepun-ivory") === t.id}
+            />
+            <span
+              class="theme-preview"
+              style={`--card-bg:${t.palette[0]};--card-ink:${t.palette[1]}`}
+            >
+              <span>PAWIWAHAN</span>
+              <strong>
+                {c.bride}
+                <i>&</i>
+                {c.groom}
+              </strong>
+              <img src="/ornaments/jepun-corner.webp" alt="" loading="lazy" />
+            </span>
+            <strong>{t.name}</strong>
+            <small>{t.description}</small>
+          </label>
+          <a href={`/themes/${t.id}`} target="_blank" rel="noopener">
+            Lihat contoh desain <Icon name="arrow" size={15} />
+          </a>
+        </div>
+      ))}
+    </div>
+    <fieldset class="ornament-picker" id="photo-mode-picker">
+      <legend>Gaya visual utama</legend>
+      <p class="editor-hint">
+        Pilih penggunaan foto di undangan. Media yang sudah diunggah tetap
+        tersimpan saat memilih mode tanpa foto.
+      </p>
+      <div>
+        <label>
+          <input
+            type="radio"
+            name="photoMode"
+            value="photos"
+            checked={(c.photoMode || "photos") === "photos"}
+          />
+          <span>Dengan Foto</span>
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="photoMode"
+            value="illustrated"
+            checked={c.photoMode === "illustrated"}
+          />
+          <span>Tanpa Foto</span>
+        </label>
+      </div>
+    </fieldset>
+    <div id="illustration-options" hidden={c.photoMode !== "illustrated"}>
+      <label class="font-picker">
+        <span>
+          <input
+            type="checkbox"
+            name="illustrationSlideshow"
+            value="true"
+            checked={c.illustrationSlideshow === true}
+          />
+          Aktifkan slideshow ilustrasi
+        </span>
+        <small>
+          Tampilkan pergantian ilustrasi dekoratif pada undangan tanpa foto.
+        </small>
+      </label>
+    </div>
+    <label class="font-picker">
+      Tipografi judul
+      <select name="fontPreset">
+        <option
+          value="cormorant"
+          selected={!c.fontPreset || c.fontPreset === "cormorant"}
+        >
+          Cormorant Garamond — lembut & editorial
+        </option>
+        <option value="italiana" selected={c.fontPreset === "italiana"}>
+          Italiana — ringan & elegan
+        </option>
+        <option value="cinzel" selected={c.fontPreset === "cinzel"}>
+          Cinzel — klasik & megah
+        </option>
+      </select>
+    </label>
+    <fieldset class="ornament-picker">
+      <legend>Kepadatan ornamen</legend>
+      <p class="editor-hint">
+        Atur seberapa banyak detail dekoratif yang tampil di undangan.
+      </p>
+      <div>
+        {(
+          [
+            ["minimal", "Minimal"],
+            ["medium", "Sedang"],
+            ["full", "Penuh"],
+          ] as const
+        ).map(([value, label]) => (
+          <label>
+            <input
+              type="radio"
+              name="ornamentDensity"
+              value={value}
+              checked={(c.ornamentDensity || "medium") === value}
+            />
+            <span>{label}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  </section>
+  <div id="editor-details">
+    {groups.map((group, index) => (
+      <section class="editor-panel">
+        <div class="panel-heading">
+          <span class="dash-kicker">0{index + 2} / DETAIL PERAYAAN</span>
+          <h3>{group.title}</h3>
+          <p>{group.intro}</p>
+        </div>
+        <div class="form-grid">
+          {group.fields.map(([name, label, max]) => (
+            <label
+              class:list={{
+                wide:
+                  name === "address" ||
+                  name === "mapUrl" ||
+                  name === "mapEmbedUrl",
+              }}
+            >
+              {label}
+              <input
+                name={String(name)}
+                value={c[name]}
+                maxlength={Number(max)}
+                required={[
+                  "bride",
+                  "groom",
+                  "brideFullName",
+                  "groomFullName",
+                  "venue",
+                  "address",
+                  "mapUrl",
+                ].includes(String(name))}
+                type={
+                  name === "mapUrl" || name === "mapEmbedUrl" ? "url" : "text"
+                }
+              />
+              {name === "mapEmbedUrl" && (
+                <small>
+                  Google Maps → Bagikan → Sematkan peta; tempel URL{" "}
+                  <code>src</code> atau kode iframe lengkap.
+                </small>
+              )}
+            </label>
+          ))}
+          {index === 1 && (
+            <label>
+              Tanggal & waktu (WITA)
+              <input
+                name="date"
+                type="datetime-local"
+                value={dateLocal(c.date)}
+                required
+              />
+            </label>
+          )}
+        </div>
+        {index === 1 && (
+          <div class="additional-events">
+            <h4>Acara tambahan</h4>
+            <p class="editor-hint">
+              Tambahkan hingga 4 acara, misalnya resepsi atau metatah. Acara
+              utama tetap ditampilkan.
+            </p>
+            <div id="extra-events"></div>
+            <button type="button" class="dash-button secondary" id="add-event">
+              Tambah acara
+            </button>
+          </div>
+        )}
+      </section>
+    ))}
+  </div>
+  <section class="editor-panel" id="editor-media">
+    <div class="panel-heading">
+      <span class="dash-kicker">04 / MOMEN PERSONAL</span>
+      <h3>Cerita dalam gambar & suara.</h3>
+      <p>
+        Unggah foto, video, dan musik milik kalian, lalu pasangkan ke bagian
+        undangan. Musik diputar setelah tamu membuka undangan.
+      </p>
+    </div>
+    <div class="upload-zone" id="upload-zone">
+      <label for="media-upload">
+        <strong>Tambah ke pustaka media</strong>
+        <span>
+          Foto JPG, PNG, WebP · Video MP4, WebM · Musik MP3, M4A, OGG, WAV
+        </span>
+      </label>
+      <input
+        id="media-upload"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/mpeg,audio/mp4,audio/ogg,audio/wav"
+        multiple
+      />
+      <progress
+        id="upload-progress"
+        max="100"
+        value="0"
+        hidden
+        aria-label="Progres unggahan"
+      ></progress>
+      <p id="upload-status" role="status">
+        Foto maks. 10 MB · musik maks. 20 MB · video maks. 80 MB.
+      </p>
+    </div>
+    <div class="media-slots">
+      {slots.map(([name, label, kind]) => (
+        <div class="media-slot" data-slot={name} data-kind={kind}>
+          <h4>{label}</h4>
+          <input type="hidden" name={name} value={c[name] || ""} />
+          <div class="slot-preview"></div>
+          <div class="slot-actions">
+            <button
+              type="button"
+              class="dash-button secondary"
+              data-select-media={name}
+            >
+              Pilih{" "}
+              {kind === "image" ? "foto" : kind === "video" ? "video" : "musik"}
+            </button>
+            <button type="button" class="subtle-button" data-clear-media={name}>
+              Lepaskan
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+    <label class="font-picker">
+      Video YouTube (opsional)
+      <input
+        type="url"
+        name="youtubeUrl"
+        maxlength="2048"
+        value={c.youtubeUrl || ""}
+        placeholder="https://youtu.be/…"
+      />
+      <small>
+        Tempel tautan YouTube, Shorts, atau video live yang sudah tersedia.
+        Video harus mengizinkan embed. Jika diisi, YouTube menggantikan video
+        upload di halaman undangan.
+      </small>
+    </label>
+    <label class="font-picker">
+      Judul musik (opsional)
+      <input name="musicTitle" maxlength="150" value={c.musicTitle || ""} />
+    </label>
+    <div class="gallery-editor">
+      <h4>
+        Galeri foto <span id="gallery-count"></span>
+      </h4>
+      <p class="editor-hint">
+        Maksimal 12 foto. Urutan ini juga dipakai slideshow otomatis di
+        undangan.
+      </p>
+      <div id="gallery-items" class="gallery-items"></div>
+      <button
+        type="button"
+        class="dash-button secondary"
+        data-select-media="galleryPhotos"
+      >
+        Tambah foto galeri
+      </button>
+    </div>
+  </section>
+  <section class="editor-panel" id="editor-words">
+    <div class="panel-heading">
+      <span class="dash-kicker">05 / SUARA KALIAN</span>
+      <h3>Undangan yang terasa personal.</h3>
+    </div>
+    <div class="form-grid">
+      <label class="wide">
+        Kutipan Veda
+        <select name="vedaQuote">
+          <option
+            value="rigveda-10-191-4"
+            selected={c.vedaQuote === "rigveda-10-191-4"}
+          >
+            Ṛgveda 10.191.4 — Keselarasan hati dan pikiran
+          </option>
+          <option value="none" selected={c.vedaQuote === "none"}>
+            Tanpa kutipan
+          </option>
+        </select>
+        <small>
+          Disertai teks Sanskerta, transliterasi, terjemahan bebas Indonesia,
+          dan sumber. Sesuaikan aksara pembuka dengan salam Latin.
+        </small>
+      </label>
+      {words.map(([name, label, max, rows]) => (
+        <label class="wide">
+          {label}
+          <textarea
+            name={String(name)}
+            maxlength={Number(max)}
+            rows={Number(rows)}
+          >{c[name] || ''}</textarea>
+        </label>
+      ))}
+    </div>
+  </section>
+  <section class="editor-panel" id="editor-preview">
+    <div class="panel-heading preview-heading">
+      <div>
+        <span class="dash-kicker">06 / CEK HASIL</span>
+        <h3>Pratinjau langsung.</h3>
+        <p>Pratinjau diperbarui setelah draft tersimpan otomatis.</p>
+      </div>
+      <div class="preview-switch" role="group" aria-label="Ukuran pratinjau">
+        <button type="button" class="active" data-preview-size="desktop">
+          Desktop
+        </button>
+        <button type="button" data-preview-size="mobile">
+          Ponsel
+        </button>
+      </div>
+    </div>
+    <div class="live-preview-frame" data-size="desktop">
+      <iframe
+        id="draft-preview"
+        src={`/i/${invitation.slug}?preview=1`}
+        title="Pratinjau draft undangan"
+        loading="lazy"
+      ></iframe>
+    </div>
+  </section>
+  <section class="editor-panel publish-checklist" id="publish-checklist">
+    <div class="panel-heading">
+      <span class="dash-kicker">07 / SIAP TERBIT</span>
+      <h3>Pemeriksaan sebelum terbit.</h3>
+    </div>
+    <ul id="checklist" aria-live="polite"></ul>
+    <p id="checklist-summary"></p>
+    <button
+      type="button"
+      class="dash-button secondary"
+      id="reload-conflict"
+      hidden
+    >
+      Muat ulang draft terbaru
+    </button>
+    <div class="recipient-link-builder">
+      <h4>Tautan untuk penerima</h4>
+      <p class="editor-hint">
+        Buat tautan dengan sapaan nama tamu tanpa mengubah undangan.
+      </p>
+      <label for="recipient-name">Nama penerima</label>
+      <div>
+        <input
+          id="recipient-name"
+          maxlength="100"
+          placeholder="Contoh: Keluarga Wayan"
+        />
+        <button
+          type="button"
+          class="dash-button secondary"
+          id="copy-recipient-link"
+        >
+          Salin tautan
+        </button>
+      </div>
+      <output id="recipient-link" for="recipient-name"></output>
+    </div>
+  </section>
+  <div class="editor-bottom">
+    <span id="save-state" role="status">
+      Draft versi {invitation.lockVersion}
+    </span>
+    <div>
+      <a
+        class="dash-button secondary"
+        href={`/i/${invitation.slug}?preview=1`}
+        target="_blank"
+        rel="noopener"
+      >
+        Pratinjau draft
+      </a>
+      <button class="dash-button" type="submit">
+        Simpan perubahan
+      </button>
+    </div>
+  </div>
+</form>
+<dialog id="media-dialog" aria-labelledby="media-dialog-title">
+  <header>
+    <div>
+      <span class="dash-kicker">PUSTAKA PERSONAL</span>
+      <h2 id="media-dialog-title">Pilih media</h2>
+    </div>
+    <button type="button" class="dash-button secondary" id="close-media">
+      Tutup
+    </button>
+  </header>
+  <p id="media-library-status" role="status"></p>
+  <div id="media-library" class="media-library"></div>
+</dialog>
+<dialog id="crop-dialog" aria-labelledby="crop-dialog-title">
+  <header>
+    <div>
+      <span class="dash-kicker">ATUR FOTO</span>
+      <h2 id="crop-dialog-title">Potong & fokus</h2>
+    </div>
+    <button type="button" class="dash-button secondary" id="close-crop">
+      Batal
+    </button>
+  </header>
+  <canvas id="crop-canvas" width="1200" height="800"></canvas>
+  <div class="crop-controls">
+    <label>
+      Perbesaran{" "}
+      <input
+        id="crop-zoom"
+        type="range"
+        min="1"
+        max="3"
+        step="0.01"
+        value="1"
+      />
+    </label>
+    <label>
+      Fokus horizontal{" "}
+      <input id="crop-x" type="range" min="0" max="100" value="50" />
+    </label>
+    <label>
+      Fokus vertikal{" "}
+      <input id="crop-y" type="range" min="0" max="100" value="50" />
+    </label>
+    <label>
+      Rasio{" "}
+      <select id="crop-ratio">
+        <option value="1.5">Lanskap 3:2</option>
+        <option value="1">Persegi</option>
+        <option value="0.75">Potret 3:4</option>
+      </select>
+    </label>
+  </div>
+  <div class="crop-actions">
+    <button type="button" class="dash-button" id="save-crop">
+      Simpan sebagai foto baru
+    </button>
+  </div>
+</dialog>

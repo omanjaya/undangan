@@ -1,0 +1,353 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import InvitationEditor from "../../components/dashboard/InvitationEditor.astro";
+import Icon from "../../components/Icon.astro";
+import { getActor } from "../../server/auth";
+import { getDashboardData } from "../../server/services";
+import "../../styles/dashboard.css";
+const actor = await getActor(Astro.request);
+if (!actor) return Astro.redirect("/login");
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const { invitation, stats, rsvps, wishes } = await getDashboardData(actor);
+const c = invitation.draft;
+const eventDate = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Asia/Makassar",
+}).format(new Date(c.date));
+---
+
+<BaseLayout title="Ruang Undangan — Temu" noindex>
+  <div class="dashboard-shell">
+    <aside class="sidebar">
+      <a class="dash-brand" href="/">
+        temu.
+      </a>
+      <span class="sidebar-label">RUANG PERSONAL</span>
+      <nav aria-label="Dashboard">
+        <a class="active" href="#overview">
+          <Icon name="grid" size={19} /> Ringkasan
+        </a>
+        <a href="#editor">
+          <Icon name="edit" size={19} /> Edit undangan
+        </a>
+        <a href="#responses">
+          <Icon name="users" size={19} /> Kehadiran{" "}
+          <span>{stats.responses}</span>
+        </a>
+        <a href="#wishes">
+          <Icon name="heart" size={19} /> Ucapan{" "}
+          <span>{stats.pendingWishes}</span>
+        </a>
+      </nav>
+      <div class="sidebar-note">
+        <Icon name="spark" size={24} />
+        <p>
+          Detail kecil.
+          <br />
+          Kenangan selamanya.
+        </p>
+        <a href={`/i/${invitation.slug}?preview=1`} target="_blank">
+          Lihat undangan <Icon name="arrow" size={15} />
+        </a>
+      </div>
+      <button id="logout" class="logout">
+        <Icon name="logout" size={17} /> Keluar
+      </button>
+    </aside>
+    <main class="dashboard-main">
+      <header class="dashboard-topbar">
+        <span>
+          Ruang undangan <span>/</span> Ringkasan
+        </span>
+        <div>
+          <span class="workspace-dot"></span> Workspace personal{" "}
+          <span class="avatar">
+            {c.bride[0]}
+            {c.groom[0]}
+          </span>
+        </div>
+      </header>
+      <div class="dashboard-content">
+        <section id="overview">
+          <div class="welcome">
+            <div>
+              <span class="dash-kicker">SEBUAH CERITA, SEBUAH PERAYAAN</span>
+              <h1>
+                Halo, {c.bride} & {c.groom}.
+              </h1>
+              <p>Semua persiapan hari bahagia kalian, dalam satu ruang.</p>
+            </div>
+            <a
+              class="dash-button secondary"
+              href={`/i/${invitation.slug}?preview=1`}
+              target="_blank"
+            >
+              <Icon name="eye" size={17} /> Pratinjau
+            </a>
+          </div>
+          <div class="invitation-overview">
+            <div class="overview-art">
+              <span>THE WEDDING OF</span>
+              <h2>
+                {c.bride}
+                <i>&</i>
+                {c.groom}
+              </h2>
+              <span>{eventDate.toUpperCase()}</span>
+              <div class="overview-leaf" aria-hidden="true">
+                <Icon name="spark" size={80} />
+              </div>
+            </div>
+            <div class="overview-details">
+              <div class="overview-title">
+                <span class="dash-kicker">UNDANGAN KALIAN</span>
+                <span
+                  class:list={[
+                    "status-pill",
+                    invitation.status === "published" ? "published" : "draft",
+                  ]}
+                >
+                  {invitation.status === "published" ? "Sudah terbit" : "Draft"}
+                </span>
+              </div>
+              <h2>
+                {c.bride} & {c.groom}
+              </h2>
+              <p>
+                <Icon name="calendar" size={15} /> {eventDate} <span>·</span>{" "}
+                {c.venue}
+              </p>
+              <div class="invitation-url">
+                <Icon name="link" size={16} />
+                <span>/i/{invitation.slug}</span>
+                <button id="copy-link" aria-label="Salin tautan undangan">
+                  Salin tautan
+                </button>
+              </div>
+              <details class="slug-settings">
+                <summary>Personalisasi tautan undangan</summary>
+                <form id="slug-form" class="slug-form">
+                  <label for="new-slug">Nama tautan</label>
+                  <div>
+                    <span>/i/</span>
+                    <input
+                      id="new-slug"
+                      name="newSlug"
+                      value={invitation.slug}
+                      pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                      minlength="3"
+                      maxlength="80"
+                      required
+                      autocomplete="off"
+                    />
+                    <button type="submit" class="dash-button secondary">
+                      Simpan tautan
+                    </button>
+                  </div>
+                  <p>
+                    Gunakan huruf kecil, angka, dan tanda hubung. Tautan lama
+                    tetap mengarah ke undangan ini.
+                  </p>
+                </form>
+              </details>
+              <div class="overview-actions">
+                <a href="#editor" class="dash-button">
+                  <Icon name="edit" size={16} /> Edit undangan
+                </a>
+                <button
+                  class="dash-button secondary"
+                  id="publish"
+                  data-slug={invitation.slug}
+                >
+                  Terbitkan draft <Icon name="arrow" size={16} />
+                </button>
+                {invitation.status === "published" && (
+                  <button
+                    class="subtle-button"
+                    id="unpublish"
+                    data-slug={invitation.slug}
+                  >
+                    Tarik dari publik
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          <div class="stats-grid">
+            {[
+              {
+                label: "Total respons",
+                value: stats.responses,
+                icon: "mail",
+                note: "Konfirmasi yang diterima",
+              },
+              {
+                label: "Bersedia hadir",
+                value: stats.attending,
+                icon: "check",
+                note: `${stats.guests} orang akan merayakan`,
+              },
+              {
+                label: "Tidak hadir",
+                value: stats.declined,
+                icon: "calendar",
+                note: "Tetap mengirim doa terbaik",
+              },
+              {
+                label: "Ucapan menunggu",
+                value: stats.pendingWishes,
+                icon: "heart",
+                note: "Siap untuk ditinjau",
+              },
+            ].map((s) => (
+              <article>
+                <span>
+                  {s.label}
+                  <Icon name={s.icon} size={18} />
+                </span>
+                <strong>{s.value}</strong>
+                <small>{s.note}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section id="editor" class="dashboard-section">
+          <div class="dash-section-heading">
+            <div>
+              <span class="dash-kicker">JADIKAN MILIK KALIAN</span>
+              <h2>Detail undangan</h2>
+            </div>
+            <span class="draft-note">Perubahan tersimpan sebagai draft</span>
+          </div>
+          <InvitationEditor invitation={invitation} />
+        </section>
+        <section id="responses" class="dashboard-section">
+          <div class="dash-section-heading">
+            <div>
+              <span class="dash-kicker">ORANG-ORANG TERSAYANG</span>
+              <h2>Konfirmasi kehadiran</h2>
+            </div>
+            <span class="count-label">{stats.responses} respons</span>
+          </div>
+          <div class="table-wrap">
+            {rsvps.length ? (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nama tamu</th>
+                    <th>Kehadiran</th>
+                    <th>Jumlah</th>
+                    <th>Diperbarui</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rsvps.map((r) => (
+                    <tr>
+                      <td>{r.name}</td>
+                      <td>
+                        <span
+                          class:list={[
+                            "status-pill",
+                            r.attendance === "attending"
+                              ? "published"
+                              : "draft",
+                          ]}
+                        >
+                          {r.attendance === "attending"
+                            ? "Hadir"
+                            : "Tidak hadir"}
+                        </span>
+                      </td>
+                      <td>{r.attendeeCount} orang</td>
+                      <td>
+                        {new Date(r.updatedAt).toLocaleDateString("id-ID", {
+                          timeZone: "Asia/Makassar",
+                        })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div class="empty-state">
+                <Icon name="users" size={32} />
+                <h3>Daftar bahagia akan segera terisi.</h3>
+                <p>
+                  Bagikan tautan undangan. Konfirmasi tamu akan muncul di sini.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+        <section id="wishes" class="dashboard-section">
+          <div class="dash-section-heading">
+            <div>
+              <span class="dash-kicker">KATA-KATA YANG MENGHANGATKAN</span>
+              <h2>Ucapan & doa</h2>
+            </div>
+            <span class="count-label">{wishes.length} ucapan</span>
+          </div>
+          <div class="wishes-list">
+            {wishes.length ? (
+              wishes.map((w) => (
+                <article class="wish-row">
+                  <span class="wish-avatar">{w.name.slice(0, 1)}</span>
+                  <div>
+                    <h3>
+                      {w.name}
+                      <span>
+                        {w.status === "approved"
+                          ? "Ditampilkan"
+                          : w.status === "hidden"
+                            ? "Disembunyikan"
+                            : "Menunggu tinjauan"}
+                      </span>
+                    </h3>
+                    <p>{w.message}</p>
+                  </div>
+                  <div class="wish-actions">
+                    {w.status !== "approved" && (
+                      <button
+                        class="moderate"
+                        data-id={w.id}
+                        data-status="approved"
+                      >
+                        Tampilkan
+                      </button>
+                    )}
+                    {w.status !== "hidden" && (
+                      <button
+                        class="moderate secondary"
+                        data-id={w.id}
+                        data-status="hidden"
+                      >
+                        Sembunyikan
+                      </button>
+                    )}
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div class="empty-state">
+                <Icon name="heart" size={30} />
+                <h3>Ruang untuk doa baik.</h3>
+                <p>
+                  Ucapan baru tampil di undangan setelah Anda menyetujuinya.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+        <footer class="dashboard-footer">
+          <span>temu.</span> Dibuat untuk cerita yang berarti.
+        </footer>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" hidden></div>
+</BaseLayout>
+<script>
+  import "../../components/dashboard/editor";
+</script>
