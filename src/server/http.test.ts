@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { guardMutation, readInput, rateLimit } from "./http";
+import { guardMutation, readInput, rateLimit, clientIp } from "./http";
 const request = (body: string, headers: Record<string, string> = {}) =>
   new Request("http://localhost/api/test", {
     method: "POST",
@@ -27,5 +27,22 @@ describe("HTTP boundaries", () => {
     ).not.toThrow();
     rateLimit("test-http-rate", 1);
     expect(() => rateLimit("test-http-rate", 1)).toThrow();
+  });
+});
+describe("clientIp", () => {
+  const proxied = (forwarded?: string) =>
+    new Request("http://localhost/api/test", {
+      headers: forwarded ? { "x-forwarded-for": forwarded } : {},
+    });
+  it("memakai clientAddress saat tidak ada X-Forwarded-For", () => {
+    expect(clientIp(proxied(), "127.0.0.1")).toBe("127.0.0.1");
+  });
+  it("memakai IP yang ditambahkan proxy, bukan yang dikirim pengunjung", () => {
+    expect(clientIp(proxied("1.2.3.4, 203.0.113.9"), "127.0.0.1")).toBe(
+      "203.0.113.9",
+    );
+  });
+  it("kembali ke clientAddress saat header kosong", () => {
+    expect(clientIp(proxied("   "), "127.0.0.1")).toBe("127.0.0.1");
   });
 });

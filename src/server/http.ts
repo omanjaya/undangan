@@ -34,6 +34,22 @@ export function guardMutation(request: Request) {
   if (!origin || origin !== expected)
     throw new DomainError("Origin permintaan tidak diizinkan.", 403);
 }
+/**
+ * IP pengunjung sebenarnya. Aplikasi hanya mendengar di 127.0.0.1 dan selalu
+ * diakses lewat reverse proxy, sehingga `clientAddress` bernilai sama untuk
+ * semua orang dan rate limit menjadi satu ember bersama. Proxy menambahkan IP
+ * asli di akhir X-Forwarded-For, jadi entri terakhir yang dipakai — entri awal
+ * bisa dipalsukan pengunjung.
+ */
+export function clientIp(request: Request, fallback: string) {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (!forwarded) return fallback;
+  const hops = forwarded
+    .split(",")
+    .map((hop) => hop.trim())
+    .filter(Boolean);
+  return hops.at(-1) || fallback;
+}
 export function rateLimit(key: string, max = 15) {
   const now = Date.now();
   if (limits.size >= 10000)

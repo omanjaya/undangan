@@ -6,13 +6,14 @@ import {
   guardMutation,
   readInput,
   rateLimit,
+  clientIp,
   json,
   errorResponse,
 } from "../../server/http";
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   try {
     guardMutation(request);
-    rateLimit("rsvp:" + clientAddress);
+    rateLimit("rsvp:" + clientIp(request, clientAddress));
     const data = await readInput(request);
     const existing = cookieValue(request, "invitation_visitor");
     const token =

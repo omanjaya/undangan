@@ -5,12 +5,13 @@ import {
   guardMutation,
   json,
   rateLimit,
+  clientIp,
   readInput,
 } from "../../../server/http";
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   try {
     guardMutation(request);
-    rateLimit("login:" + clientAddress, 8);
+    rateLimit("login:" + clientIp(request, clientAddress), 8);
     const data = await readInput(request);
     const token = await login(
       String(data.email || ""),
