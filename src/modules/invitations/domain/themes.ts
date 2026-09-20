@@ -28,7 +28,8 @@ export const themes = [
     art: "ivory",
     mood: "Romantis & manis",
     name: "Lotus Rosa",
-    description: "Merah muda lembut, teratai, dan tipografi Playfair yang romantis.",
+    description:
+      "Merah muda lembut, teratai, dan tipografi Playfair yang romantis.",
     palette: ["#faf0f0", "#8c4a52", "#c9a06a"],
   },
   {
@@ -36,7 +37,8 @@ export const themes = [
     art: "emerald",
     mood: "Tenang & dalam",
     name: "Samudra Biru",
-    description: "Biru laut dalam, buih putih, dan huruf Marcellus yang tenang.",
+    description:
+      "Biru laut dalam, buih putih, dan huruf Marcellus yang tenang.",
     palette: ["#122c3d", "#e8eef0", "#c2a878"],
   },
   {
@@ -60,7 +62,8 @@ export const themes = [
     art: "ivory",
     mood: "Minimal & modern",
     name: "Pasir Putih",
-    description: "Putih pasir minimalis dengan Italiana yang ringan dan modern.",
+    description:
+      "Putih pasir minimalis dengan Italiana yang ringan dan modern.",
     palette: ["#fbfaf6", "#5a564c", "#b3a284"],
   },
 ] as const;

@@ -152,3 +152,62 @@ describe("custom invitation addresses", () => {
     }
   });
 });
+describe("beberapa undangan dalam satu ruang kerja", () => {
+  it("membuat salinan, memisahkan RSVP, dan menolak slug ganda", async () => {
+    const dibuat = await service.createInvitation(actor, {
+      slug: "resepsi-sesi-2",
+      copyFromSlug: "amara-raka",
+    });
+    expect(dibuat.status).toBe("draft");
+    expect(dibuat.slug).toBe("resepsi-sesi-2");
+
+    await expect(
+      service.createInvitation(actor, { slug: "resepsi-sesi-2" }),
+    ).rejects.toThrow("sudah dipakai");
+    await expect(
+      service.createInvitation(actor, { slug: "dashboard" }),
+    ).rejects.toThrow("huruf kecil");
+
+    // Undangan lama tetap utuh dan keduanya tampil di dashboard.
+    const papan = await service.getDashboardData(actor);
+    expect(papan.invitations.map((i) => i.slug)).toContain("resepsi-sesi-2");
+    expect(papan.invitations.length).toBe(2);
+
+    // Menyunting salinan tidak mengubah undangan asal.
+    const salinan = await service.getInvitation("resepsi-sesi-2");
+    await service.saveDraft(actor, {
+      slug: "resepsi-sesi-2",
+      lockVersion: salinan!.lockVersion,
+      content: { ...salinan!.draft, bride: "Sesi Dua" },
+    });
+    await service.publishInvitation(actor, "resepsi-sesi-2");
+    expect((await service.getPublished("resepsi-sesi-2"))?.bride).toBe(
+      "Sesi Dua",
+    );
+    expect((await service.getPublished("amara-raka"))?.bride).not.toBe(
+      "Sesi Dua",
+    );
+
+    // RSVP masuk ke undangan yang dituju saja.
+    await service.submitRsvp(
+      "resepsi-sesi-2",
+      { name: "Tamu Sesi Dua", attendance: "attending", attendeeCount: 2 },
+      "pengunjung-sesi-2",
+    );
+    const papanSesi2 = await service.getDashboardData(actor, "resepsi-sesi-2");
+    const papanUtama = await service.getDashboardData(actor, "amara-raka");
+    expect(papanSesi2.rsvps.some((r) => r.name === "Tamu Sesi Dua")).toBe(true);
+    expect(papanUtama.rsvps.some((r) => r.name === "Tamu Sesi Dua")).toBe(
+      false,
+    );
+  });
+  it("menghapus undangan beserta RSVP-nya, tapi menjaga undangan terakhir", async () => {
+    const sebelum = await service.getDashboardData(actor, "resepsi-sesi-2");
+    expect(sebelum.rsvps.length).toBeGreaterThan(0);
+    await service.deleteInvitation(actor, "resepsi-sesi-2");
+    expect(await service.getInvitation("resepsi-sesi-2")).toBeNull();
+    await expect(service.deleteInvitation(actor, "amara-raka")).rejects.toThrow(
+      "terakhir",
+    );
+  });
+});

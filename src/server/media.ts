@@ -60,7 +60,7 @@ export function validateMediaReferences(
         (a) =>
           a.url === reference.url &&
           a.kind === reference.kind &&
-          a.workspaceId === state.invitation.workspaceId,
+          a.workspaceId === state.invitations[0]?.workspaceId,
       )
     )
       throw new DomainError(
@@ -74,15 +74,23 @@ export function canReadAsset(
   actor: Actor | null,
 ) {
   if (actor?.workspaceId === asset.workspaceId) return true;
-  return (
-    state.invitation.status === "published" &&
-    !!state.invitation.published &&
-    referencedMedia(state.invitation.published).some((r) => r.url === asset.url)
+  // Publik hanya boleh membaca media yang dipakai salah satu undangan terbit.
+  return state.invitations.some(
+    (invitation) =>
+      invitation.status === "published" &&
+      !!invitation.published &&
+      referencedMedia(invitation.published).some((r) => r.url === asset.url),
   );
+}
+function requireWorkspace(state: State, actor: Actor | null) {
+  const reference = state.invitations[0];
+  if (!reference) throw new DomainError("Belum ada undangan.", 404);
+  authorize(actor, reference);
+  return reference;
 }
 export async function listMedia(actor: Actor | null) {
   const state = await readState();
-  authorize(actor, state.invitation);
+  requireWorkspace(state, actor);
   return (state.assets || [])
     .filter((a) => a.workspaceId === actor!.workspaceId)
     .map(({ workspaceId: _, filename: __, ...asset }) => asset);
@@ -95,7 +103,7 @@ export function uploadMedia(actor: Actor | null, request: Request) {
 }
 async function performUpload(actor: Actor | null, request: Request) {
   const state = await readState();
-  authorize(actor, state.invitation);
+  requireWorkspace(state, actor);
   const mime = request.headers.get("content-type")?.split(";")[0].trim() || "";
   const format = formats[mime];
   if (!format) throw new DomainError("Format media tidak didukung.", 415);
@@ -203,7 +211,7 @@ async function performUpload(actor: Actor | null, request: Request) {
       ...dimensions,
     };
     await mutateState((current) => {
-      authorize(actor, current.invitation);
+      requireWorkspace(current, actor);
       const size = (current.assets || []).reduce((n, a) => n + a.bytes, 0);
       if (size + bytes > storageLimit)
         throw new DomainError("Penyimpanan media penuh.", 413);

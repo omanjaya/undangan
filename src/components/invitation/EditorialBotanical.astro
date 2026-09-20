@@ -42,8 +42,7 @@ const {
 const content = presentationContent(savedContent);
 const illustrated = content.photoMode === "illustrated";
 const theme = content.theme ?? "jepun-ivory";
-const themeArt =
-  themes.find((t) => t.id === theme)?.art ?? "ivory";
+const themeArt = themes.find((t) => t.id === theme)?.art ?? "ivory";
 const coverArt = `/ornaments/covers/${themeArt}-cover.webp`;
 const ornamentDensity =
   (

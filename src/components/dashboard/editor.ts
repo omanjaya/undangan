@@ -987,9 +987,38 @@ slugForm.addEventListener("submit", async (event) => {
   try {
     const newSlug = String(new FormData(slugForm).get("newSlug"));
     await post(`/api/invitations/${form.dataset.slug}/slug`, { newSlug });
-    location.reload();
+    location.href = `/dashboard?undangan=${encodeURIComponent(newSlug)}`;
   } catch (error) {
     notify((error as Error).message, true);
+    button.disabled = false;
+  }
+});
+
+// Membuat undangan baru dari salinan undangan yang sedang dibuka.
+const createForm =
+  document.querySelector<HTMLFormElement>("#create-invitation");
+createForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (dirty || uploading || saving) {
+    notify("Simpan perubahan dulu sebelum membuat undangan baru.", true);
+    return;
+  }
+  if (!createForm.reportValidity()) return;
+  const button = createForm.querySelector<HTMLButtonElement>("button")!;
+  const error = document.querySelector<HTMLElement>(
+    "#create-invitation-error",
+  )!;
+  button.disabled = true;
+  error.textContent = "";
+  try {
+    const slug = String(new FormData(createForm).get("slug"));
+    await post("/api/invitations", {
+      slug,
+      copyFromSlug: form.dataset.slug,
+    });
+    location.href = `/dashboard?undangan=${encodeURIComponent(slug)}`;
+  } catch (e) {
+    error.textContent = (e as Error).message;
     button.disabled = false;
   }
 });

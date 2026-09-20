@@ -8,7 +8,9 @@ import "../../styles/dashboard.css";
 const actor = await getActor(Astro.request);
 if (!actor) return Astro.redirect("/login");
 Astro.response.headers.set("Cache-Control", "private, no-store");
-const { invitation, stats, rsvps, wishes } = await getDashboardData(actor);
+const selected = Astro.url.searchParams.get("undangan") || undefined;
+const { invitation, invitations, stats, rsvps, wishes } =
+  await getDashboardData(actor, selected);
 const c = invitation.draft;
 const eventDate = new Intl.DateTimeFormat("id-ID", {
   day: "numeric",
@@ -87,6 +89,44 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
               <Icon name="eye" size={17} /> Pratinjau
             </a>
           </div>
+          <section class="invitation-switcher" aria-label="Pilih undangan">
+            <div class="invitation-switcher-list">
+              {invitations.map((item) => (
+                <a
+                  href={`/dashboard?undangan=${item.slug}`}
+                  class:list={[
+                    "invitation-chip",
+                    item.slug === invitation.slug && "is-active",
+                  ]}
+                  aria-current={
+                    item.slug === invitation.slug ? "true" : undefined
+                  }
+                >
+                  <strong>{item.ceremonyTitle || item.title}</strong>
+                  <span>/i/{item.slug}</span>
+                  <em>{item.status === "published" ? "Terbit" : "Draft"}</em>
+                </a>
+              ))}
+            </div>
+            <form class="invitation-create" id="create-invitation">
+              <label>
+                Undangan baru
+                <input
+                  name="slug"
+                  required
+                  minlength="3"
+                  maxlength="80"
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  placeholder="resepsi-sesi-2"
+                />
+              </label>
+              <button type="submit">Buat salinan</button>
+              <p class="invitation-create-note">
+                Isi undangan yang sedang dibuka disalin sebagai titik awal.
+              </p>
+              <p id="create-invitation-error" role="alert"></p>
+            </form>
+          </section>
           <div class="invitation-overview">
             <div class="overview-art">
               <span>THE WEDDING OF</span>

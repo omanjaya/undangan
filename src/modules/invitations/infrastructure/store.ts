@@ -24,21 +24,25 @@ export type MediaAsset = {
 export type State = {
   assets?: MediaAsset[];
   sessions?: { tokenHash: string; expiresAt: number; credentialTag?: string }[];
-  invitation: Invitation;
+  /** State lama menyimpan satu undangan; normalizeState memindahkannya ke `invitations`. */
+  invitation?: Invitation;
+  invitations: Invitation[];
   rsvps: (Rsvp & { visitorId: string })[];
   wishes: Wish[];
   revisions: {
+    invitationId?: string;
     revision: number;
     content: Invitation["draft"];
     createdAt: string;
   }[];
 };
 const initial = (): State => ({
-  invitation: structuredClone(demoInvitation),
+  invitations: [structuredClone(demoInvitation)],
   rsvps: [],
   wishes: [],
   revisions: [
     {
+      invitationId: demoInvitation.id,
       revision: 1,
       content: structuredClone(demoInvitation.draft),
       createdAt: demoInvitation.updatedAt,
@@ -92,13 +96,20 @@ export async function mutateState<T>(fn: (state: State) => T): Promise<T> {
 }
 
 export function normalizeState(state: State): State {
-  state.invitation.draft = contentSchema.parse(state.invitation.draft);
-  if (state.invitation.published)
-    state.invitation.published = contentSchema.parse(
-      state.invitation.published,
-    );
+  // State lama menyimpan satu undangan pada `invitation`; pindahkan sekali ke daftar.
+  if (!state.invitations?.length && state.invitation)
+    state.invitations = [state.invitation];
+  state.invitations ??= [];
+  delete state.invitation;
+  const fallbackId = state.invitations[0]?.id;
+  for (const invitation of state.invitations) {
+    invitation.draft = contentSchema.parse(invitation.draft);
+    if (invitation.published)
+      invitation.published = contentSchema.parse(invitation.published);
+  }
   state.revisions = state.revisions.map((revision) => ({
     ...revision,
+    invitationId: revision.invitationId ?? fallbackId,
     content: contentSchema.parse(revision.content),
   }));
   state.assets ??= [];
