@@ -355,33 +355,6 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         <p class="invite-opening">{content.opening}</p>
         <div class="invite-couple">
           <article>
-            {content.bridePhoto ? (
-              <img
-                class="invite-couple-portrait"
-                src={content.bridePhoto}
-                loading="lazy"
-                decoding="async"
-                style={focusStyle("bridePhoto")}
-                alt={content.brideFullName}
-                width="400"
-                height="500"
-              />
-            ) : (
-              !illustrated && (
-                <div class="invite-initial-medallion">
-                  {content.bride.charAt(0)}
-                </div>
-              )
-            )}
-            <p class="invite-eyebrow">MEMPELAI WANITA</p>
-            <h3>{content.brideFullName}</h3>
-            <p>{content.brideParents}</p>
-            <p class="invite-family-address">{content.brideAddress}</p>
-          </article>
-          <span class="invite-couple-ampersand" aria-hidden="true">
-            &
-          </span>
-          <article>
             {content.groomPhoto ? (
               <img
                 class="invite-couple-portrait"
@@ -404,6 +377,33 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
             <h3>{content.groomFullName}</h3>
             <p>{content.groomParents}</p>
             <p class="invite-family-address">{content.groomAddress}</p>
+          </article>
+          <span class="invite-couple-ampersand" aria-hidden="true">
+            &
+          </span>
+          <article>
+            {content.bridePhoto ? (
+              <img
+                class="invite-couple-portrait"
+                src={content.bridePhoto}
+                loading="lazy"
+                decoding="async"
+                style={focusStyle("bridePhoto")}
+                alt={content.brideFullName}
+                width="400"
+                height="500"
+              />
+            ) : (
+              !illustrated && (
+                <div class="invite-initial-medallion">
+                  {content.bride.charAt(0)}
+                </div>
+              )
+            )}
+            <p class="invite-eyebrow">MEMPELAI WANITA</p>
+            <h3>{content.brideFullName}</h3>
+            <p>{content.brideParents}</p>
+            <p class="invite-family-address">{content.brideAddress}</p>
           </article>
         </div>
         <div class="invite-flourish" aria-hidden="true">

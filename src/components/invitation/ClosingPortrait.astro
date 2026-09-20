@@ -25,7 +25,7 @@ const { photo, focus = { x: 50, y: 50 }, bride, groom, ornament } = Astro.props;
       <img
         class="closing-portrait-photo"
         src={photo}
-        alt={`${bride} dan ${groom}`}
+        alt={`${groom} dan ${bride}`}
         style={`object-position:${focus.x}% ${focus.y}%`}
         width="900"
         height="1000"
@@ -35,9 +35,9 @@ const { photo, focus = { x: 50, y: 50 }, bride, groom, ornament } = Astro.props;
     </div>
   ) : (
     <div class="closing-portrait-monogram" aria-hidden="true">
-      {bride.charAt(0)}
-      <span>&</span>
       {groom.charAt(0)}
+      <span>&</span>
+      {bride.charAt(0)}
     </div>
   )}
   <img
