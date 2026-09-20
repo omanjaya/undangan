@@ -407,8 +407,8 @@ async function loadLibrary() {
             .dataset.kind;
     const filtered = assets.filter((a) => a.kind === kind);
     status.textContent = filtered.length
-      ? `${filtered.length} berkas tersedia`
-      : "Belum ada berkas untuk bagian ini. Tutup dan unggah media terlebih dahulu.";
+      ? `${filtered.length} berkas tersedia di pustaka`
+      : "Pustaka masih kosong untuk bagian ini. Unggah berkas di atas.";
     filtered.forEach((asset) => {
       const card = document.createElement("article");
       const usage = mediaUsage(asset.url);
@@ -427,17 +427,7 @@ async function loadLibrary() {
       choose.disabled =
         targetSlot === "galleryPhotos" && gallery.includes(asset.url);
       choose.addEventListener("click", () => {
-        if (targetSlot === "galleryPhotos") {
-          if (gallery.length >= 12) return;
-          gallery.push(asset.url);
-          renderGallery();
-        } else {
-          form.querySelector<HTMLInputElement>(
-            `input[name="${targetSlot}"]`,
-          )!.value = asset.url;
-          renderSlots();
-        }
-        markDirty();
+        if (!applyToTarget(asset.url)) return;
         dialog.close();
       });
       card.append(choose);
@@ -469,15 +459,92 @@ function mediaUsage(url: string) {
   if (gallery.includes(url)) labels.push("galeri");
   return labels.join(", ");
 }
+const ACCEPT: Record<string, string> = {
+  image: "image/jpeg,image/png,image/webp",
+  video: "video/mp4,video/webm",
+  audio: "audio/mpeg,audio/mp4,audio/ogg,audio/wav",
+};
+function targetKind() {
+  return targetSlot === "galleryPhotos"
+    ? "image"
+    : form.querySelector<HTMLElement>(`[data-slot="${targetSlot}"]`)!.dataset
+        .kind!;
+}
+/** Pasang berkas ke slot yang sedang dibuka, atau tambahkan ke galeri. */
+function applyToTarget(url: string) {
+  if (targetSlot === "galleryPhotos") {
+    if (gallery.length >= 12 || gallery.includes(url)) return false;
+    gallery.push(url);
+    renderGallery();
+  } else {
+    form.querySelector<HTMLInputElement>(`input[name="${targetSlot}"]`)!.value =
+      url;
+    renderSlots();
+  }
+  markDirty();
+  return true;
+}
 document
   .querySelectorAll<HTMLButtonElement>("[data-select-media]")
   .forEach((button) =>
     button.addEventListener("click", () => {
       targetSlot = button.dataset.selectMedia!;
+      const kind = targetKind();
+      dialogUpload.accept = ACCEPT[kind];
+      dialogUpload.multiple = targetSlot === "galleryPhotos";
+      dialogUploadHint.textContent =
+        targetSlot === "galleryPhotos"
+          ? "Foto yang diunggah langsung masuk galeri."
+          : "Berkas langsung dipasang setelah unggahan selesai.";
       dialog.showModal();
       void loadLibrary();
     }),
   );
+const dialogUpload =
+  document.querySelector<HTMLInputElement>("#dialog-upload")!;
+const dialogUploadHint = document.querySelector<HTMLElement>(
+  "#dialog-upload-hint",
+)!;
+const dialogProgress = document.querySelector<HTMLProgressElement>(
+  "#dialog-upload-progress",
+)!;
+dialogUpload.addEventListener("change", async () => {
+  const files = [...(dialogUpload.files || [])];
+  if (!files.length) return;
+  if (uploading) {
+    notify("Unggahan lain masih berjalan. Tunggu hingga selesai.", true);
+    return;
+  }
+  uploading = true;
+  dialogUpload.disabled = true;
+  dialogProgress.hidden = false;
+  const status = document.querySelector<HTMLElement>("#media-library-status")!;
+  let dipasang = 0;
+  const errors: string[] = [];
+  for (const file of files) {
+    status.textContent = `Mengunggah ${file.name}…`;
+    dialogProgress.value = 0;
+    try {
+      const asset = await uploadFile(file, (n) => (dialogProgress.value = n));
+      assets.push(asset);
+      if (applyToTarget(asset.url)) dipasang++;
+    } catch (e) {
+      errors.push(`${file.name}: ${(e as Error).message}`);
+    }
+  }
+  uploading = false;
+  dialogUpload.disabled = false;
+  dialogUpload.value = "";
+  dialogProgress.hidden = true;
+  if (errors.length) {
+    status.textContent = errors.join(" ");
+    notify("Sebagian berkas gagal diunggah.", true);
+    void loadLibrary();
+    return;
+  }
+  notify(`${dipasang} berkas dipasang.`);
+  dialog.close();
+});
 document
   .querySelector("#close-media")!
   .addEventListener("click", () => dialog.close());

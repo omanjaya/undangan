@@ -326,7 +326,7 @@ const slots = [
               class="dash-button secondary"
               data-select-media={name}
             >
-              Pilih{" "}
+              Unggah / pilih{" "}
               {kind === "image" ? "foto" : kind === "video" ? "video" : "musik"}
             </button>
             <button type="button" class="subtle-button" data-clear-media={name}>
@@ -495,12 +495,26 @@ const slots = [
   <header>
     <div>
       <span class="dash-kicker">PUSTAKA PERSONAL</span>
-      <h2 id="media-dialog-title">Pilih media</h2>
+      <h2 id="media-dialog-title">Unggah atau pilih media</h2>
     </div>
     <button type="button" class="dash-button secondary" id="close-media">
       Tutup
     </button>
   </header>
+  <div class="media-dialog-upload">
+    <label for="dialog-upload">
+      <strong>Unggah berkas baru</strong>
+      <span id="dialog-upload-hint">Langsung dipasang setelah selesai.</span>
+    </label>
+    <input id="dialog-upload" type="file" multiple />
+    <progress
+      id="dialog-upload-progress"
+      max="100"
+      value="0"
+      hidden
+      aria-label="Progres unggahan"
+    ></progress>
+  </div>
   <p id="media-library-status" role="status"></p>
   <div id="media-library" class="media-library"></div>
 </dialog>

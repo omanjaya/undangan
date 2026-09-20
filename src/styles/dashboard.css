@@ -1699,3 +1699,31 @@ td {
 #create-invitation-error {
   color: #a14737;
 }
+
+.media-dialog-upload {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  background: #fbfaf6;
+}
+.media-dialog-upload label {
+  display: grid;
+  gap: 3px;
+}
+.media-dialog-upload strong {
+  font-size: 13px;
+}
+.media-dialog-upload span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.media-dialog-upload input[type="file"] {
+  font-size: 12px;
+}
+.media-dialog-upload progress {
+  width: 100%;
+  height: 4px;
+}
