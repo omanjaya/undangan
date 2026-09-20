@@ -25,7 +25,7 @@ export const themes = [
   },
   {
     id: "lotus-rosa",
-    art: "ivory",
+    art: "rosa",
     mood: "Romantis & manis",
     name: "Lotus Rosa",
     description:
@@ -34,7 +34,7 @@ export const themes = [
   },
   {
     id: "samudra-biru",
-    art: "emerald",
+    art: "biru",
     mood: "Tenang & dalam",
     name: "Samudra Biru",
     description:
@@ -43,7 +43,7 @@ export const themes = [
   },
   {
     id: "sawah-hijau",
-    art: "ivory",
+    art: "hijau",
     mood: "Segar & ceria",
     name: "Sawah Hijau",
     description: "Hijau padi segar dengan huruf Lora yang hangat dan ceria.",
@@ -51,7 +51,7 @@ export const themes = [
   },
   {
     id: "malam-keemasan",
-    art: "emerald",
+    art: "keemasan",
     mood: "Megah & dramatis",
     name: "Malam Keemasan",
     description: "Hitam arang, kilau emas, dan Cinzel yang megah.",
@@ -59,7 +59,7 @@ export const themes = [
   },
   {
     id: "pasir-putih",
-    art: "ivory",
+    art: "pasir",
     mood: "Minimal & modern",
     name: "Pasir Putih",
     description:

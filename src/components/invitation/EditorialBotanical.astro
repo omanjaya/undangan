@@ -55,7 +55,9 @@ const densityCorner =
     ? "/ornaments/theme-pack/emerald-foliage-corner.webp"
     : themeArt === "terracotta"
       ? "/ornaments/theme-pack/terracotta-floral-spray.webp"
-      : "/ornaments/theme-pack/ivory-floral-crescent.webp";
+      : themeArt === "ivory"
+        ? "/ornaments/theme-pack/ivory-floral-crescent.webp"
+        : `/ornaments/theme-pack/${themeArt}-corner.webp`;
 const imageFocus =
   (
     content as InvitationContent & {
