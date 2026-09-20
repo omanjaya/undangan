@@ -159,9 +159,9 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         {initials}
       </span>
       <p class="invite-cover-names">
-        {content.groom}
+        <span class="invite-couple-name">{content.groom}</span>
         <em>&</em>
-        {content.bride}
+        <span class="invite-couple-name">{content.bride}</span>
       </p>
       <p class="invite-cover-date">{dateLabel}</p>
       <span class="invite-short-rule"></span>
@@ -258,9 +258,9 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
             <span></span> PAWIWAHAN · BALI
           </p>
           <h1 id="wedding-title">
-            {content.groom}
+            <span class="invite-couple-name">{content.groom}</span>
             <span class="invite-ampersand">&</span>
-            {content.bride}
+            <span class="invite-couple-name">{content.bride}</span>
           </h1>
           <p class="invite-hero-date">
             {dayLabel}, {dateLabel}

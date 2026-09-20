@@ -529,6 +529,7 @@ async function uploadFiles(files: File[]) {
   const status = document.querySelector<HTMLElement>("#upload-status")!;
   progress.hidden = false;
   let success = 0;
+  const uploaded: Asset[] = [];
   const errors: string[] = [];
   for (const file of files) {
     status.textContent = `Mengunggah ${file.name}…`;
@@ -536,6 +537,7 @@ async function uploadFiles(files: File[]) {
     try {
       const asset = await uploadFile(file, (n) => (progress.value = n));
       assets.push(asset);
+      uploaded.push(asset);
       success++;
     } catch (e) {
       errors.push(`${file.name}: ${(e as Error).message}`);
@@ -545,14 +547,47 @@ async function uploadFiles(files: File[]) {
   upload.disabled = false;
   upload.value = "";
   progress.hidden = true;
-  status.textContent = `${success} berkas tersimpan di pustaka. Pilih media untuk memasangkannya.${errors.length ? " " + errors.join(" ") : ""}`;
+  const dipasang = autoAssignSingleSlots(uploaded);
+  status.textContent = `${success} berkas tersimpan di pustaka.${
+    dipasang.length ? ` Langsung dipasang ke ${dipasang.join(" dan ")}.` : ""
+  }${
+    dipasang.length < success
+      ? " Untuk foto, buka Pilih media pada bagian yang dituju."
+      : ""
+  }${errors.length ? " " + errors.join(" ") : ""}`;
   notify(
     errors.length
       ? "Beberapa berkas gagal diunggah. Lihat keterangan unggahan."
-      : "Media siap dipilih untuk undangan.",
+      : dipasang.length
+        ? `Media dipasang ke ${dipasang.join(" dan ")}.`
+        : "Media siap dipilih untuk undangan.",
     errors.length > 0,
   );
   if (dirty) void autosave();
+}
+/**
+ * Musik dan film hanya punya satu slot, jadi berkas yang baru diunggah langsung
+ * dipasang bila slotnya masih kosong. Foto tetap dipilih manual karena ada
+ * beberapa slot dan galeri.
+ */
+function autoAssignSingleSlots(uploaded: Asset[]) {
+  const dipasang: string[] = [];
+  for (const kind of ["audio", "video"] as const) {
+    const asset = uploaded.find((a) => a.kind === kind);
+    if (!asset) continue;
+    const slot = form.querySelector<HTMLElement>(
+      `[data-slot][data-kind="${kind}"]`,
+    );
+    const input = slot?.querySelector<HTMLInputElement>("input");
+    if (!slot || !input || input.value) continue;
+    input.value = asset.url;
+    dipasang.push(slot.querySelector("h4")?.textContent?.trim() || kind);
+  }
+  if (dipasang.length) {
+    renderSlots();
+    markDirty();
+  }
+  return dipasang;
 }
 upload.addEventListener(
   "change",

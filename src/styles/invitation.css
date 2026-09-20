@@ -2288,3 +2288,37 @@ html.invite-locked {
   overflow-wrap: anywhere;
   letter-spacing: normal;
 }
+
+/*
+ * Nama panjang seperti "Ngurah Bazonk & Dwi Purwantini" sebelumnya mengalir
+ * sebagai satu paragraf sehingga tanda & menempel di awal baris dan nama
+ * terpotong di tengah. Setiap nama kini menempati barisnya sendiri.
+ */
+.invite-couple-name {
+  display: block;
+  text-wrap: balance;
+}
+.invitation .invite-cover-names {
+  display: grid;
+  justify-items: center;
+}
+.invitation .invite-cover-names em {
+  display: block;
+  padding: 0;
+  margin: 2px 0;
+}
+/* Hero desktop tetap rata kiri seperti desain aslinya. */
+.invitation #wedding-title {
+  display: grid;
+  justify-items: start;
+}
+@media (max-width: 760px) {
+  .invitation #wedding-title {
+    justify-items: center;
+  }
+  .invitation #wedding-title .invite-ampersand {
+    display: block;
+    padding: 0;
+    margin: 2px 0;
+  }
+}
