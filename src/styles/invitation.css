@@ -1578,6 +1578,23 @@ html:has(.invitation) {
   font-family: var(--iv-serif);
   font-size: 22px;
 }
+.invite-dress-code {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  font-family: var(--iv-serif);
+  font-size: 19px;
+  margin-top: 14px;
+}
+.invite-dress-code span {
+  font-family: var(--iv-sans, inherit);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--iv-muted, currentColor);
+  opacity: 0.75;
+}
 .invite-story-art {
   height: 100%;
   display: grid;

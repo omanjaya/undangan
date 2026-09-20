@@ -465,6 +465,12 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
           {content.balineseDate && (
             <p class="invite-balinese-date">{content.balineseDate}</p>
           )}
+          {content.dressCode && (
+            <p class="invite-dress-code">
+              <span>Dress code</span>
+              {content.dressCode}
+            </p>
+          )}
           {events.map((event, index) => (
             <EventCard
               title={event.title}

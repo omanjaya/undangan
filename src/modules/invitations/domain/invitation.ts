@@ -52,6 +52,7 @@ export const contentSchema = z.object({
   groomAddress: z.string().trim().max(300).default(""),
   ceremonyTitle: z.string().trim().max(100).default("Pawiwahan"),
   balineseDate: z.string().trim().max(200).default(""),
+  dressCode: z.string().trim().max(160).default(""),
   heroPhoto: mediaUrl,
   bridePhoto: mediaUrl,
   groomPhoto: mediaUrl,
