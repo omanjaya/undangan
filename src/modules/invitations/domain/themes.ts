@@ -66,5 +66,14 @@ export const themes = [
       "Putih pasir minimalis dengan Italiana yang ringan dan modern.",
     palette: ["#fbfaf6", "#5a564c", "#b3a284"],
   },
+  {
+    id: "elegansi-monokrom",
+    art: "monokrom",
+    mood: "Sinematik & elegan",
+    name: "Elegansi Monokrom",
+    description:
+      "Hitam-putih sinematik, EB Garamond kapital, dan animasi mengalun dari samping.",
+    palette: ["#141414", "#efece5", "#9c9285"],
+  },
 ] as const;
 export type ThemeId = (typeof themes)[number]["id"];

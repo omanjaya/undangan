@@ -31,6 +31,7 @@ export const contentSchema = z.object({
       "sawah-hijau",
       "malam-keemasan",
       "pasir-putih",
+      "elegansi-monokrom",
     ])
     .default("jepun-ivory"),
   ornamentDensity: z.enum(["minimal", "medium", "full"]).default("medium"),
@@ -51,7 +52,15 @@ export const contentSchema = z.object({
     }),
   mapEmbedUrl: mapEmbed,
   fontPreset: z
-    .enum(["cormorant", "italiana", "cinzel", "playfair", "marcellus", "lora"])
+    .enum([
+      "cormorant",
+      "italiana",
+      "cinzel",
+      "playfair",
+      "marcellus",
+      "lora",
+      "garamond",
+    ])
     .default("cormorant"),
   balineseGreeting: z.string().trim().max(200).default("ᬒᬁ ᬲ᭄ᬯᬲ᭄ᬢ᭄ᬬᬲ᭄ᬢᬸ᭟"),
   vedaQuote: z.enum(["none", "rigveda-10-191-4"]).default("rigveda-10-191-4"),

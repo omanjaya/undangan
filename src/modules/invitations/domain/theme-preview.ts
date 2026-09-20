@@ -32,6 +32,7 @@ const heroPhotoByTheme: Record<
   "sawah-hijau": { photo: "/media/0de00016.webp", focusY: 60 },
   "malam-keemasan": { photo: "/media/0de0001b.webp", focusY: 50 },
   "pasir-putih": { photo: "/media/0de0001c.webp", focusY: 50 },
+  "elegansi-monokrom": { photo: "/media/0de00015.webp", focusY: 45 },
 };
 
 // Font bawaan tiap tema — menentukan karakter tipografinya.
@@ -47,6 +48,7 @@ const fontByTheme: Record<
   "sawah-hijau": "lora",
   "malam-keemasan": "cinzel",
   "pasir-putih": "italiana",
+  "elegansi-monokrom": "garamond",
 };
 
 const galleryPhotos = [

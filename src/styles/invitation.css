@@ -1490,6 +1490,49 @@ html:has(.invitation) {
   --im-slide-ms: 700ms;
   --im-ease: ease-out;
 }
+.invitation[data-theme="elegansi-monokrom"] {
+  --iv-paper: #141414;
+  --iv-ink: #efece5;
+  --iv-olive: #b8b2a4;
+  --iv-muted: #93908a;
+  --iv-line: #3a3a38;
+  --iv-gold: #9c9285;
+  --iv-surface: #1f1f1e;
+  --iv-serif: "EB Garamond", Georgia, serif;
+  --im-reveal-x: -34px;
+  --im-reveal-distance: 0px;
+  --im-fade-ms: 1200ms;
+  --im-slide-ms: 1300ms;
+  --im-ease: cubic-bezier(0.22, 0.6, 0.3, 1);
+}
+.invitation[data-theme="elegansi-monokrom"] .invite-cover-names,
+.invitation[data-theme="elegansi-monokrom"] h1,
+.invitation[data-theme="elegansi-monokrom"] h2 {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.invitation[data-theme="elegansi-monokrom"] h1 {
+  font-size: clamp(44px, 5.5vw, 76px);
+}
+.invitation[data-theme="elegansi-monokrom"] .invite-eyebrow,
+.invitation[data-theme="elegansi-monokrom"] .invite-hero-date {
+  letter-spacing: 0.32em;
+}
+.invitation[data-theme="elegansi-monokrom"] .invite-hero-image,
+.invitation[data-theme="elegansi-monokrom"] .invite-story-photo,
+.invitation[data-theme="elegansi-monokrom"] .invite-couple-portrait,
+.invitation[data-theme="elegansi-monokrom"] .invite-photo-side img,
+.invitation[data-theme="elegansi-monokrom"] .invite-gallery img,
+.invitation[data-theme="elegansi-monokrom"] .closing-portrait-frame img,
+.invitation[data-theme="elegansi-monokrom"] .slideshow-slide img,
+.invitation[data-theme="elegansi-monokrom"] .invite-artwork {
+  filter: grayscale(1) contrast(1.05);
+}
+.invitation[data-theme="elegansi-monokrom"] .invite-button {
+  border-radius: 0;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
 .invitation[data-font="cinzel"] {
   --iv-serif: "Cinzel", Georgia, serif;
 }
@@ -1504,6 +1547,9 @@ html:has(.invitation) {
 }
 .invitation[data-font="lora"] {
   --iv-serif: "Lora", Georgia, serif;
+}
+.invitation[data-font="garamond"] {
+  --iv-serif: "EB Garamond", Georgia, serif;
 }
 .invitation h1 {
   font-size: clamp(68px, 8vw, 118px);

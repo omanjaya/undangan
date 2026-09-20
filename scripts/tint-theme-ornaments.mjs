@@ -12,6 +12,7 @@ const arts = {
   hijau: { base: "light", tint: { r: 124, g: 152, b: 104 } },
   keemasan: { base: "dark", tint: { r: 205, g: 168, b: 96 } },
   pasir: { base: "light", tint: { r: 176, g: 160, b: 132 } },
+  monokrom: { base: "dark", tint: { r: 158, g: 158, b: 155 } },
 };
 
 const sources = {
