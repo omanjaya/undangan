@@ -1420,11 +1420,90 @@ html:has(.invitation) {
   --iv-gold: #b87f50;
   --iv-surface: #ead7c4;
 }
+.invitation[data-theme="lotus-rosa"] {
+  --iv-paper: #faf0f0;
+  --iv-ink: #503038;
+  --iv-olive: #8c4a52;
+  --iv-muted: #93707a;
+  --iv-line: #e3c8cb;
+  --iv-gold: #c9a06a;
+  --iv-surface: #f3e2e2;
+  --iv-serif: "Playfair Display", Georgia, serif;
+  --im-reveal-distance: 30px;
+  --im-fade-ms: 950ms;
+  --im-slide-ms: 1150ms;
+  --im-ease: cubic-bezier(0.16, 0.8, 0.3, 1);
+}
+.invitation[data-theme="samudra-biru"] {
+  --iv-paper: #122c3d;
+  --iv-ink: #e8eef0;
+  --iv-olive: #c2a878;
+  --iv-muted: #9db4c0;
+  --iv-line: #35586d;
+  --iv-gold: #d3b988;
+  --iv-surface: #1b3a4e;
+  --iv-serif: "Marcellus", Georgia, serif;
+  --im-reveal-distance: 18px;
+  --im-fade-ms: 1100ms;
+  --im-slide-ms: 1400ms;
+  --im-ease: cubic-bezier(0.25, 0.6, 0.3, 1);
+}
+.invitation[data-theme="sawah-hijau"] {
+  --iv-paper: #f3f7ec;
+  --iv-ink: #2e4028;
+  --iv-olive: #3f6135;
+  --iv-muted: #6e7d63;
+  --iv-line: #ccdabc;
+  --iv-gold: #a8873f;
+  --iv-surface: #e6eeda;
+  --iv-serif: "Lora", Georgia, serif;
+  --im-reveal-distance: 16px;
+  --im-fade-ms: 450ms;
+  --im-slide-ms: 550ms;
+  --im-ease: cubic-bezier(0.3, 1.1, 0.4, 1);
+}
+.invitation[data-theme="malam-keemasan"] {
+  --iv-paper: #191613;
+  --iv-ink: #e9dcbf;
+  --iv-olive: #c9a45c;
+  --iv-muted: #a2947a;
+  --iv-line: #453d33;
+  --iv-gold: #c9a45c;
+  --iv-surface: #241f1a;
+  --iv-serif: "Cinzel", Georgia, serif;
+  --im-reveal-distance: 12px;
+  --im-fade-ms: 1300ms;
+  --im-slide-ms: 1600ms;
+  --im-ease: cubic-bezier(0.2, 0.55, 0.25, 1);
+}
+.invitation[data-theme="pasir-putih"] {
+  --iv-paper: #fbfaf6;
+  --iv-ink: #3f3c34;
+  --iv-olive: #5a564c;
+  --iv-muted: #8b8577;
+  --iv-line: #e2ddd0;
+  --iv-gold: #b3a284;
+  --iv-surface: #f1eee6;
+  --iv-serif: "Italiana", Georgia, serif;
+  --im-reveal-distance: 10px;
+  --im-fade-ms: 600ms;
+  --im-slide-ms: 700ms;
+  --im-ease: ease-out;
+}
 .invitation[data-font="cinzel"] {
   --iv-serif: "Cinzel", Georgia, serif;
 }
 .invitation[data-font="italiana"] {
   --iv-serif: "Italiana", Georgia, serif;
+}
+.invitation[data-font="playfair"] {
+  --iv-serif: "Playfair Display", Georgia, serif;
+}
+.invitation[data-font="marcellus"] {
+  --iv-serif: "Marcellus", Georgia, serif;
+}
+.invitation[data-font="lora"] {
+  --iv-serif: "Lora", Georgia, serif;
 }
 .invitation h1 {
   font-size: clamp(68px, 8vw, 118px);

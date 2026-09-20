@@ -27,6 +27,26 @@ const heroPhotoByTheme: Record<
   "jepun-ivory": { photo: "/media/0de00001.webp", focusY: 62 },
   "puri-emerald": { photo: "/media/0de00002.webp", focusY: 84 },
   "senja-terracotta": { photo: "/media/0de00003.webp", focusY: 64 },
+  "lotus-rosa": { photo: "/media/0de00012.webp", focusY: 50 },
+  "samudra-biru": { photo: "/media/0de00018.webp", focusY: 55 },
+  "sawah-hijau": { photo: "/media/0de00016.webp", focusY: 60 },
+  "malam-keemasan": { photo: "/media/0de0001b.webp", focusY: 50 },
+  "pasir-putih": { photo: "/media/0de0001c.webp", focusY: 50 },
+};
+
+// Font bawaan tiap tema — menentukan karakter tipografinya.
+const fontByTheme: Record<
+  InvitationContent["theme"],
+  InvitationContent["fontPreset"]
+> = {
+  "jepun-ivory": "cormorant",
+  "puri-emerald": "cinzel",
+  "senja-terracotta": "cormorant",
+  "lotus-rosa": "playfair",
+  "samudra-biru": "marcellus",
+  "sawah-hijau": "lora",
+  "malam-keemasan": "cinzel",
+  "pasir-putih": "italiana",
 };
 
 const galleryPhotos = [
@@ -53,7 +73,7 @@ export function themePreviewContent(
   return contentSchema.parse({
     ...demoContent,
     theme: themeId,
-    fontPreset: themeId === "puri-emerald" ? "cinzel" : "cormorant",
+    fontPreset: fontByTheme[themeId],
     bride: "Ayu",
     groom: "Wira",
     brideFullName: "Ni Putu Ayu Pradnyani",

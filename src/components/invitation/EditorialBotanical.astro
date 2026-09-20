@@ -14,6 +14,7 @@ import EventCard from "./EventCard.astro";
 import RsvpForm from "./RsvpForm.astro";
 import Guestbook from "./Guestbook.astro";
 import type { InvitationContent } from "../../modules/invitations/domain/invitation";
+import { themes } from "../../modules/invitations/domain/themes";
 import "../../styles/invitation.css";
 import "../../styles/guest-polish.css";
 import "../../styles/cover-polish.css";
@@ -21,6 +22,11 @@ import "../../styles/illustrated-invitation.css";
 import "@fontsource/cormorant-garamond/latin-400.css";
 import "@fontsource/cormorant-garamond/latin-400-italic.css";
 import "@fontsource/cinzel/latin-400.css";
+import "@fontsource/playfair-display/latin-400.css";
+import "@fontsource/playfair-display/latin-400-italic.css";
+import "@fontsource/marcellus/latin-400.css";
+import "@fontsource/lora/latin-400.css";
+import "@fontsource/lora/latin-400-italic.css";
 interface Props {
   content: InvitationContent;
   slug: string;
@@ -36,7 +42,9 @@ const {
 const content = presentationContent(savedContent);
 const illustrated = content.photoMode === "illustrated";
 const theme = content.theme ?? "jepun-ivory";
-const coverArt = `/ornaments/covers/${theme === "puri-emerald" ? "emerald" : theme === "senja-terracotta" ? "terracotta" : "ivory"}-cover.webp`;
+const themeArt =
+  themes.find((t) => t.id === theme)?.art ?? "ivory";
+const coverArt = `/ornaments/covers/${themeArt}-cover.webp`;
 const ornamentDensity =
   (
     content as InvitationContent & {
@@ -44,9 +52,9 @@ const ornamentDensity =
     }
   ).ornamentDensity || "medium";
 const densityCorner =
-  theme === "puri-emerald"
+  themeArt === "emerald"
     ? "/ornaments/theme-pack/emerald-foliage-corner.webp"
-    : theme === "senja-terracotta"
+    : themeArt === "terracotta"
       ? "/ornaments/theme-pack/terracotta-floral-spray.webp"
       : "/ornaments/theme-pack/ivory-floral-crescent.webp";
 const imageFocus =

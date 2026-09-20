@@ -3,8 +3,9 @@
     opacity: 0;
     translate: 0 var(--im-reveal-distance, 22px);
     transition:
-      opacity 700ms ease var(--im-delay, 0ms),
-      translate 850ms cubic-bezier(0.2, 0.65, 0.3, 1) var(--im-delay, 0ms);
+      opacity var(--im-fade-ms, 700ms) var(--im-ease, ease) var(--im-delay, 0ms),
+      translate var(--im-slide-ms, 850ms)
+        var(--im-ease, cubic-bezier(0.2, 0.65, 0.3, 1)) var(--im-delay, 0ms);
   }
 
   .invitation.im-ready .im-reveal.im-visible {

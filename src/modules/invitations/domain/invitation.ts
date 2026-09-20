@@ -22,7 +22,16 @@ const mediaUrl = z
   .default("");
 export const contentSchema = z.object({
   theme: z
-    .enum(["jepun-ivory", "puri-emerald", "senja-terracotta"])
+    .enum([
+      "jepun-ivory",
+      "puri-emerald",
+      "senja-terracotta",
+      "lotus-rosa",
+      "samudra-biru",
+      "sawah-hijau",
+      "malam-keemasan",
+      "pasir-putih",
+    ])
     .default("jepun-ivory"),
   ornamentDensity: z.enum(["minimal", "medium", "full"]).default("medium"),
   photoMode: z.enum(["photos", "illustrated"]).default("photos"),
@@ -41,7 +50,9 @@ export const contentSchema = z.object({
       storyPhoto: { x: 50, y: 50 },
     }),
   mapEmbedUrl: mapEmbed,
-  fontPreset: z.enum(["cormorant", "italiana", "cinzel"]).default("cormorant"),
+  fontPreset: z
+    .enum(["cormorant", "italiana", "cinzel", "playfair", "marcellus", "lora"])
+    .default("cormorant"),
   balineseGreeting: z.string().trim().max(200).default("ᬒᬁ ᬲ᭄ᬯᬲ᭄ᬢ᭄ᬬᬲ᭄ᬢᬸ᭟"),
   vedaQuote: z.enum(["none", "rigveda-10-191-4"]).default("rigveda-10-191-4"),
   greeting: z.string().trim().max(120).default("Om Swastyastu"),

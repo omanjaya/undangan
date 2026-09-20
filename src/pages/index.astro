@@ -4,11 +4,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Icon from "../components/Icon.astro";
 import "../styles/landing.css";
 import { themes } from "../modules/invitations/domain/themes";
-const collections = themes.map((theme, index) => ({
-  ...theme,
-  art: ["ivory", "emerald", "terracotta"][index],
-  mood: ["Lembut & abadi", "Anggun & megah", "Hangat & intim"][index],
-}));
+const collections = themes;
 const features = [
   {
     icon: "edit",
@@ -148,7 +144,7 @@ const faqs = [
         <div>
           <p class="eyebrow">01 / PILIH SUASANANYA</p>
           <h2>
-            Tiga nuansa.
+            Delapan nuansa.
             <br />
             <em>Sama bermaknanya.</em>
           </h2>
