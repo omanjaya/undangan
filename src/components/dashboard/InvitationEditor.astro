@@ -15,14 +15,14 @@ const groups = [
     intro:
       "Nama, keluarga, dan asal kedua mempelai ditampilkan bersama foto masing-masing.",
     fields: [
-      ["bride", "Nama panggilan perempuan", 80],
       ["groom", "Nama panggilan laki-laki", 80],
-      ["brideFullName", "Nama lengkap perempuan", 150],
+      ["bride", "Nama panggilan perempuan", 80],
       ["groomFullName", "Nama lengkap laki-laki", 150],
-      ["brideParents", "Keterangan orang tua perempuan", 300],
+      ["brideFullName", "Nama lengkap perempuan", 150],
       ["groomParents", "Keterangan orang tua laki-laki", 300],
-      ["brideAddress", "Asal / alamat perempuan", 300],
+      ["brideParents", "Keterangan orang tua perempuan", 300],
       ["groomAddress", "Asal / alamat laki-laki", 300],
+      ["brideAddress", "Asal / alamat perempuan", 300],
     ],
   },
   {
@@ -96,9 +96,9 @@ const slots = [
             >
               <span>PAWIWAHAN</span>
               <strong>
-                {c.bride}
-                <i>&</i>
                 {c.groom}
+                <i>&</i>
+                {c.bride}
               </strong>
               <img src="/ornaments/jepun-corner.webp" alt="" loading="lazy" />
             </span>
