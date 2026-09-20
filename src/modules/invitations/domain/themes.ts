@@ -67,10 +67,10 @@ export const themes = [
     palette: ["#fbfaf6", "#5a564c", "#b3a284"],
   },
   {
-    id: "elegansi-monokrom",
+    id: "midnight-monochrome",
     art: "monokrom",
     mood: "Sinematik & elegan",
-    name: "Elegansi Monokrom",
+    name: "Midnight Monochrome",
     description:
       "Hitam-putih sinematik, EB Garamond kapital, dan animasi mengalun dari samping.",
     palette: ["#141414", "#efece5", "#9c9285"],

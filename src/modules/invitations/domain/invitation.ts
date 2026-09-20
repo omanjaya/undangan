@@ -31,7 +31,7 @@ export const contentSchema = z.object({
       "sawah-hijau",
       "malam-keemasan",
       "pasir-putih",
-      "elegansi-monokrom",
+      "midnight-monochrome",
     ])
     .default("jepun-ivory"),
   ornamentDensity: z.enum(["minimal", "medium", "full"]).default("medium"),
