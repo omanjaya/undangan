@@ -36,7 +36,7 @@ export const GET: APIRoute = async ({ params }) => {
   if (!savedContent) return new Response("Not found", { status: 404 });
 
   const content = presentationContent(savedContent);
-  const namesText = truncate(`${content.bride} & ${content.groom}`, 48);
+  const namesText = truncate(`${content.groom} & ${content.bride}`, 48);
   const names = escapeXml(namesText);
   const nameFontSize = Math.max(
     36,

@@ -52,7 +52,7 @@ export async function getDashboardData(actor: Actor | null, slug?: string) {
       id: i.id,
       slug: i.slug,
       status: i.status,
-      title: `${i.draft.bride} & ${i.draft.groom}`,
+      title: `${i.draft.groom} & ${i.draft.bride}`,
       ceremonyTitle: i.draft.ceremonyTitle,
       date: i.draft.date,
     })),

@@ -78,7 +78,8 @@ const dayLabel = new Intl.DateTimeFormat("id-ID", {
   timeZone: "Asia/Makassar",
 }).format(date);
 
-const initials = `${content.bride.charAt(0)}${content.groom.charAt(0)}`;
+// Penyebutan pasangan memakai urutan adat: mempelai pria lebih dulu.
+const initials = `${content.groom.charAt(0)}${content.bride.charAt(0)}`;
 const events = content.events?.length
   ? content.events
   : [
@@ -123,7 +124,7 @@ const calendarEnd = new Date(
   .toISOString()
   .replace(/[-:]/g, "")
   .replace(/\.\d{3}/, "");
-const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Pernikahan ${content.bride} & ${content.groom}`)}&dates=${calendarStart}/${calendarEnd}&details=${encodeURIComponent(content.opening)}&location=${encodeURIComponent(`${content.venue}, ${content.address}`)}`;
+const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Pernikahan ${content.groom} & ${content.bride}`)}&dates=${calendarStart}/${calendarEnd}&details=${encodeURIComponent(content.opening)}&location=${encodeURIComponent(`${content.venue}, ${content.address}`)}`;
 ---
 
 <div
@@ -154,9 +155,9 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         {initials}
       </span>
       <p class="invite-cover-names">
-        {content.bride}
-        <em>&</em>
         {content.groom}
+        <em>&</em>
+        {content.bride}
       </p>
       <p class="invite-cover-date">{dateLabel}</p>
       <span class="invite-short-rule"></span>
@@ -220,7 +221,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
       <a
         href="#home"
         class="invite-monogram"
-        aria-label={`${content.bride} dan ${content.groom}, kembali ke awal`}
+        aria-label={`${content.groom} dan ${content.bride}, kembali ke awal`}
       >
         {initials}
         <span aria-hidden="true">.</span>
@@ -253,9 +254,9 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
             <span></span> PAWIWAHAN · BALI
           </p>
           <h1 id="wedding-title">
-            {content.bride}
-            <span class="invite-ampersand">&</span>
             {content.groom}
+            <span class="invite-ampersand">&</span>
+            {content.bride}
           </h1>
           <p class="invite-hero-date">
             {dayLabel}, {dateLabel}
@@ -282,7 +283,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
                   src={content.heroPhoto}
                   width="800"
                   height="1000"
-                  alt={`Potret ${content.bride} dan ${content.groom}`}
+                  alt={`Potret ${content.groom} dan ${content.bride}`}
                   fetchpriority="high"
                   loading="eager"
                   decoding="async"
@@ -507,7 +508,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
                 style={focusStyle("storyPhoto")}
                 width="800"
                 height="1000"
-                alt={`Cerita ${content.bride} dan ${content.groom}`}
+                alt={`Cerita ${content.groom} dan ${content.bride}`}
               />
             ) : (
               <div class="invite-story-art">
@@ -537,7 +538,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
             <span class="invite-short-rule" aria-hidden="true"></span>
             <p>{content.story}</p>
             <p class="invite-story-signature">
-              {content.bride} & {content.groom}
+              {content.groom} & {content.bride}
             </p>
           </div>
         </section>
@@ -576,7 +577,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
                 class="invite-gallery-item"
                 type="button"
                 data-full-image={photo}
-                data-alt={`Momen ${index + 1}, ${content.bride} dan ${content.groom}`}
+                data-alt={`Momen ${index + 1}, ${content.groom} dan ${content.bride}`}
                 aria-label={`Perbesar foto ${index + 1}`}
               >
                 <img
@@ -584,7 +585,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
                   width="650"
                   height="800"
                   loading="lazy"
-                  alt={`Momen ${index + 1}, ${content.bride} dan ${content.groom}`}
+                  alt={`Momen ${index + 1}, ${content.groom} dan ${content.bride}`}
                 />
                 <span class="invite-gallery-expand">
                   <InviteIcon name="plus" size={20} />
@@ -601,7 +602,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
                 playsinline
                 preload="none"
                 poster={content.heroPhoto || undefined}
-                aria-label={`Video ${content.bride} dan ${content.groom}`}
+                aria-label={`Video ${content.groom} dan ${content.bride}`}
               >
                 <source src={content.videoUrl} />
                 <track kind="captions" label="Tanpa dialog" />
@@ -675,7 +676,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         />
         <p class="invite-eyebrow">DENGAN SEGENAP CINTA</p>
         <h2>
-          {content.bride} <em>&</em> {content.groom}
+          {content.groom} <em>&</em> {content.bride}
         </h2>
         <p>Terima kasih telah menjadi bagian dari cerita kami.</p>
         <p class="invite-closing">

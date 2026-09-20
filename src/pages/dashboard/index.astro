@@ -66,8 +66,8 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
         <div>
           <span class="workspace-dot"></span> Workspace personal{" "}
           <span class="avatar">
-            {c.bride[0]}
             {c.groom[0]}
+            {c.bride[0]}
           </span>
         </div>
       </header>
@@ -77,7 +77,7 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
             <div>
               <span class="dash-kicker">SEBUAH CERITA, SEBUAH PERAYAAN</span>
               <h1>
-                Halo, {c.bride} & {c.groom}.
+                Halo, {c.groom} & {c.bride}.
               </h1>
               <p>Semua persiapan hari bahagia kalian, dalam satu ruang.</p>
             </div>
@@ -131,9 +131,9 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
             <div class="overview-art">
               <span>THE WEDDING OF</span>
               <h2>
-                {c.bride}
-                <i>&</i>
                 {c.groom}
+                <i>&</i>
+                {c.bride}
               </h2>
               <span>{eventDate.toUpperCase()}</span>
               <div class="overview-leaf" aria-hidden="true">
@@ -153,7 +153,7 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
                 </span>
               </div>
               <h2>
-                {c.bride} & {c.groom}
+                {c.groom} & {c.bride}
               </h2>
               <p>
                 <Icon name="calendar" size={15} /> {eventDate} <span>·</span>{" "}
