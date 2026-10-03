@@ -289,7 +289,7 @@ if (section) {
       if (!window.confirm(`Hapus pos "${item.name}"?`)) return;
       remove.disabled = true;
       try {
-        await send(`/api/budget/${item.id}`, "DELETE");
+        await send(`/api/budget/${item.id}/delete`, "POST", {});
         notify("Pos anggaran dihapus.");
         await load();
       } catch (e) {

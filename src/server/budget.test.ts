@@ -127,3 +127,11 @@ describe("perbaikan hasil audit", () => {
     );
   });
 });
+describe("jalur hapus", () => {
+  it("tersedia lewat POST karena Astro memblokir DELETE di balik reverse proxy", async () => {
+    const dibuat = await budget.addBudgetItem(actor, { name: "Untuk dihapus" });
+    await budget.removeBudgetItem(actor, dibuat.id);
+    const sisa = await budget.getBudget(actor);
+    expect(sisa.items.some((i) => i.id === dibuat.id)).toBe(false);
+  });
+});
