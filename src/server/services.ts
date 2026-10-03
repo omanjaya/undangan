@@ -36,7 +36,11 @@ export async function getInvitation(slug = "amara-raka", _preview = false) {
 }
 export async function getPublished(slug: string) {
   const invitation = await getInvitation(slug);
-  return invitation?.status === "published" ? invitation.published : null;
+  if (invitation?.status !== "published" || !invitation.published) return null;
+  // Isi yang tidak lolos skema tidak disajikan ke tamu, tetapi kegagalannya
+  // dibatasi pada undangan ini saja.
+  const content = contentSchema.safeParse(invitation.published);
+  return content.success ? content.data : null;
 }
 export async function getDashboardData(actor: Actor | null, slug?: string) {
   const state = await readState();
@@ -52,9 +56,9 @@ export async function getDashboardData(actor: Actor | null, slug?: string) {
       id: i.id,
       slug: i.slug,
       status: i.status,
-      title: `${i.draft.groom} & ${i.draft.bride}`,
-      ceremonyTitle: i.draft.ceremonyTitle,
-      date: i.draft.date,
+      title: `${i.draft?.groom ?? ""} & ${i.draft?.bride ?? ""}`.trim(),
+      ceremonyTitle: i.draft?.ceremonyTitle ?? "",
+      date: i.draft?.date ?? "",
     })),
     rsvps: rsvps.map(({ visitorId: _, ...r }) => r),
     wishes,

@@ -170,10 +170,16 @@ export function normalizeState(state: State): State {
   state.invitations ??= [];
   delete state.invitation;
   const fallbackId = state.invitations[0]?.id;
+  // Tiap undangan dinormalisasi sendiri-sendiri. Satu undangan yang isinya
+  // cacat dibiarkan apa adanya agar pemilik masih bisa memperbaikinya, dan
+  // tidak ikut menjatuhkan undangan lain yang sedang dibuka tamu.
   for (const invitation of state.invitations) {
-    invitation.draft = contentSchema.parse(invitation.draft);
-    if (invitation.published)
-      invitation.published = contentSchema.parse(invitation.published);
+    const draft = contentSchema.safeParse(invitation.draft);
+    if (draft.success) invitation.draft = draft.data;
+    if (invitation.published) {
+      const published = contentSchema.safeParse(invitation.published);
+      if (published.success) invitation.published = published.data;
+    }
   }
   state.revisions = state.revisions.map((revision) => ({
     ...revision,

@@ -77,3 +77,18 @@ Landing page dirancang ulang dengan hero editorial, preview cover sebenarnya, ti
 Ivory memakai layout surat berbingkai dan cerita mengalir; Emerald memakai susunan aksial dengan gapura serta acara formal; Terracotta memakai pembuka terbalik, kartu berselang, dan cerita asimetris. CSS khusus hanya berlaku pada mode illustrated. Slideshow ornamen kini mempunyai tiga pilihan aset per tema. Koleksi memiliki dua tautan mode dan enam preview statis dibangun, termasuk /themes/{tema}/tanpa-foto. Preview Dengan Foto secara eksplisit menjelaskan ilustrasi pengganti sebelum pengguna mengunggah foto pribadi.
 
 Browser memeriksa tiga preview tanpa foto pada 390 px (scrollWidth = clientWidth), ornamen slideshow Emerald/Terracotta sesuai tema, serta pembuka Ivory desktop. Diperbaiki specificity .invite-density-corner yang sebelumnya membuat dekorasi tersembunyi tampil terlalu besar. Astro Check 62 file bersih, 29 tes lulus, build berhasil.
+
+## 3 Oktober 2026 — Anggaran pernikahan dan ketahanan state
+
+Fitur anggaran ditambahkan: pos per kategori pawiwahan Bali, penanggung antar keluarga, pagu, pengingat jatuh tempo, kerangka 20 pos, ekspor dan impor CSV, serta grafik SVG tanpa dependensi.
+
+Audit terpisah terhadap fitur ini menemukan delapan cacat yang kemudian diverifikasi ulang dan diperbaiki, antara lain: `1500.00` dari spreadsheet berlokal Inggris terbaca 150000; penyuntingan dengan payload sebagian mengosongkan kolom lain; realisasi nol tidak dapat dinyatakan; baris header asing masuk sebagai pos; dan ekspor lalu impor memakan apostrof milik pengguna.
+
+Dua cacat ketahanan ditemukan lewat pengujian langsung dan diperbaiki:
+
+- Satu pos anggaran rusak membuat `readState` melempar sehingga halaman undangan yang dibuka tamu ikut mati. Pos cacat kini diperbaiki seadanya.
+- Satu undangan dengan isi cacat menjatuhkan seluruh undangan lain pada instance yang sama. Normalisasi kini per undangan, dan isi terbit yang tidak lolos skema hanya menonaktifkan undangan itu sendiri.
+
+Tombol hapus pos anggaran membalas 403 di produksi karena pemeriksaan lintas situs bawaan Astro menolak `DELETE` tanpa `content-type` di balik reverse proxy; jalur hapus dipindahkan ke POST mengikuti pola undangan.
+
+Hasil: 96 tes pada 12 berkas lulus, Astro Check 82 berkas bersih, build dan pemeriksaan format berhasil. Perbaikan diverifikasi ulang di produksi lewat API, termasuk penolakan nilai `true` dan `"0x10"` sebagai rupiah. Pengujian antarmuka memakai server pengembangan mode demo; data uji di produksi dihapus setelah verifikasi.

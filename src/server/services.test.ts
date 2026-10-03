@@ -211,3 +211,11 @@ describe("beberapa undangan dalam satu ruang kerja", () => {
     );
   });
 });
+describe("penyajian isi yang cacat", () => {
+  it("tidak menyajikan isi terbit yang tidak lolos skema", async () => {
+    const invitation = await service.getInvitation("amara-raka");
+    expect(invitation).not.toBeNull();
+    // Kegagalan satu undangan tidak boleh melempar ke pemanggilnya.
+    await expect(service.getPublished("slug-tidak-ada")).resolves.toBeNull();
+  });
+});

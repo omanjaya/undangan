@@ -233,15 +233,24 @@ Tombol **Isi kerangka pawiwahan** menambahkan 20 pos yang lazim pada rangkaian p
 
 **Ekspor CSV** mengunduh `anggaran-pernikahan.csv` berisi kategori, pos, penanggung, vendor, estimasi, realisasi, dibayar, kekurangan, status, jatuh tempo, dan catatan. File memakai BOM UTF-8 agar Excel membaca karakter Indonesia dengan benar, dan nilai yang diawali tanda rumus dinetralkan agar aman dibuka di spreadsheet.
 
-| Endpoint                 | Metode | Kegunaan                                   |
-| ------------------------ | ------ | ------------------------------------------ |
-| `/api/budget`            | GET    | Daftar pos, pagu, dan ringkasan            |
-| `/api/budget`            | POST   | Tambah pos anggaran                        |
-| `/api/budget/{id}`       | POST   | Ubah pos anggaran                          |
-| `/api/budget/{id}`       | DELETE | Hapus pos anggaran                         |
-| `/api/budget/settings`   | POST   | Simpan pagu total                          |
-| `/api/budget/template`   | POST   | Isi kerangka pawiwahan tanpa duplikasi pos |
-| `/api/budget/export.csv` | GET    | Unduh anggaran sebagai CSV                 |
+**Impor CSV** menerima berkas hasil ekspor maupun suntingan spreadsheet. Kategori dan penanggung boleh ditulis sebagai label Indonesia atau kunci enum, nilai rupiah boleh ditulis `18000000`, `18.000.000`, atau `Rp 18.000.000`, dan kolom boleh berpindah urutan selama barisnya berheader. Pemisah hanya dianggap ribuan bila mengelompokkan tepat tiga digit, sehingga `1500.00` dari spreadsheet berlokal Inggris terbaca seribu lima ratus. Baris yang rusak dilewati dengan pesan per baris tanpa menggagalkan baris lain, dan maksimal 500 baris diproses sekali impor.
+
+Impor selalu menambah pos baru, tidak menimpa yang ada, karena berkas CSV tidak membawa id. Saat memilih berkas, dashboard menanyakan apakah pos yang namanya sudah ada perlu dilewati; tanpa itu, mengimpor ulang berkas hasil ekspor akan menggandakan daftar.
+
+**Grafik** di atas daftar pos menampilkan komitmen dan pembayaran per kategori serta proporsi antar keluarga, digambar sebagai SVG tanpa dependensi dan mengikuti warna tema.
+
+Anggaran yang rusak tidak menjatuhkan halaman undangan: pos yang cacat diperbaiki seadanya saat dibaca, dan undangan yang isinya tidak lolos skema hanya menonaktifkan dirinya sendiri.
+
+| Endpoint                  | Metode | Kegunaan                                   |
+| ------------------------- | ------ | ------------------------------------------ |
+| `/api/budget`             | GET    | Daftar pos, pagu, dan ringkasan            |
+| `/api/budget`             | POST   | Tambah pos anggaran                        |
+| `/api/budget/{id}`        | POST   | Ubah pos anggaran                          |
+| `/api/budget/{id}/delete` | POST   | Hapus pos anggaran                         |
+| `/api/budget/settings`    | POST   | Simpan pagu total                          |
+| `/api/budget/template`    | POST   | Isi kerangka pawiwahan tanpa duplikasi pos |
+| `/api/budget/export.csv`  | GET    | Unduh anggaran sebagai CSV                 |
+| `/api/budget/import`      | POST   | Impor pos dari berkas CSV                  |
 
 Batas yang berlaku: maksimal **200 pos** anggaran, nilai disimpan sebagai **rupiah bulat** tanpa pecahan sen, dan anggaran hanya dapat diakses pemilik yang sudah masuk.
 
@@ -305,7 +314,7 @@ docker compose config --quiet
 docker compose --env-file .env.production -f compose.production.yaml -f compose.https.yaml config --quiet
 ```
 
-Pemeriksaan terakhir fitur pada 18 September 2026: **26 tes lulus**, Astro Check pada 59 file tanpa error/warning/hint, dan build berhasil. Riwayat verifikasi browser, Docker, serta batas pengujian ada di [VERIFICATION.md](VERIFICATION.md). Ini bukan klaim benchmark Core Web Vitals atau audit keamanan menyeluruh.
+Pemeriksaan terakhir fitur pada 3 Oktober 2026: **96 tes lulus**, Astro Check pada 82 file tanpa error/warning/hint, dan build berhasil. Riwayat verifikasi browser, Docker, serta batas pengujian ada di [VERIFICATION.md](VERIFICATION.md). Ini bukan klaim benchmark Core Web Vitals atau audit keamanan menyeluruh.
 
 ## Deployment
 

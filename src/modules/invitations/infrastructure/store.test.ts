@@ -48,3 +48,21 @@ describe("ketahanan state anggaran", () => {
     expect(JSON.stringify(normalizeState(sekali).budget)).toBe(salinan);
   });
 });
+describe("ketahanan antar undangan", () => {
+  it("undangan yang isinya cacat tidak menjatuhkan undangan lain", () => {
+    const rusak = structuredClone(demoInvitation);
+    rusak.id = "rusak";
+    rusak.slug = "sesi-rusak";
+    (rusak.draft as unknown as Record<string, unknown>).mapUrl = "bukan-url";
+    const hasil = normalizeState({
+      invitations: [structuredClone(demoInvitation), rusak],
+      rsvps: [],
+      wishes: [],
+      revisions: [],
+    } as unknown as State);
+    expect(hasil.invitations).toHaveLength(2);
+    // Yang sehat tetap ter-normalisasi; yang cacat dibiarkan untuk diperbaiki.
+    expect(hasil.invitations[0].draft.mapUrl).toBe(demoInvitation.draft.mapUrl);
+    expect(hasil.invitations[1].draft.mapUrl).toBe("bukan-url");
+  });
+});
