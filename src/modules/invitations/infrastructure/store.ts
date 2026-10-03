@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import postgres from "postgres";
 import {
@@ -11,6 +12,8 @@ import {
 import {
   budgetItemInputSchema,
   budgetSettingsSchema,
+  BUDGET_BEARERS,
+  BUDGET_CATEGORIES,
   type BudgetItem,
   type BudgetSettings,
 } from "../domain/budget";
@@ -106,6 +109,60 @@ export async function mutateState<T>(fn: (state: State) => T): Promise<T> {
   return operation;
 }
 
+/**
+ * Anggaran disunting lewat satu pintu, tetapi berkas state dapat rusak karena
+ * suntingan manual atau pemulihan sebagian. Pos yang cacat diperbaiki
+ * seadanya, bukan dilempar sebagai galat: kegagalan membaca anggaran tidak
+ * boleh ikut menjatuhkan halaman undangan yang dibuka tamu.
+ */
+function recoverBudgetItem(raw: unknown): BudgetItem[] {
+  if (!raw || typeof raw !== "object") return [];
+  const item = raw as Record<string, unknown>;
+  const parsed = budgetItemInputSchema.safeParse(item);
+  const data = parsed.success
+    ? parsed.data
+    : budgetItemInputSchema.safeParse({
+        ...item,
+        name: String(item.name ?? "").trim() || "Pos tanpa nama",
+        estimate: angkaAman(item.estimate),
+        actual: item.actual === null ? null : angkaAman(item.actual),
+        paid: angkaAman(item.paid),
+        dueDate: typeof item.dueDate === "string" ? item.dueDate : "",
+        category: BUDGET_CATEGORIES.includes(item.category as never)
+          ? item.category
+          : "lainnya",
+        bearer: BUDGET_BEARERS.includes(item.bearer as never)
+          ? item.bearer
+          : "bersama",
+        vendor: typeof item.vendor === "string" ? item.vendor : "",
+        note: typeof item.note === "string" ? item.note : "",
+      }).data;
+  if (!data) return [];
+  const waktu =
+    typeof item.createdAt === "string" && item.createdAt
+      ? item.createdAt
+      : new Date(0).toISOString();
+  return [
+    {
+      ...data,
+      id: typeof item.id === "string" && item.id ? item.id : randomUUID(),
+      createdAt: waktu,
+      updatedAt:
+        typeof item.updatedAt === "string" && item.updatedAt
+          ? item.updatedAt
+          : waktu,
+    },
+  ];
+}
+
+/** Nilai yang tidak dapat dibaca sebagai rupiah dianggap nol, bukan menggagalkan pos. */
+function angkaAman(value: unknown) {
+  const angka = typeof value === "string" ? Number(value.trim()) : value;
+  return typeof angka === "number" && Number.isFinite(angka) && angka >= 0
+    ? Math.round(angka)
+    : 0;
+}
+
 export function normalizeState(state: State): State {
   // State lama menyimpan satu undangan pada `invitation`; pindahkan sekali ke daftar.
   if (!state.invitations?.length && state.invitation)
@@ -124,10 +181,8 @@ export function normalizeState(state: State): State {
     content: contentSchema.parse(revision.content),
   }));
   state.assets ??= [];
-  state.budget = (state.budget ?? []).map((item) => ({
-    ...item,
-    ...budgetItemInputSchema.parse(item),
-  }));
-  state.budgetSettings = budgetSettingsSchema.parse(state.budgetSettings ?? {});
+  state.budget = (state.budget ?? []).flatMap(recoverBudgetItem);
+  const settings = budgetSettingsSchema.safeParse(state.budgetSettings ?? {});
+  state.budgetSettings = settings.success ? settings.data : { cap: 0 };
   return state;
 }

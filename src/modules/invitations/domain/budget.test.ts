@@ -177,3 +177,19 @@ describe("perbaikan hasil audit", () => {
     );
   });
 });
+describe("validasi nilai rupiah", () => {
+  const nilai = (estimate: unknown) =>
+    budgetItemInputSchema.safeParse({ name: "Pos", estimate });
+  it("menolak nilai yang bukan angka rupiah", () => {
+    // z.coerce dulu menerima ini sebagai 16 dan 1.
+    expect(nilai("0x10").success).toBe(false);
+    expect(nilai(true).success).toBe(false);
+    expect(nilai("12abc").success).toBe(false);
+    expect(nilai(1.5).success).toBe(false);
+  });
+  it("menerima angka dan string berisi digit", () => {
+    expect(nilai(18000000).data?.estimate).toBe(18000000);
+    expect(nilai("18000000").data?.estimate).toBe(18000000);
+    expect(nilai(" 250 ").data?.estimate).toBe(250);
+  });
+});

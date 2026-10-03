@@ -33,11 +33,21 @@ export const CATEGORY_LABELS: Record<
 };
 
 /** Rupiah disimpan sebagai bilangan bulat; pecahan sen tidak dipakai. */
-const rupiahBase = z.coerce
-  .number()
-  .int("Gunakan angka bulat dalam rupiah.")
-  .min(0, "Nilai tidak boleh negatif.")
-  .max(100_000_000_000, "Nilai terlalu besar.");
+/**
+ * `z.coerce` terlalu longgar untuk nilai uang: ia menerima `true` sebagai 1 dan
+ * `"0x10"` sebagai 16. Hanya angka dan string berisi digit yang diterima.
+ */
+const rupiahBase = z.preprocess(
+  (value) =>
+    typeof value === "string" && /^\s*\d+\s*$/.test(value)
+      ? Number(value.trim())
+      : value,
+  z
+    .number("Nilai harus berupa angka rupiah.")
+    .int("Gunakan angka bulat dalam rupiah.")
+    .min(0, "Nilai tidak boleh negatif.")
+    .max(100_000_000_000, "Nilai terlalu besar."),
+);
 
 const rupiah = rupiahBase.default(0);
 

@@ -225,6 +225,12 @@ function parseDueDate(raw: string): string | null {
   return null;
 }
 
+/** Sel mentah dipendekkan agar satu berkas rusak tidak menghasilkan ratusan pesan panjang. */
+function ringkas(value: string) {
+  const teks = value.trim();
+  return teks.length > 40 ? `${teks.slice(0, 40)}…` : teks;
+}
+
 export function parseBudgetCsv(text: string): BudgetImportResult {
   const items: BudgetItemInput[] = [];
   const errors: BudgetImportIssue[] = [];
@@ -272,7 +278,7 @@ export function parseBudgetCsv(text: string): BudgetImportResult {
     if (rawCategory && !category) {
       errors.push({
         line: row.line,
-        message: `Kategori "${rawCategory}" tidak dikenali, dipakai "${CATEGORY_LABELS.lainnya}".`,
+        message: `Kategori "${ringkas(rawCategory)}" tidak dikenali, dipakai "${CATEGORY_LABELS.lainnya}".`,
       });
     }
 
@@ -283,7 +289,7 @@ export function parseBudgetCsv(text: string): BudgetImportResult {
     if (rawBearer && !bearer) {
       errors.push({
         line: row.line,
-        message: `Penanggung "${rawBearer}" tidak dikenali, dipakai "${BEARER_LABELS.bersama}".`,
+        message: `Penanggung "${ringkas(rawBearer)}" tidak dikenali, dipakai "${BEARER_LABELS.bersama}".`,
       });
     }
 
@@ -307,7 +313,7 @@ export function parseBudgetCsv(text: string): BudgetImportResult {
       if (value === null) {
         errors.push({
           line: row.line,
-          message: `${labels[field]} "${raw}" bukan nilai rupiah yang sah, baris dilewati.`,
+          message: `${labels[field]} "${ringkas(raw)}" bukan nilai rupiah yang sah, baris dilewati.`,
         });
         broken = true;
         break;
@@ -321,7 +327,7 @@ export function parseBudgetCsv(text: string): BudgetImportResult {
     if (dueDate === null) {
       errors.push({
         line: row.line,
-        message: `Jatuh tempo "${rawDueDate}" tidak terbaca, dikosongkan.`,
+        message: `Jatuh tempo "${ringkas(rawDueDate)}" tidak terbaca, dikosongkan.`,
       });
     }
 

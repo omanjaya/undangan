@@ -1,11 +1,22 @@
 import type { APIRoute } from "astro";
 import { getActor } from "../../../server/auth";
 import { applyBudgetTemplate } from "../../../server/budget";
-import { guardMutation, json, errorResponse } from "../../../server/http";
-export const POST: APIRoute = async ({ request }) => {
+import {
+  guardMutation,
+  rateLimit,
+  clientIp,
+  json,
+  errorResponse,
+} from "../../../server/http";
+export const POST: APIRoute = async ({ request, clientAddress }) => {
   try {
     guardMutation(request);
-    return json(await applyBudgetTemplate(await getActor(request)));
+    const actor = await getActor(request);
+    rateLimit(
+      `budget-template:${actor?.id || clientIp(request, clientAddress)}`,
+      30,
+    );
+    return json(await applyBudgetTemplate(actor));
   } catch (e) {
     return errorResponse(e);
   }

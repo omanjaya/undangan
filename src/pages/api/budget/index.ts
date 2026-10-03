@@ -3,6 +3,8 @@ import { getActor } from "../../../server/auth";
 import { addBudgetItem, getBudget } from "../../../server/budget";
 import {
   guardMutation,
+  rateLimit,
+  clientIp,
   readInput,
   json,
   errorResponse,
@@ -14,13 +16,15 @@ export const GET: APIRoute = async ({ request }) => {
     return errorResponse(e);
   }
 };
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
   try {
     guardMutation(request);
-    return json(
-      await addBudgetItem(await getActor(request), await readInput(request)),
-      201,
+    const actor = await getActor(request);
+    rateLimit(
+      `budget-add:${actor?.id || clientIp(request, clientAddress)}`,
+      30,
     );
+    return json(await addBudgetItem(actor, await readInput(request)), 201);
   } catch (e) {
     return errorResponse(e);
   }
