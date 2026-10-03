@@ -7,6 +7,7 @@ import {
   paymentStatus,
   type BudgetItem,
 } from "../../modules/invitations/domain/budget";
+import { bearerSplit, categoryBars } from "./budget-chart";
 
 const section = document.querySelector<HTMLElement>("#budget");
 if (section) {
@@ -19,6 +20,9 @@ if (section) {
   const bearers = document.querySelector<HTMLElement>("#budget-bearers")!;
   const templateButton =
     document.querySelector<HTMLButtonElement>("#budget-template")!;
+  const charts = document.querySelector<HTMLElement>("#budget-charts")!;
+  const importInput =
+    document.querySelector<HTMLInputElement>("#budget-import")!;
   const toast = document.querySelector<HTMLElement>("#toast");
 
   const rupiah = (value: number) =>
@@ -161,6 +165,27 @@ if (section) {
       list.append(li);
     });
     due.append(list);
+  }
+
+  /**
+   * Markup SVG berasal dari modul grafik yang sudah meloloskan label pengguna
+   * lewat escapeXml, jadi aman disisipkan sebagai markup.
+   */
+  function renderCharts(summary: {
+    byCategory: Parameters<typeof categoryBars>[0];
+    byBearer: Parameters<typeof bearerSplit>[0];
+  }) {
+    const kategori = categoryBars(summary.byCategory, {
+      title: "Komitmen dan pembayaran per kategori",
+    });
+    const penanggung = bearerSplit(summary.byBearer, {
+      title: "Proporsi komitmen antar keluarga",
+    });
+    charts.innerHTML = [kategori, penanggung]
+      .filter(Boolean)
+      .map((svg) => `<figure class="budget-chart">${svg}</figure>`)
+      .join("");
+    charts.hidden = !kategori && !penanggung;
   }
 
   function field(
@@ -384,6 +409,7 @@ if (section) {
       renderStats(data.summary);
       renderBearers(data.summary.byBearer);
       renderDue(data.summary.dueSoon);
+      renderCharts(data.summary);
     } catch (e) {
       notify((e as Error).message, true);
     }
@@ -446,6 +472,34 @@ if (section) {
       notify((e as Error).message, true);
     } finally {
       templateButton.disabled = false;
+    }
+  });
+
+  importInput.addEventListener("change", async () => {
+    const file = importInput.files?.[0];
+    if (!file) return;
+    importInput.disabled = true;
+    try {
+      const result = await send("/api/budget/import", "POST", {
+        csv: await file.text(),
+      });
+      const catatan = result.errors?.length
+        ? ` ${result.errors.length} baris dilewati.`
+        : "";
+      notify(`${result.added} pos diimpor.${catatan}`, !result.added);
+      if (result.errors?.length)
+        error.textContent = result.errors
+          .slice(0, 5)
+          .map((e: { line: number; message: string }) =>
+            e.line ? `Baris ${e.line}: ${e.message}` : e.message,
+          )
+          .join(" · ");
+      await load();
+    } catch (e) {
+      notify((e as Error).message, true);
+    } finally {
+      importInput.disabled = false;
+      importInput.value = "";
     }
   });
 

@@ -1943,3 +1943,27 @@ td {
   font-size: 11px;
   color: var(--muted);
 }
+
+.budget-charts {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.budget-chart {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--olive);
+}
+.budget-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.budget-import-label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}

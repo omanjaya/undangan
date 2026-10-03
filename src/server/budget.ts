@@ -12,6 +12,10 @@ import {
   type BudgetItem,
 } from "../modules/invitations/domain/budget";
 import {
+  parseBudgetCsv,
+  type BudgetImportIssue,
+} from "../modules/invitations/domain/budget-import";
+import {
   readState,
   mutateState,
   type State,
@@ -132,4 +136,39 @@ export async function exportBudgetCsv(actor: Actor | null) {
   const state = await readState();
   requireWorkspace(state, actor);
   return budgetToCsv(sorted(state.budget ?? []));
+}
+
+/**
+ * Impor menambahkan pos baru, tidak menimpa yang sudah ada: berkas spreadsheet
+ * tidak membawa id, jadi mencocokkan baris ke pos lama hanya lewat nama akan
+ * menghapus perubahan yang dibuat lewat dashboard.
+ */
+export async function importBudgetCsv(actor: Actor | null, text: unknown) {
+  if (typeof text !== "string" || !text.trim())
+    throw new DomainError("Berkas CSV kosong.");
+  const parsed = parseBudgetCsv(text);
+  return mutateState((state) => {
+    requireWorkspace(state, actor);
+    state.budget ??= [];
+    const errors: BudgetImportIssue[] = [...parsed.errors];
+    const now = new Date().toISOString();
+    let added = 0;
+    for (const entry of parsed.items) {
+      if (state.budget.length >= MAX_ITEMS) {
+        errors.push({
+          line: 0,
+          message: `Batas ${MAX_ITEMS} pos tercapai; sisa baris diabaikan.`,
+        });
+        break;
+      }
+      state.budget.push({
+        ...entry,
+        id: randomUUID(),
+        createdAt: now,
+        updatedAt: now,
+      });
+      added++;
+    }
+    return { added, total: state.budget.length, errors };
+  });
 }

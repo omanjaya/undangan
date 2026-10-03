@@ -440,6 +440,15 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
             >
               Ekspor CSV
             </a>
+            <label class="dash-button secondary budget-import-label">
+              Impor CSV
+              <input
+                type="file"
+                id="budget-import"
+                accept=".csv,text/csv"
+                hidden
+              />
+            </label>
           </form>
           <div id="budget-due" class="budget-due" hidden></div>
           <div id="budget-bearers" class="budget-bearers"></div>
@@ -550,6 +559,7 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
             <p id="budget-error" role="alert"></p>
           </form>
 
+          <div id="budget-charts" class="budget-charts"></div>
           <div id="budget-list" class="budget-list"></div>
         </section>
         <footer class="dashboard-footer">

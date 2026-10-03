@@ -2,7 +2,7 @@
 
 Website undangan pernikahan dan Pawiwahan Bali dengan Astro dan TypeScript. Temu menyediakan halaman tamu responsif, tiga tema dengan ornamen khusus, serta dashboard untuk mengelola konten, media, kehadiran, dan ucapan.
 
-Implementasi saat ini ditujukan untuk **satu pemilik, satu undangan, dan satu instance aplikasi**. Rancangan platform multi-workspace di [PLANNING.md](PLANNING.md) merupakan pengembangan lanjutan, bukan fitur yang sudah tersedia.
+Implementasi saat ini ditujukan untuk **satu pemilik dan satu instance aplikasi**. Satu instance dapat menampung beberapa undangan sekaligus, misalnya upacara dan tiap sesi resepsi, yang berbagi satu pustaka media dan satu anggaran. Rancangan platform multi-workspace di [PLANNING.md](PLANNING.md) merupakan pengembangan lanjutan, bukan fitur yang sudah tersedia.
 
 ## Daftar isi
 
@@ -43,6 +43,7 @@ Implementasi saat ini ditujukan untuk **satu pemilik, satu undangan, dan satu in
 - Pustaka media dengan thumbnail, ukuran file, dan penanda penggunaan dalam draft.
 - Checklist sebelum publish, pengaturan slug, publish/unpublish, dan pembuat tautan penerima.
 - Rekap RSVP serta moderasi ucapan.
+- Anggaran pernikahan dengan estimasi, realisasi, pembayaran, pagu, dan ekspor CSV.
 
 ## Teknologi
 
@@ -205,6 +206,44 @@ Foto dioptimasi menjadi WebP tanpa metadata. Audio/video tidak ditranscode; MP4 
 - **YouTube:** tempel tautan watch, youtu.be, Shorts, live, atau embed. Aplikasi membuat player `youtube-nocookie` sendiri. Jika diisi, YouTube menggantikan video unggahan; video harus mengizinkan embed. Tautan langsung tetap tersedia jika player gagal.
 - **Musik:** dimulai sesudah tamu menekan Buka undangan, mengikuti kebijakan browser; playback video menjeda musik.
 - **Preview berbagi:** isi `APP_URL` dengan domain publik yang benar. WhatsApp tidak dapat mengambil gambar dari localhost.
+
+### Anggaran pernikahan
+
+Anggaran berada di Dashboard → **Anggaran pernikahan**. Anggaran melekat pada ruang kerja, bukan pada satu undangan: satu pernikahan yang memiliki beberapa undangan — upacara dan tiap sesi resepsi — memakai satu anggaran yang sama.
+
+Setiap pos memakai salah satu dari sembilan kategori: Upakara & Banten, Tempat & Dekorasi, Katering, Busana & Rias, Dokumentasi, Hiburan & Gamelan, Undangan & Suvenir, Transportasi & Akomodasi, serta Lain-lain. Upakara dipisah dari dekorasi karena sarana upacara dan punia pemangku dianggarkan sendiri, terpisah dari kebutuhan resepsi.
+
+Penanggung biaya dicatat per pos karena biaya pawiwahan lazim dipikul bersama kedua keluarga dengan pembagian yang disepakati. Tersedia tiga pilihan: **Ditanggung bersama**, **Keluarga mempelai pria**, dan **Keluarga mempelai wanita**. Jika lebih dari satu penanggung dipakai, dashboard menampilkan rekap komitmen, pembayaran, dan sisa per keluarga.
+
+| Nilai per pos | Arti                                             |
+| ------------- | ------------------------------------------------ |
+| Estimasi      | Perkiraan sebelum harga dengan vendor disepakati |
+| Realisasi     | Harga yang berlaku setelah disepakati            |
+| Dibayar       | Jumlah yang sudah dibayarkan ke vendor           |
+
+Nilai komitmen sebuah pos adalah realisasi bila realisasi lebih dari nol, selain itu estimasi. Dengan begitu pos yang harganya sudah pasti tidak lagi dihitung dari angka perkiraan. Status bayar mengikuti perbandingan dibayar terhadap komitmen: **Lunas**, **Dibayar sebagian**, atau **Belum dibayar**.
+
+Sisa tagihan dihitung per pos sebagai komitmen dikurangi dibayar, dan tidak pernah negatif. Kelebihan bayar pada satu pos tidak menutupi kekurangan pos lain, sehingga total sisa tagihan tetap menunjukkan jumlah yang masih harus dibayar.
+
+Pagu total opsional. Bila pagu diisi, dashboard menampilkan sisa pagu; bila komitmen melewati pagu, kartu ditandai dan labelnya berubah menjadi **Lewat pagu**.
+
+Pos yang punya tanggal jatuh tempo dan belum lunas muncul pada daftar pengingat jika tersisa 30 hari atau kurang, diurutkan dari yang paling dekat. Tanggal yang sudah lewat ditandai beserta jumlah hari keterlambatan. Perhitungan jatuh tempo memakai acuan WITA.
+
+Tombol **Isi kerangka pawiwahan** menambahkan 20 pos yang lazim pada rangkaian pawiwahan Bali dengan nilai nol; angka diisi sendiri setelah menawar dengan vendor. Pos yang namanya sudah ada dilewati, jadi tombol ini aman dijalankan ulang tanpa menggandakan daftar.
+
+**Ekspor CSV** mengunduh `anggaran-pernikahan.csv` berisi kategori, pos, penanggung, vendor, estimasi, realisasi, dibayar, kekurangan, status, jatuh tempo, dan catatan. File memakai BOM UTF-8 agar Excel membaca karakter Indonesia dengan benar, dan nilai yang diawali tanda rumus dinetralkan agar aman dibuka di spreadsheet.
+
+| Endpoint                 | Metode | Kegunaan                                   |
+| ------------------------ | ------ | ------------------------------------------ |
+| `/api/budget`            | GET    | Daftar pos, pagu, dan ringkasan            |
+| `/api/budget`            | POST   | Tambah pos anggaran                        |
+| `/api/budget/{id}`       | POST   | Ubah pos anggaran                          |
+| `/api/budget/{id}`       | DELETE | Hapus pos anggaran                         |
+| `/api/budget/settings`   | POST   | Simpan pagu total                          |
+| `/api/budget/template`   | POST   | Isi kerangka pawiwahan tanpa duplikasi pos |
+| `/api/budget/export.csv` | GET    | Unduh anggaran sebagai CSV                 |
+
+Batas yang berlaku: maksimal **200 pos** anggaran, nilai disimpan sebagai **rupiah bulat** tanpa pecahan sen, dan anggaran hanya dapat diakses pemilik yang sudah masuk.
 
 ## Tema dan aset desain
 
