@@ -7,6 +7,8 @@ import { getDashboardData } from "../../server/services";
 import { getBudget } from "../../server/budget";
 import {
   BUDGET_CATEGORIES,
+  BUDGET_BEARERS,
+  BEARER_LABELS,
   CATEGORY_LABELS,
 } from "../../modules/invitations/domain/budget";
 import "../../styles/dashboard.css";
@@ -424,7 +426,23 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
             <button type="submit" class="dash-button secondary">
               Simpan pagu
             </button>
+            <button
+              type="button"
+              class="dash-button secondary"
+              id="budget-template"
+            >
+              Isi kerangka pawiwahan
+            </button>
+            <a
+              class="dash-button secondary"
+              href="/api/budget/export.csv"
+              download
+            >
+              Ekspor CSV
+            </a>
           </form>
+          <div id="budget-due" class="budget-due" hidden></div>
+          <div id="budget-bearers" class="budget-bearers"></div>
 
           <div class="budget-stats" id="budget-stats">
             <article>
@@ -463,6 +481,14 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
                     <option value={category}>
                       {CATEGORY_LABELS[category]}
                     </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Penanggung
+                <select name="bearer">
+                  {BUDGET_BEARERS.map((bearer) => (
+                    <option value={bearer}>{BEARER_LABELS[bearer]}</option>
                   ))}
                 </select>
               </label>

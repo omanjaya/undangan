@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  budgetToCsv,
   budgetItemInputSchema,
   committedAmount,
   paymentStatus,
@@ -10,6 +11,7 @@ import {
 const item = (over: Partial<BudgetItem>): BudgetItem => ({
   id: over.id || "x",
   category: "lainnya",
+  bearer: "bersama",
   name: "Pos",
   vendor: "",
   estimate: 0,
@@ -79,5 +81,51 @@ describe("anggaran pernikahan", () => {
     );
     expect(summary.overCap).toBe(true);
     expect(summary.byCategory.map((g) => g.category)).toEqual(["upakara"]);
+  });
+});
+describe("penanggung, jatuh tempo, dan ekspor", () => {
+  const hariIni = new Date("2026-09-20T08:00:00+08:00");
+  it("merekap per keluarga penanggung", () => {
+    const summary = summarizeBudget(
+      [
+        item({ id: "a", bearer: "pria", estimate: 1000, paid: 400 }),
+        item({ id: "b", bearer: "wanita", estimate: 600, paid: 600 }),
+      ],
+      { cap: 0 },
+      hariIni,
+    );
+    expect(summary.byBearer.map((g) => g.bearer)).toEqual(["pria", "wanita"]);
+    expect(summary.byBearer[0].outstanding).toBe(600);
+    expect(summary.byBearer[1].outstanding).toBe(0);
+  });
+  it("mengingatkan pos belum lunas yang mendekat dan yang lewat", () => {
+    const summary = summarizeBudget(
+      [
+        item({ id: "a", name: "Lewat", estimate: 500, dueDate: "2026-09-10" }),
+        item({ id: "b", name: "Dekat", estimate: 500, dueDate: "2026-09-25" }),
+        item({ id: "c", name: "Jauh", estimate: 500, dueDate: "2026-12-01" }),
+        item({
+          id: "d",
+          name: "Sudah lunas",
+          estimate: 500,
+          paid: 500,
+          dueDate: "2026-09-21",
+        }),
+      ],
+      { cap: 0 },
+      hariIni,
+    );
+    expect(summary.dueSoon.map((i) => i.name)).toEqual(["Lewat", "Dekat"]);
+    expect(summary.overdue).toBe(1);
+    expect(summary.dueSoon[0].daysLeft).toBeLessThan(0);
+  });
+  it("mengekspor CSV dan menetralkan nilai yang diawali rumus", () => {
+    const csv = budgetToCsv([
+      item({ id: "a", name: "=cmd|calc", estimate: 1000, paid: 250 }),
+    ]);
+    expect(csv.startsWith("﻿")).toBe(true);
+    expect(csv).toContain('"Kategori"');
+    expect(csv).toContain('"\'=cmd|calc"');
+    expect(csv).toContain('"750"');
   });
 });

@@ -6,7 +6,9 @@ import {
 import {
   budgetItemInputSchema,
   budgetSettingsSchema,
+  budgetToCsv,
   summarizeBudget,
+  BUDGET_TEMPLATE,
   type BudgetItem,
 } from "../modules/invitations/domain/budget";
 import {
@@ -96,4 +98,38 @@ export async function saveBudgetSettings(actor: Actor | null, input: unknown) {
     state.budgetSettings = settings;
     return settings;
   });
+}
+
+/**
+ * Mengisi kerangka pos pawiwahan. Pos yang namanya sudah ada dilewati agar
+ * aman dijalankan ulang tanpa menggandakan daftar.
+ */
+export async function applyBudgetTemplate(actor: Actor | null) {
+  return mutateState((state) => {
+    requireWorkspace(state, actor);
+    state.budget ??= [];
+    const existing = new Set(
+      state.budget.map((i) => i.name.trim().toLowerCase()),
+    );
+    const now = new Date().toISOString();
+    let added = 0;
+    for (const entry of BUDGET_TEMPLATE) {
+      if (existing.has(entry.name.toLowerCase())) continue;
+      if (state.budget.length >= MAX_ITEMS) break;
+      state.budget.push({
+        ...budgetItemInputSchema.parse(entry),
+        id: randomUUID(),
+        createdAt: now,
+        updatedAt: now,
+      });
+      added++;
+    }
+    return { added, total: state.budget.length };
+  });
+}
+
+export async function exportBudgetCsv(actor: Actor | null) {
+  const state = await readState();
+  requireWorkspace(state, actor);
+  return budgetToCsv(sorted(state.budget ?? []));
 }

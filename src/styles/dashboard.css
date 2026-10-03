@@ -1890,3 +1890,56 @@ td {
 .budget-edit .form-grid {
   margin-bottom: 12px;
 }
+
+.budget-due {
+  padding: 14px 16px;
+  border: 1px solid #c9a227;
+  border-radius: 6px;
+  background: #fdfaef;
+  margin-bottom: 18px;
+}
+.budget-due h3 {
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.budget-due ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.budget-due li {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.budget-due li.is-overdue {
+  color: #a14737;
+}
+.budget-bearers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.budget-bearers h3 {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.budget-bearers article {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+.budget-bearers strong {
+  font-size: 13px;
+}
+.budget-bearers span {
+  font-size: 11px;
+  color: var(--muted);
+}

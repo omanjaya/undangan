@@ -1,5 +1,7 @@
 import {
   BUDGET_CATEGORIES,
+  BUDGET_BEARERS,
+  BEARER_LABELS,
   CATEGORY_LABELS,
   committedAmount,
   paymentStatus,
@@ -13,6 +15,10 @@ if (section) {
   const capForm = document.querySelector<HTMLFormElement>("#budget-cap-form")!;
   const error = document.querySelector<HTMLElement>("#budget-error")!;
   const stats = document.querySelector<HTMLElement>("#budget-stats")!;
+  const due = document.querySelector<HTMLElement>("#budget-due")!;
+  const bearers = document.querySelector<HTMLElement>("#budget-bearers")!;
+  const templateButton =
+    document.querySelector<HTMLButtonElement>("#budget-template")!;
   const toast = document.querySelector<HTMLElement>("#toast");
 
   const rupiah = (value: number) =>
@@ -54,6 +60,7 @@ if (section) {
   function itemPayload(data: FormData) {
     return {
       category: String(data.get("category") || "lainnya"),
+      bearer: String(data.get("bearer") || "bersama"),
       name: String(data.get("name") || "").trim(),
       vendor: String(data.get("vendor") || "").trim(),
       estimate: amount(data, "estimate"),
@@ -98,6 +105,64 @@ if (section) {
     }
   }
 
+  function renderBearers(
+    groups: {
+      label: string;
+      committed: number;
+      paid: number;
+      outstanding: number;
+    }[],
+  ) {
+    bearers.replaceChildren();
+    if (groups.length < 2) return;
+    const heading = document.createElement("h3");
+    heading.textContent = "Pembagian antar keluarga";
+    bearers.append(heading);
+    groups.forEach((group) => {
+      const card = document.createElement("article");
+      const name = document.createElement("strong");
+      name.textContent = group.label;
+      const detail = document.createElement("span");
+      detail.textContent = `${rupiah(group.committed)} · dibayar ${rupiah(
+        group.paid,
+      )} · sisa ${rupiah(group.outstanding)}`;
+      card.append(name, detail);
+      bearers.append(card);
+    });
+  }
+
+  function renderDue(
+    entries: {
+      name: string;
+      dueDate: string;
+      outstanding: number;
+      daysLeft: number;
+    }[],
+  ) {
+    due.replaceChildren();
+    due.hidden = entries.length === 0;
+    if (!entries.length) return;
+    const heading = document.createElement("h3");
+    heading.textContent = "Pembayaran yang perlu diingat";
+    due.append(heading);
+    const list = document.createElement("ul");
+    entries.forEach((entry) => {
+      const li = document.createElement("li");
+      const lewat = entry.daysLeft < 0;
+      li.className = lewat ? "is-overdue" : "";
+      const tanggal = new Intl.DateTimeFormat("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(`${entry.dueDate}T00:00:00+08:00`));
+      li.textContent = lewat
+        ? `${entry.name} — lewat ${Math.abs(entry.daysLeft)} hari (${tanggal}), kurang ${rupiah(entry.outstanding)}`
+        : `${entry.name} — ${entry.daysLeft} hari lagi (${tanggal}), kurang ${rupiah(entry.outstanding)}`;
+      list.append(li);
+    });
+    due.append(list);
+  }
+
   function field(
     labelText: string,
     name: string,
@@ -132,6 +197,7 @@ if (section) {
     meta.className = "budget-meta";
     meta.textContent = [
       CATEGORY_LABELS[item.category],
+      BEARER_LABELS[item.bearer],
       item.vendor,
       item.dueDate
         ? `Jatuh tempo ${new Intl.DateTimeFormat("id-ID", {
@@ -221,8 +287,22 @@ if (section) {
       });
       categoryLabel.append(select);
 
+      const bearerLabel = document.createElement("label");
+      bearerLabel.textContent = "Penanggung";
+      const bearerSelect = document.createElement("select");
+      bearerSelect.name = "bearer";
+      BUDGET_BEARERS.forEach((bearer) => {
+        const option = document.createElement("option");
+        option.value = bearer;
+        option.textContent = BEARER_LABELS[bearer];
+        option.selected = bearer === item.bearer;
+        bearerSelect.append(option);
+      });
+      bearerLabel.append(bearerSelect);
+
       grid.append(
         categoryLabel,
+        bearerLabel,
         field("Nama pos", "name", item.name),
         field("Vendor / pelaksana", "vendor", item.vendor),
         field("Estimasi (Rp)", "estimate", String(item.estimate), "number"),
@@ -302,6 +382,8 @@ if (section) {
         );
       }
       renderStats(data.summary);
+      renderBearers(data.summary.byBearer);
+      renderDue(data.summary.dueSoon);
     } catch (e) {
       notify((e as Error).message, true);
     }
@@ -341,6 +423,29 @@ if (section) {
       notify((e as Error).message, true);
     } finally {
       button.disabled = false;
+    }
+  });
+
+  templateButton.addEventListener("click", async () => {
+    if (
+      !window.confirm(
+        "Tambahkan kerangka pos pawiwahan Bali? Pos dengan nama yang sudah ada dilewati.",
+      )
+    )
+      return;
+    templateButton.disabled = true;
+    try {
+      const result = await send("/api/budget/template", "POST", {});
+      notify(
+        result.added
+          ? `${result.added} pos ditambahkan.`
+          : "Semua pos kerangka sudah ada.",
+      );
+      await load();
+    } catch (e) {
+      notify((e as Error).message, true);
+    } finally {
+      templateButton.disabled = false;
     }
   });
 
