@@ -8,6 +8,12 @@ import {
   type Rsvp,
   type Wish,
 } from "../domain/invitation";
+import {
+  budgetItemInputSchema,
+  budgetSettingsSchema,
+  type BudgetItem,
+  type BudgetSettings,
+} from "../domain/budget";
 export type MediaAsset = {
   id: string;
   workspaceId: string;
@@ -28,6 +34,9 @@ export type State = {
   invitation?: Invitation;
   invitations: Invitation[];
   rsvps: (Rsvp & { visitorId: string })[];
+  /** Anggaran berlaku untuk satu pernikahan, bukan per undangan. */
+  budget?: BudgetItem[];
+  budgetSettings?: BudgetSettings;
   wishes: Wish[];
   revisions: {
     invitationId?: string;
@@ -40,6 +49,8 @@ const initial = (): State => ({
   invitations: [structuredClone(demoInvitation)],
   rsvps: [],
   wishes: [],
+  budget: [],
+  budgetSettings: { cap: 0 },
   revisions: [
     {
       invitationId: demoInvitation.id,
@@ -113,5 +124,10 @@ export function normalizeState(state: State): State {
     content: contentSchema.parse(revision.content),
   }));
   state.assets ??= [];
+  state.budget = (state.budget ?? []).map((item) => ({
+    ...item,
+    ...budgetItemInputSchema.parse(item),
+  }));
+  state.budgetSettings = budgetSettingsSchema.parse(state.budgetSettings ?? {});
   return state;
 }

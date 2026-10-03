@@ -1,0 +1,75 @@
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+let budget: typeof import("./budget");
+let directory: string;
+const actor = {
+  id: "owner",
+  workspaceId: "workspace-demo",
+  email: "owner@example.test",
+};
+const asing = { ...actor, workspaceId: "lain" };
+beforeAll(async () => {
+  directory = await mkdtemp(join(tmpdir(), "budget-test-"));
+  process.env.DATA_DIR = directory;
+  delete process.env.DATABASE_URL;
+  budget = await import("./budget");
+});
+afterAll(async () => {
+  await rm(directory, { recursive: true, force: true });
+});
+describe("anggaran ruang kerja", () => {
+  it("menolak akses tanpa sesi dan dari ruang kerja lain", async () => {
+    await expect(budget.getBudget(null)).rejects.toThrow();
+    await expect(budget.getBudget(asing)).rejects.toThrow();
+    await expect(
+      budget.addBudgetItem(asing, { name: "Banten" }),
+    ).rejects.toThrow();
+  });
+  it("menambah pos lalu menghitung ringkasan", async () => {
+    const dibuat = await budget.addBudgetItem(actor, {
+      category: "upakara",
+      name: "Banten pawiwahan",
+      estimate: 15000000,
+      paid: 5000000,
+    });
+    expect(dibuat.id).toBeTruthy();
+    await budget.addBudgetItem(actor, {
+      category: "katering",
+      name: "Prasmanan 300 porsi",
+      estimate: 30000000,
+      actual: 32000000,
+      paid: 32000000,
+    });
+    const hasil = await budget.getBudget(actor);
+    expect(hasil.items.length).toBe(2);
+    expect(hasil.summary.committed).toBe(47000000);
+    expect(hasil.summary.paid).toBe(37000000);
+    expect(hasil.summary.outstanding).toBe(10000000);
+  });
+  it("menyimpan pagu dan menandai pelampauan", async () => {
+    await budget.saveBudgetSettings(actor, { cap: 40000000 });
+    const hasil = await budget.getBudget(actor);
+    expect(hasil.settings.cap).toBe(40000000);
+    expect(hasil.summary.overCap).toBe(true);
+  });
+  it("mengubah dan menghapus pos, menolak id tak dikenal", async () => {
+    const { items } = await budget.getBudget(actor);
+    const target = items[0];
+    const diubah = await budget.updateBudgetItem(actor, target.id, {
+      ...target,
+      paid: 15000000,
+    });
+    expect(diubah.paid).toBe(15000000);
+    expect(diubah.createdAt).toBe(target.createdAt);
+    await expect(
+      budget.updateBudgetItem(actor, "tidak-ada", { name: "X" }),
+    ).rejects.toThrow("tidak ditemukan");
+    await budget.removeBudgetItem(actor, target.id);
+    expect((await budget.getBudget(actor)).items.length).toBe(1);
+    await expect(budget.removeBudgetItem(actor, target.id)).rejects.toThrow(
+      "tidak ditemukan",
+    );
+  });
+});

@@ -4,6 +4,11 @@ import InvitationEditor from "../../components/dashboard/InvitationEditor.astro"
 import Icon from "../../components/Icon.astro";
 import { getActor } from "../../server/auth";
 import { getDashboardData } from "../../server/services";
+import { getBudget } from "../../server/budget";
+import {
+  BUDGET_CATEGORIES,
+  CATEGORY_LABELS,
+} from "../../modules/invitations/domain/budget";
 import "../../styles/dashboard.css";
 const actor = await getActor(Astro.request);
 if (!actor) return Astro.redirect("/login");
@@ -11,6 +16,13 @@ Astro.response.headers.set("Cache-Control", "private, no-store");
 const selected = Astro.url.searchParams.get("undangan") || undefined;
 const { invitation, invitations, stats, rsvps, wishes } =
   await getDashboardData(actor, selected);
+const budget = await getBudget(actor);
+const rupiah = (value: number) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value);
 const c = invitation.draft;
 const eventDate = new Intl.DateTimeFormat("id-ID", {
   day: "numeric",
@@ -41,6 +53,10 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
         <a href="#wishes">
           <Icon name="heart" size={19} /> Ucapan{" "}
           <span>{stats.pendingWishes}</span>
+        </a>
+        <a href="#budget">
+          <Icon name="shield" size={19} /> Anggaran{" "}
+          <span>{budget.summary.items}</span>
         </a>
       </nav>
       <div class="sidebar-note">
@@ -380,6 +396,136 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
             )}
           </div>
         </section>
+        <section id="budget" class="dashboard-section">
+          <div class="dash-section-heading">
+            <div>
+              <span class="dash-kicker">RENCANA & REALISASI</span>
+              <h2>Anggaran pernikahan</h2>
+            </div>
+            <span class="count-label">{budget.summary.items} pos</span>
+          </div>
+          <p class="budget-intro">
+            Anggaran berlaku untuk satu pernikahan, dipakai bersama oleh semua
+            undangan di ruang ini.
+          </p>
+
+          <form class="budget-cap" id="budget-cap-form">
+            <label>
+              Pagu total (Rp)
+              <input
+                type="number"
+                name="cap"
+                min="0"
+                step="1000"
+                value={budget.settings.cap || ""}
+                placeholder="0"
+              />
+            </label>
+            <button type="submit" class="dash-button secondary">
+              Simpan pagu
+            </button>
+          </form>
+
+          <div class="budget-stats" id="budget-stats">
+            <article>
+              <span>Estimasi</span>
+              <strong>{rupiah(budget.summary.estimate)}</strong>
+            </article>
+            <article>
+              <span>Komitmen</span>
+              <strong>{rupiah(budget.summary.committed)}</strong>
+            </article>
+            <article>
+              <span>Sudah dibayar</span>
+              <strong>{rupiah(budget.summary.paid)}</strong>
+            </article>
+            <article class={budget.summary.outstanding ? "is-warning" : ""}>
+              <span>Sisa tagihan</span>
+              <strong>{rupiah(budget.summary.outstanding)}</strong>
+            </article>
+            <article class={budget.summary.overCap ? "is-danger" : ""}>
+              <span>{budget.summary.overCap ? "Lewat pagu" : "Sisa pagu"}</span>
+              <strong>
+                {budget.settings.cap
+                  ? rupiah(Math.abs(budget.summary.remainingCap))
+                  : "Belum diatur"}
+              </strong>
+            </article>
+          </div>
+
+          <form class="budget-form" id="budget-form">
+            <h3>Tambah pos anggaran</h3>
+            <div class="form-grid">
+              <label>
+                Kategori
+                <select name="category">
+                  {BUDGET_CATEGORIES.map((category) => (
+                    <option value={category}>
+                      {CATEGORY_LABELS[category]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Nama pos
+                <input
+                  name="name"
+                  required
+                  maxlength="120"
+                  placeholder="Banten pawiwahan"
+                />
+              </label>
+              <label>
+                Vendor / pelaksana
+                <input name="vendor" maxlength="120" placeholder="Opsional" />
+              </label>
+              <label>
+                Estimasi (Rp)
+                <input
+                  type="number"
+                  name="estimate"
+                  min="0"
+                  step="1000"
+                  value="0"
+                />
+              </label>
+              <label>
+                Realisasi (Rp)
+                <input
+                  type="number"
+                  name="actual"
+                  min="0"
+                  step="1000"
+                  value="0"
+                />
+              </label>
+              <label>
+                Sudah dibayar (Rp)
+                <input
+                  type="number"
+                  name="paid"
+                  min="0"
+                  step="1000"
+                  value="0"
+                />
+              </label>
+              <label>
+                Jatuh tempo
+                <input type="date" name="dueDate" />
+              </label>
+              <label>
+                Catatan
+                <input name="note" maxlength="500" placeholder="Opsional" />
+              </label>
+            </div>
+            <button type="submit" class="dash-button">
+              Tambah pos
+            </button>
+            <p id="budget-error" role="alert"></p>
+          </form>
+
+          <div id="budget-list" class="budget-list"></div>
+        </section>
         <footer class="dashboard-footer">
           <span>temu.</span> Dibuat untuk cerita yang berarti.
         </footer>
@@ -390,4 +536,5 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
 </BaseLayout>
 <script>
   import "../../components/dashboard/editor";
+  import "../../components/dashboard/budget";
 </script>
