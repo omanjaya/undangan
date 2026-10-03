@@ -9,7 +9,7 @@ const item = (over: Partial<BudgetItem>): BudgetItem => ({
   name: "Pos",
   vendor: "",
   estimate: 0,
-  actual: 0,
+  actual: null,
   paid: 0,
   dueDate: "",
   note: "",
@@ -144,5 +144,42 @@ describe("impor anggaran dari CSV", () => {
     expect(parsed).toHaveLength(BUDGET_IMPORT_MAX_ROWS);
     expect(errors).toHaveLength(1);
     expect(errors[0]?.message).toContain(String(BUDGET_IMPORT_MAX_ROWS));
+  });
+});
+describe("perbaikan hasil audit", () => {
+  const head =
+    "Kategori,Pos,Penanggung,Vendor,Estimasi,Realisasi,Dibayar,Kekurangan,Status,Jatuh tempo,Catatan";
+  // Nilai dikutip karena pemisah ribuan koma sendiri adalah pemisah kolom CSV.
+  const estimasi = (nilai: string) =>
+    parseBudgetCsv(`${head}\nkatering,Pos,bersama,,"${nilai}",,0,0,belum,,`);
+
+  it("membedakan pemisah ribuan dari titik desimal", () => {
+    // Spreadsheet berlokal Inggris menulis "1500.00"; dulu terbaca 150000.
+    expect(estimasi("1500.00").items[0].estimate).toBe(1500);
+    expect(estimasi("0.5").items[0].estimate).toBe(1);
+    expect(estimasi("18.000.000").items[0].estimate).toBe(18000000);
+    expect(estimasi("18,000,000").items[0].estimate).toBe(18000000);
+    expect(estimasi("1,500.75").items[0].estimate).toBe(1501);
+    expect(estimasi("Rp 2.500.000").items[0].estimate).toBe(2500000);
+  });
+  it("menolak nilai yang bukan angka", () => {
+    expect(estimasi("abc").items).toHaveLength(0);
+    expect(estimasi("5e3").items).toHaveLength(0);
+  });
+  it("tidak memasukkan baris header asing sebagai pos", () => {
+    const hasil = parseBudgetCsv("Nama,Jumlah\nBanten,5000");
+    expect(hasil.items.map((i) => i.name)).not.toContain("Jumlah");
+    expect(hasil.items.map((i) => i.name)).not.toContain("5000");
+  });
+  it("tidak terpancing nama milik prototipe objek", () => {
+    const hasil = parseBudgetCsv("constructor,__proto__\nBanten,5000");
+    expect(hasil.items.every((i) => typeof i.name === "string")).toBe(true);
+    expect(Object.hasOwn({}, "polusi")).toBe(false);
+  });
+  it("memulihkan apostrof pengguna lewat ekspor lalu impor", () => {
+    const hasil = parseBudgetCsv(
+      budgetToCsv([item({ name: "'catatan manual" })]),
+    );
+    expect(hasil.items[0].name).toBe("'catatan manual");
   });
 });

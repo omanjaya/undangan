@@ -73,3 +73,57 @@ describe("anggaran ruang kerja", () => {
     );
   });
 });
+describe("perbaikan hasil audit", () => {
+  it("payload sebagian hanya mengubah kolom yang dikirim", async () => {
+    const dibuat = await budget.addBudgetItem(actor, {
+      category: "katering",
+      name: "Prasmanan",
+      vendor: "Dapur Bali",
+      estimate: 30000000,
+      actual: 32000000,
+      paid: 10000000,
+      dueDate: "2026-10-01",
+      note: "cicil dua kali",
+    });
+    const diubah = await budget.updateBudgetItem(actor, dibuat.id, {
+      name: "Prasmanan 300 porsi",
+    });
+    expect(diubah.name).toBe("Prasmanan 300 porsi");
+    expect(diubah.vendor).toBe("Dapur Bali");
+    expect(diubah.estimate).toBe(30000000);
+    expect(diubah.actual).toBe(32000000);
+    expect(diubah.paid).toBe(10000000);
+    expect(diubah.dueDate).toBe("2026-10-01");
+    expect(diubah.note).toBe("cicil dua kali");
+  });
+  it("menolak simpanan yang menimpa perubahan orang lain", async () => {
+    const dibuat = await budget.addBudgetItem(actor, { name: "Penjor" });
+    // Cap waktu usang mewakili tab lain yang memuat pos sebelum diubah.
+    await expect(
+      budget.updateBudgetItem(actor, dibuat.id, {
+        paid: 2000,
+        expectedUpdatedAt: "2020-01-01T00:00:00.000Z",
+      }),
+    ).rejects.toThrow("diubah di tempat lain");
+    const segar = await budget.updateBudgetItem(actor, dibuat.id, {
+      paid: 2000,
+      expectedUpdatedAt: dibuat.updatedAt,
+    });
+    expect(segar.paid).toBe(2000);
+  });
+  it("impor dapat melewati pos yang namanya sudah ada", async () => {
+    const csv = await budget.exportBudgetCsv(actor);
+    const ulang = await budget.importBudgetCsv(actor, csv, {
+      skipExisting: true,
+    });
+    expect(ulang.added).toBe(0);
+    expect(ulang.skipped).toBeGreaterThan(0);
+    const ganda = await budget.importBudgetCsv(actor, csv);
+    expect(ganda.added).toBeGreaterThan(0);
+  });
+  it("menolak CSV kosong", async () => {
+    await expect(budget.importBudgetCsv(actor, "   ")).rejects.toThrow(
+      "kosong",
+    );
+  });
+});

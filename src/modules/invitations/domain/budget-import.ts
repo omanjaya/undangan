@@ -88,8 +88,13 @@ type Row = { line: number; cells: string[] };
  * dibuka di spreadsheet; apostrof itu dilepas kembali supaya hasil ekspor
  * sendiri bisa diimpor utuh.
  */
+/**
+ * Ekspor menambahkan apostrof di depan nilai yang diawali karakter rumus, dan
+ * menggandakan apostrof yang memang ditulis pengguna. Keduanya dilepas satu
+ * lapis di sini supaya ekspor lalu impor mengembalikan teks aslinya.
+ */
 function unescapeCell(value: string) {
-  return /^'[=+\-@\t\r]/.test(value) ? value.slice(1) : value;
+  return /^'(?:[=+\-@\t\r]|')/.test(value) ? value.slice(1) : value;
 }
 
 function parseRows(text: string): Row[] {
@@ -161,29 +166,50 @@ function parseRows(text: string): Row[] {
 }
 
 function isHeader(cells: string[]) {
-  const known = cells.filter((value) => {
+  // Satu nama kolom yang cocok sudah cukup: memperlakukan header asing sebagai
+  // data akan memasukkan judul kolom ke anggaran sebagai pos.
+  return cells.some((value) => {
     const name = normalize(unescapeCell(value));
-    return name in COLUMN_NAMES || COMPUTED_COLUMNS.has(name);
+    return Object.hasOwn(COLUMN_NAMES, name) || COMPUTED_COLUMNS.has(name);
   });
-  return known.length >= 2;
 }
 
 function columnsFromHeader(cells: string[]): (Field | null)[] {
-  return cells.map(
-    (value) => COLUMN_NAMES[normalize(unescapeCell(value))] ?? null,
-  );
+  return cells.map((value) => {
+    const name = normalize(unescapeCell(value));
+    return Object.hasOwn(COLUMN_NAMES, name) ? COLUMN_NAMES[name] : null;
+  });
 }
 
-/** Terima "18000000", "18.000.000", "Rp 18.000.000", dan sel kosong sebagai nol. */
+/**
+ * Terima "18000000", "18.000.000", "Rp 18.000.000", "1,500.75", dan sel kosong.
+ * Pemisah hanya dianggap ribuan bila mengelompokkan tepat tiga digit; satu
+ * pemisah dengan satu atau dua digit di belakangnya adalah desimal. Tanpa
+ * pembedaan ini, "1500.00" dari spreadsheet berlokal Inggris terbaca 150000.
+ */
 function parseRupiah(raw: string): number | null {
-  const text = raw.trim();
-  if (!text) return 0;
-  const digits = text
+  const text = raw
+    .trim()
     .replace(/^rp\.?/i, "")
-    .replace(/[\s .]/g, "")
-    .replace(",", ".");
-  if (!/^\d+(\.\d+)?$/.test(digits)) return null;
-  return Math.round(Number(digits));
+    .replace(/[\s\u00a0]/g, "");
+  if (!text) return 0;
+  if (/^\d+$/.test(text)) return Number(text);
+  for (const [grup, desimal] of [
+    [".", ","],
+    [",", "."],
+  ] as const) {
+    const pola = new RegExp(
+      `^\\d{1,3}(\\${grup}\\d{3})+(\\${desimal}\\d{1,2})?$`,
+    );
+    if (pola.test(text))
+      return Math.round(
+        Number(text.split(grup).join("").replace(desimal, ".")),
+      );
+  }
+  const desimalSaja = text.match(/^(\d+)[.,](\d{1,2})$/);
+  if (desimalSaja)
+    return Math.round(Number(`${desimalSaja[1]}.${desimalSaja[2]}`));
+  return null;
 }
 
 /** Spreadsheet Indonesia sering menulis tanggal sebagai hari dulu. */
@@ -261,7 +287,9 @@ export function parseBudgetCsv(text: string): BudgetImportResult {
       });
     }
 
-    const amounts: Partial<Record<"estimate" | "actual" | "paid", number>> = {};
+    const amounts: Partial<
+      Record<"estimate" | "actual" | "paid", number | null>
+    > = {};
     const labels = {
       estimate: "Estimasi",
       actual: "Realisasi",
@@ -270,6 +298,11 @@ export function parseBudgetCsv(text: string): BudgetImportResult {
     let broken = false;
     for (const field of ["estimate", "actual", "paid"] as const) {
       const raw = cell(field);
+      // Realisasi yang dibiarkan kosong berarti belum dicatat, bukan nol.
+      if (field === "actual" && !raw.trim()) {
+        amounts.actual = null;
+        continue;
+      }
       const value = parseRupiah(raw);
       if (value === null) {
         errors.push({

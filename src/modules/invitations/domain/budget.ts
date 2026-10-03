@@ -33,12 +33,22 @@ export const CATEGORY_LABELS: Record<
 };
 
 /** Rupiah disimpan sebagai bilangan bulat; pecahan sen tidak dipakai. */
-const rupiah = z.coerce
+const rupiahBase = z.coerce
   .number()
   .int("Gunakan angka bulat dalam rupiah.")
   .min(0, "Nilai tidak boleh negatif.")
-  .max(100_000_000_000, "Nilai terlalu besar.")
-  .default(0);
+  .max(100_000_000_000, "Nilai terlalu besar.");
+
+const rupiah = rupiahBase.default(0);
+
+/**
+ * `null` berarti realisasi belum dicatat, berbeda dari `0` yang berarti pos
+ * benar-benar tidak jadi mengeluarkan biaya. Tanpa pembedaan ini, pos yang
+ * dibatalkan tetap dihitung sebesar estimasinya.
+ */
+const rupiahOpsional = z
+  .union([z.null(), z.literal("").transform(() => null), rupiahBase])
+  .default(null);
 
 /**
  * Di Bali biaya pawiwahan lazim dipikul bersama kedua keluarga dengan
@@ -58,10 +68,10 @@ export const budgetItemInputSchema = z.object({
   name: z.string().trim().min(1, "Nama pos wajib diisi.").max(120),
   vendor: z.string().trim().max(120).default(""),
   estimate: rupiah,
-  actual: rupiah,
+  actual: rupiahOpsional,
   paid: rupiah,
   dueDate: z
-    .union([z.iso.date(), z.literal("")])
+    .union([z.iso.date("Tanggal harus berformat YYYY-MM-DD."), z.literal("")])
     .default("")
     .describe("Tanggal jatuh tempo pembayaran, format YYYY-MM-DD."),
   note: z.string().trim().max(500).default(""),
@@ -87,7 +97,7 @@ export type BudgetSettings = z.infer<typeof budgetSettingsSchema>;
  * dihitung dari angka perkiraan.
  */
 export function committedAmount(item: Pick<BudgetItem, "estimate" | "actual">) {
-  return item.actual > 0 ? item.actual : item.estimate;
+  return item.actual !== null ? item.actual : item.estimate;
 }
 
 export type PaymentStatus = "lunas" | "sebagian" | "belum";
@@ -96,7 +106,9 @@ export function paymentStatus(
   item: Pick<BudgetItem, "estimate" | "actual" | "paid">,
 ): PaymentStatus {
   const committed = committedAmount(item);
-  if (committed > 0 && item.paid >= committed) return "lunas";
+  // Pos yang belum diisi sama sekali bukan "lunas", meski nol memenuhi nol.
+  if (committed === 0 && item.paid === 0) return "belum";
+  if (item.paid >= committed) return "lunas";
   return item.paid > 0 ? "sebagian" : "belum";
 }
 
@@ -115,7 +127,7 @@ export function summarizeBudget(
   today = new Date(),
 ) {
   const estimate = items.reduce((n, i) => n + i.estimate, 0);
-  const actual = items.reduce((n, i) => n + i.actual, 0);
+  const actual = items.reduce((n, i) => n + (i.actual ?? 0), 0);
   const committed = items.reduce((n, i) => n + committedAmount(i), 0);
   const paid = items.reduce((n, i) => n + i.paid, 0);
   // Kekurangan per pos tidak pernah negatif: lebih bayar pada satu pos tidak
@@ -160,7 +172,7 @@ export function summarizeBudget(
       outstanding: Math.max(committedAmount(i) - i.paid, 0),
       daysLeft: daysUntil(i.dueDate, today),
     }))
-    .filter((i) => i.daysLeft !== null && i.daysLeft <= 30)
+    .filter((i) => i.daysLeft !== null && i.daysLeft <= 30 && i.outstanding > 0)
     .sort((a, b) => a.daysLeft! - b.daysLeft!);
 
   return {
@@ -228,7 +240,13 @@ const CSV_HEADERS = [
 /** Nilai yang diawali tanda rumus dinetralkan agar aman dibuka di spreadsheet. */
 function csvCell(value: string | number) {
   const text = String(value);
-  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  // Apostrof yang memang ditulis pengguna digandakan supaya impor dapat
+  // membedakannya dari apostrof pengaman yang ditambahkan di sini.
+  const safe = /^[=+\-@\t\r]/.test(text)
+    ? `'${text}`
+    : text.startsWith("'")
+      ? `'${text}`
+      : text;
   return `"${safe.replace(/"/g, '""')}"`;
 }
 
@@ -240,7 +258,7 @@ export function budgetToCsv(items: BudgetItem[]) {
       BEARER_LABELS[item.bearer],
       item.vendor,
       item.estimate,
-      item.actual,
+      item.actual ?? "",
       item.paid,
       Math.max(committedAmount(item) - item.paid, 0),
       paymentStatus(item),

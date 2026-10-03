@@ -61,6 +61,12 @@ if (section) {
   const amount = (data: FormData, key: string) =>
     Number(String(data.get(key) ?? "").trim() || 0);
 
+  /** Realisasi yang dibiarkan kosong berarti belum dicatat, bukan nol. */
+  const optionalAmount = (data: FormData, key: string) => {
+    const raw = String(data.get(key) ?? "").trim();
+    return raw === "" ? null : Number(raw);
+  };
+
   function itemPayload(data: FormData) {
     return {
       category: String(data.get("category") || "lainnya"),
@@ -68,7 +74,7 @@ if (section) {
       name: String(data.get("name") || "").trim(),
       vendor: String(data.get("vendor") || "").trim(),
       estimate: amount(data, "estimate"),
-      actual: amount(data, "actual"),
+      actual: optionalAmount(data, "actual"),
       paid: amount(data, "paid"),
       dueDate: String(data.get("dueDate") || ""),
       note: String(data.get("note") || "").trim(),
@@ -254,7 +260,7 @@ if (section) {
       const dt = document.createElement("dt");
       dt.textContent = label;
       const dd = document.createElement("dd");
-      dd.textContent = rupiah(value);
+      dd.textContent = value === null ? "Belum dicatat" : rupiah(value);
       numbers.append(dt, dd);
     });
 
@@ -331,7 +337,12 @@ if (section) {
         field("Nama pos", "name", item.name),
         field("Vendor / pelaksana", "vendor", item.vendor),
         field("Estimasi (Rp)", "estimate", String(item.estimate), "number"),
-        field("Realisasi (Rp)", "actual", String(item.actual), "number"),
+        field(
+          "Realisasi (Rp)",
+          "actual",
+          item.actual === null ? "" : String(item.actual),
+          "number",
+        ),
         field("Sudah dibayar (Rp)", "paid", String(item.paid), "number"),
         field("Jatuh tempo", "dueDate", item.dueDate, "date"),
         field("Catatan", "note", item.note),
@@ -478,15 +489,27 @@ if (section) {
   importInput.addEventListener("change", async () => {
     const file = importInput.files?.[0];
     if (!file) return;
+    // Impor selalu menambah, jadi mengulang berkas yang sama akan menggandakan
+    // daftar bila pemilik tidak diberi pilihan.
+    const skipExisting = window.confirm(
+      `Impor "${file.name}". Lewati pos yang namanya sudah ada?\n\nOK = lewati duplikat · Batal = tambahkan semua baris.`,
+    );
     importInput.disabled = true;
     try {
       const result = await send("/api/budget/import", "POST", {
         csv: await file.text(),
+        skipExisting,
       });
-      const catatan = result.errors?.length
-        ? ` ${result.errors.length} baris dilewati.`
+      const dilewati = result.skipped
+        ? ` ${result.skipped} duplikat dilewati.`
         : "";
-      notify(`${result.added} pos diimpor.${catatan}`, !result.added);
+      const catatan = result.errors?.length
+        ? ` ${result.errors.length} baris bermasalah.`
+        : "";
+      notify(
+        `${result.added} pos diimpor.${dilewati}${catatan}`,
+        !result.added && !result.skipped,
+      );
       if (result.errors?.length)
         error.textContent = result.errors
           .slice(0, 5)

@@ -74,11 +74,37 @@ export async function updateBudgetItem(
   id: string,
   input: unknown,
 ) {
-  const data = budgetItemInputSchema.parse(input);
+  // Payload sebagian hanya mengubah kolom yang dikirim; memakai skema penuh
+  // akan mengosongkan kolom yang tidak disertakan karena semuanya punya
+  // nilai bawaan.
+  const { expectedUpdatedAt, ...rest } = (input ?? {}) as Record<
+    string,
+    unknown
+  >;
+  // `.partial()` saja tidak cukup: setiap kolom punya `.default()`, sehingga
+  // kunci yang tidak dikirim tetap terisi nilai bawaan dan menghapus data lama.
+  const dikirim = Object.keys(rest);
+  const tervalidasi = budgetItemInputSchema.partial().parse(rest) as Record<
+    string,
+    unknown
+  >;
+  const data = Object.fromEntries(
+    Object.entries(tervalidasi).filter(([kunci]) => dikirim.includes(kunci)),
+  );
   return mutateState((state) => {
     requireWorkspace(state, actor);
     const item = (state.budget ?? []).find((i) => i.id === id);
     if (!item) throw new DomainError("Pos anggaran tidak ditemukan.", 404);
+    // Dua orang menyunting anggaran dari perangkat berbeda tidak boleh saling
+    // menimpa diam-diam, seperti penguncian pada draft undangan.
+    if (
+      typeof expectedUpdatedAt === "string" &&
+      expectedUpdatedAt !== item.updatedAt
+    )
+      throw new DomainError(
+        "Pos ini baru saja diubah di tempat lain. Muat ulang sebelum menyimpan.",
+        409,
+      );
     Object.assign(item, data, { updatedAt: new Date().toISOString() });
     return item;
   });
@@ -143,7 +169,11 @@ export async function exportBudgetCsv(actor: Actor | null) {
  * tidak membawa id, jadi mencocokkan baris ke pos lama hanya lewat nama akan
  * menghapus perubahan yang dibuat lewat dashboard.
  */
-export async function importBudgetCsv(actor: Actor | null, text: unknown) {
+export async function importBudgetCsv(
+  actor: Actor | null,
+  text: unknown,
+  options: { skipExisting?: boolean } = {},
+) {
   if (typeof text !== "string" || !text.trim())
     throw new DomainError("Berkas CSV kosong.");
   const parsed = parseBudgetCsv(text);
@@ -152,8 +182,16 @@ export async function importBudgetCsv(actor: Actor | null, text: unknown) {
     state.budget ??= [];
     const errors: BudgetImportIssue[] = [...parsed.errors];
     const now = new Date().toISOString();
+    const existing = new Set(
+      state.budget.map((i) => i.name.trim().toLowerCase()),
+    );
     let added = 0;
+    let skipped = 0;
     for (const entry of parsed.items) {
+      if (options.skipExisting && existing.has(entry.name.toLowerCase())) {
+        skipped++;
+        continue;
+      }
       if (state.budget.length >= MAX_ITEMS) {
         errors.push({
           line: 0,
@@ -167,8 +205,9 @@ export async function importBudgetCsv(actor: Actor | null, text: unknown) {
         createdAt: now,
         updatedAt: now,
       });
+      existing.add(entry.name.toLowerCase());
       added++;
     }
-    return { added, total: state.budget.length, errors };
+    return { added, skipped, total: state.budget.length, errors };
   });
 }

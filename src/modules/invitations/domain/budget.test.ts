@@ -15,7 +15,7 @@ const item = (over: Partial<BudgetItem>): BudgetItem => ({
   name: "Pos",
   vendor: "",
   estimate: 0,
-  actual: 0,
+  actual: null,
   paid: 0,
   dueDate: "",
   note: "",
@@ -45,19 +45,25 @@ describe("anggaran pernikahan", () => {
         .success,
     ).toBe(false);
   });
-  it("memakai realisasi bila ada, selain itu estimasi", () => {
-    expect(committedAmount({ estimate: 10, actual: 0 })).toBe(10);
+  it("memakai realisasi bila sudah dicatat, selain itu estimasi", () => {
+    expect(committedAmount({ estimate: 10, actual: null })).toBe(10);
     expect(committedAmount({ estimate: 10, actual: 7 })).toBe(7);
+    // Pos yang batal: realisasi nol yang disengaja, bukan kembali ke estimasi.
+    expect(committedAmount({ estimate: 10, actual: 0 })).toBe(0);
   });
   it("menentukan status bayar dari nilai komitmen", () => {
-    expect(paymentStatus({ estimate: 100, actual: 0, paid: 0 })).toBe("belum");
-    expect(paymentStatus({ estimate: 100, actual: 0, paid: 40 })).toBe(
+    expect(paymentStatus({ estimate: 100, actual: null, paid: 0 })).toBe(
+      "belum",
+    );
+    expect(paymentStatus({ estimate: 100, actual: null, paid: 40 })).toBe(
       "sebagian",
     );
     // Realisasi turun di bawah uang yang sudah disetor: tetap lunas.
     expect(paymentStatus({ estimate: 100, actual: 80, paid: 80 })).toBe(
       "lunas",
     );
+    // Pos kerangka yang belum diisi apa pun bukan berarti sudah lunas.
+    expect(paymentStatus({ estimate: 0, actual: null, paid: 0 })).toBe("belum");
   });
   it("menjumlahkan ringkasan tanpa menutupi kekurangan pos lain", () => {
     const summary = summarizeBudget(
@@ -127,5 +133,47 @@ describe("penanggung, jatuh tempo, dan ekspor", () => {
     expect(csv).toContain('"Kategori"');
     expect(csv).toContain('"\'=cmd|calc"');
     expect(csv).toContain('"750"');
+  });
+});
+describe("perbaikan hasil audit", () => {
+  it("menandai apostrof milik pengguna agar impor dapat memulihkannya", () => {
+    const csv = budgetToCsv([item({ id: "a", name: "'catatan manual" })]);
+    expect(csv).toContain(`"''catatan manual"`);
+  });
+  it("tidak mengingatkan pos yang jatuh tempo tapi tidak punya kekurangan", () => {
+    const summary = summarizeBudget(
+      [
+        item({ id: "a", name: "Serba nol", dueDate: "2026-09-01" }),
+        item({
+          id: "b",
+          name: "Sudah dibayar",
+          estimate: 500,
+          paid: 500,
+          dueDate: "2026-09-01",
+        }),
+      ],
+      { cap: 0 },
+      new Date("2026-09-20T08:00:00+08:00"),
+    );
+    expect(summary.dueSoon).toEqual([]);
+    expect(summary.overdue).toBe(0);
+  });
+  it("mencatat realisasi nol sebagai pos yang batal, bukan kembali ke estimasi", () => {
+    const summary = summarizeBudget(
+      [item({ id: "a", estimate: 50_000_000, actual: 0 })],
+      { cap: 40_000_000 },
+      new Date("2026-09-20T08:00:00+08:00"),
+    );
+    expect(summary.committed).toBe(0);
+    expect(summary.overCap).toBe(false);
+  });
+  it("menerima realisasi kosong sebagai belum dicatat", () => {
+    expect(budgetItemInputSchema.parse({ name: "Pos" }).actual).toBeNull();
+    expect(
+      budgetItemInputSchema.parse({ name: "Pos", actual: "" }).actual,
+    ).toBeNull();
+    expect(budgetItemInputSchema.parse({ name: "Pos", actual: 0 }).actual).toBe(
+      0,
+    );
   });
 });
