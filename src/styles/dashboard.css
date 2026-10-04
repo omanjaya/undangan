@@ -1967,3 +1967,60 @@ td {
   align-items: center;
   cursor: pointer;
 }
+.extras-group {
+  margin: 22px 0 0;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.extras-group legend {
+  padding: 0 8px;
+  font-size: 13px;
+  color: #59664f;
+}
+.extras-group h4 {
+  margin: 18px 0 4px;
+}
+.extras-group .font-picker {
+  margin-top: 14px;
+}
+.extras-group .font-picker textarea {
+  width: 100%;
+  margin-top: 6px;
+}
+#gift-accounts {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.toggle-field {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 14px;
+  font-size: 13px;
+  color: #59664f;
+  cursor: pointer;
+}
+.toggle-field input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--olive);
+}
+.toggle-field small {
+  display: block;
+  margin-top: 4px;
+}
+.extras-group .font-picker textarea {
+  padding: 12px;
+  border: 1px solid #d6dccb;
+  border-radius: 4px;
+  background: #fffefa;
+  font: inherit;
+  font-size: 14px;
+}
+#gift-options .media-slots {
+  margin: 18px 0;
+}

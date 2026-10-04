@@ -1,6 +1,7 @@
 import type { InvitationContent } from "../../modules/invitations/domain/invitation";
 import { isGoogleMapEmbedUrl } from "../../modules/invitations/domain/maps";
 import { youtubeId } from "../../modules/invitations/domain/video";
+import { isSafeHttpsUrl } from "../../modules/invitations/domain/links";
 type Asset = {
   id: string;
   url: string;
@@ -23,6 +24,10 @@ let conflicted = false;
 let assets: Asset[] = [];
 let gallery: string[] = [...(original.galleryPhotos || [])];
 let events: ExtraEvent[] = [...(original.events || [])];
+type GiftAccount = InvitationContent["gift"]["accounts"][number];
+let giftAccounts: GiftAccount[] = structuredClone(
+  original.gift?.accounts || [],
+);
 const toast = document.querySelector<HTMLElement>("#toast")!;
 const state = document.querySelector<HTMLElement>("#save-state")!;
 let timer: ReturnType<typeof setTimeout>;
@@ -225,6 +230,78 @@ mainEmbed?.addEventListener("input", () =>
 );
 if (mainEmbed) attachEmbedPaste(mainEmbed);
 
+const giftEnabled = form.querySelector<HTMLInputElement>("#gift-enabled")!;
+const giftOptions = form.querySelector<HTMLElement>("#gift-options")!;
+const giftRecipient = form.querySelector<HTMLInputElement>(
+  "#gift-shipping-recipient",
+)!;
+const giftAddress = form.querySelector<HTMLTextAreaElement>(
+  "#gift-shipping-address",
+)!;
+function renderGiftAccounts() {
+  const container = form.querySelector<HTMLElement>("#gift-accounts")!;
+  container.replaceChildren();
+  giftAccounts.forEach((account, index) => {
+    const row = document.createElement("fieldset");
+    row.className = "event-editor";
+    const legend = document.createElement("legend");
+    legend.textContent = `Rekening ${index + 1}`;
+    row.append(legend);
+    const grid = document.createElement("div");
+    grid.className = "form-grid";
+    const fields: [keyof GiftAccount, string, number, string][] = [
+      ["provider", "Bank / dompet digital (mis. BCA, GoPay)", 60, "text"],
+      ["holder", "Nama pemilik rekening", 100, "text"],
+      ["number", "Nomor rekening / nomor telepon", 34, "text"],
+    ];
+    fields.forEach(([key, title, max, type]) => {
+      const label = document.createElement("label");
+      label.textContent = title;
+      const input = document.createElement("input");
+      input.type = type;
+      input.value = account[key];
+      input.required = true;
+      input.maxLength = max;
+      if (key === "number") {
+        input.minLength = 4;
+        input.inputMode = "numeric";
+        input.pattern = "[0-9A-Za-z][0-9A-Za-z .+\\-]*";
+        input.title =
+          "Angka, huruf, spasi, titik, plus, atau strip (4–34 karakter)";
+      }
+      input.addEventListener("input", () => {
+        account[key] = input.value;
+      });
+      label.append(input);
+      grid.append(label);
+    });
+    row.append(grid);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "subtle-button";
+    remove.textContent = "Hapus rekening ini";
+    remove.addEventListener("click", () => {
+      giftAccounts.splice(index, 1);
+      renderGiftAccounts();
+      markDirty();
+    });
+    row.append(remove);
+    container.append(row);
+  });
+  form.querySelector<HTMLButtonElement>("#add-gift-account")!.disabled =
+    giftAccounts.length >= 3;
+}
+form.querySelector("#add-gift-account")!.addEventListener("click", () => {
+  if (giftAccounts.length >= 3) return;
+  giftAccounts.push({ provider: "", holder: "", number: "" });
+  renderGiftAccounts();
+  markDirty();
+});
+giftEnabled.addEventListener("change", () => {
+  giftOptions.hidden = !giftEnabled.checked;
+});
+renderGiftAccounts();
+
 function attachEmbedPaste(input: HTMLInputElement) {
   input.addEventListener("paste", (event) => {
     const pasted = event.clipboardData?.getData("text/plain").trim() || "";
@@ -282,7 +359,7 @@ function renderSlots() {
     }
     slot.querySelector<HTMLButtonElement>("[data-clear-media]")!.disabled =
       !url;
-    if (slot.dataset.kind === "image") {
+    if (slot.dataset.kind === "image" && !slot.hasAttribute("data-no-focus")) {
       let controls = slot.querySelector<HTMLElement>(".focus-controls");
       if (!controls) {
         controls = document.createElement("div");
@@ -828,6 +905,32 @@ function updateChecklist() {
         : "YouTube tidak digunakan (opsional)",
       !fields.youtubeUrl || youtubeId(String(fields.youtubeUrl)) !== null,
     ],
+    ...(fields.liveStreamUrl
+      ? ([
+          [
+            "Tautan siaran langsung memakai HTTPS",
+            isSafeHttpsUrl(String(fields.liveStreamUrl)),
+          ],
+        ] as const)
+      : []),
+    ...(giftEnabled.checked
+      ? ([
+          [
+            "Amplop digital aktif — rekening, QRIS, atau alamat terisi",
+            giftAccounts.some((a) => a.provider && a.holder && a.number) ||
+              Boolean(fields.qrisImage) ||
+              Boolean(giftAddress.value.trim()),
+          ],
+        ] as const)
+      : []),
+    ...(fields.showEnglish === "true"
+      ? ([
+          [
+            "Kalimat undangan bahasa Inggris terisi (disarankan)",
+            Boolean(String(fields.openingEn || "").trim()),
+          ],
+        ] as const)
+      : []),
     [
       fields.videoUrl
         ? "Format video unggahan valid — cek video di pratinjau"
@@ -918,11 +1021,21 @@ async function saveDraft(validate = true) {
       ...original,
       ...fields,
       illustrationSlideshow: fields.illustrationSlideshow === "true",
+      showEnglish: fields.showEnglish === "true",
+      gift: {
+        enabled: giftEnabled.checked,
+        accounts: structuredClone(giftAccounts),
+        qrisImage: String(fields.qrisImage || ""),
+        shippingRecipient: giftRecipient.value,
+        shippingAddress: giftAddress.value,
+      },
       date: new Date(String(fields.date) + ":00+08:00").toISOString(),
       galleryPhotos: [...gallery],
       events: structuredClone(events),
       imageFocus: original.imageFocus,
     };
+    // QRIS dipilih lewat slot media, tetapi tersimpan di dalam objek gift.
+    delete (content as Record<string, unknown>).qrisImage;
     const saved = await post(`/api/invitations/${form.dataset.slug}/draft`, {
       lockVersion: Number(form.dataset.version),
       content,

@@ -101,5 +101,7 @@ export function themePreviewContent(
     },
     musicUrl: "",
     videoUrl: "",
+    liveStreamUrl: "https://www.youtube.com/live/contoh",
+    liveStreamLabel: "",
   });
 }

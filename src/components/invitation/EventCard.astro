@@ -10,14 +10,26 @@ interface Props {
   title: string;
   date: string;
   time: string;
+  dateIso?: string;
+  untilEnd?: boolean;
   venue: string;
   address: string;
   mapUrl: string;
   mapEmbedUrl?: string;
   index: number;
 }
-const { title, date, time, venue, address, mapUrl, mapEmbedUrl, index } =
-  Astro.props;
+const {
+  title,
+  date,
+  time,
+  dateIso,
+  untilEnd = false,
+  venue,
+  address,
+  mapUrl,
+  mapEmbedUrl,
+  index,
+} = Astro.props;
 const exactPreviewUrl = googleMapEmbedUrl(mapEmbedUrl);
 const previewUrl =
   exactPreviewUrl ?? approximateGoogleMapEmbedUrl(venue, address);
@@ -30,16 +42,32 @@ const directionsUrl = mapDirectionsUrl(mapUrl);
       0{index}
     </span>
     <InviteIcon name={index === 1 ? "heart" : "calendar"} size={28} />
-    <p class="invite-event-kicker">Rangkaian acara</p>
+    <p class="invite-event-kicker" data-i18n="card.kicker">
+      Rangkaian acara
+    </p>
     <h3>{title}</h3>
   </div>
   <div class="invite-event-schedule" aria-label={`${date}, ${time}`}>
-    <p class="invite-event-date">{date}</p>
-    <p class="invite-event-time">{time}</p>
+    <p class="invite-event-date">
+      {dateIso ? (
+        <time data-dt={dateIso} data-dt-fmt="full">
+          {date}
+        </time>
+      ) : (
+        date
+      )}
+    </p>
+    <p class="invite-event-time">
+      {time}
+      {untilEnd && " "}
+      {untilEnd && <span data-i18n="time.untilEnd">— selesai</span>}
+    </p>
   </div>
   <span class="invite-short-rule" aria-hidden="true"></span>
   <div class="invite-event-venue">
-    <p class="invite-event-venue-label">Lokasi acara</p>
+    <p class="invite-event-venue-label" data-i18n="card.venue">
+      Lokasi acara
+    </p>
     <h4>{venue}</h4>
     <p class="invite-event-address">{address}</p>
   </div>
@@ -52,7 +80,8 @@ const directionsUrl = mapDirectionsUrl(mapUrl);
         rel="noopener noreferrer"
         aria-label={`Buka lokasi ${venue} di peta (tab baru)`}
       >
-        <InviteIcon name="pin" size={16} /> Buka lokasi
+        <InviteIcon name="pin" size={16} />
+        <span data-i18n="card.open">Buka lokasi</span>
         <InviteIcon name="arrow" size={16} />
       </a>
     )}
@@ -68,7 +97,10 @@ const directionsUrl = mapDirectionsUrl(mapUrl);
           allowfullscreen
         ></iframe>
       </div>
-      <p class="event-map-note">
+      <p
+        class="event-map-note"
+        data-i18n={exactPreviewUrl ? "card.mapExact" : "card.mapApprox"}
+      >
         {exactPreviewUrl
           ? "Pin lokasi yang dibagikan tuan rumah."
           : "Pratinjau perkiraan berdasarkan alamat. Gunakan tombol Buka lokasi untuk menuju pin yang dibagikan tuan rumah."}
