@@ -248,7 +248,7 @@ const CSV_HEADERS = [
 ] as const;
 
 /** Nilai yang diawali tanda rumus dinetralkan agar aman dibuka di spreadsheet. */
-function csvCell(value: string | number) {
+export function csvCell(value: string | number) {
   const text = String(value);
   // Apostrof yang memang ditulis pengguna digandakan supaya impor dapat
   // membedakannya dari apostrof pengaman yang ditambahkan di sini.

@@ -546,6 +546,40 @@ td {
   color: #8c917e;
   border-color: #e3e6d8;
 }
+.moderate.danger {
+  background: transparent;
+  color: #a2483a;
+  border-color: #e6cbc5;
+}
+.dash-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.wish-reply {
+  margin-top: 10px;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+}
+.wish-reply-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.wish-reply-form label {
+  flex-basis: 100%;
+}
+.wish-reply-form textarea {
+  width: 100%;
+  font: 11px/1.6 inherit;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  resize: vertical;
+}
 .dashboard-footer {
   border-top: 1px solid var(--line);
   margin-top: 45px;

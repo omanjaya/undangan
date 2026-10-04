@@ -7,6 +7,12 @@ import {
 } from "./media";
 import { randomUUID } from "node:crypto";
 import {
+  replySchema,
+  rsvpsToCsv,
+  wishesToCsv,
+} from "../modules/invitations/domain/engagement";
+import { notifyOwner, type GuestActivity } from "./notify";
+import {
   authorize,
   contentSchema,
   DomainError,
@@ -143,7 +149,8 @@ export async function submitRsvp(
   visitorId: string,
 ) {
   const data = rsvpSchema.parse(input);
-  return mutateState((state) => {
+  let activity: GuestActivity | null = null;
+  const result = await mutateState((state) => {
     const i = findBySlug(state, slug);
     if (!i || i.status !== "published")
       throw new DomainError("Undangan tidak tersedia.", 404);
@@ -178,12 +185,23 @@ export async function submitRsvp(
         status: "pending",
         createdAt: rsvp.updatedAt,
       });
+    activity = {
+      invitationTitle:
+        `${i.draft?.groom ?? ""} & ${i.draft?.bride ?? ""}`.trim(),
+      guestName: rsvp.name,
+      attendance: rsvp.attendance,
+      attendeeCount: rsvp.attendeeCount,
+      wish: data.message || undefined,
+    };
     return {
       id: rsvp.id,
       message:
         "Terima kasih. Konfirmasi Anda tersimpan. Ucapan akan ditampilkan setelah disetujui.",
     };
   });
+  // Setelah data tersimpan dan tanpa ditunggu, agar tamu tidak ikut terhambat.
+  if (activity) notifyOwner(activity);
+  return result;
 }
 export async function getWishes(slug: string) {
   const state = await readState();
@@ -191,7 +209,13 @@ export async function getWishes(slug: string) {
   if (!invitation || invitation.status !== "published") return [];
   return state.wishes
     .filter((w) => w.invitationId === invitation.id && w.status === "approved")
-    .map(({ status: _, invitationId: __, ...w }) => w);
+    .map((w) => ({
+      id: w.id,
+      name: w.name,
+      message: w.message,
+      createdAt: w.createdAt,
+      ...(w.reply ? { reply: w.reply } : {}),
+    }));
 }
 export async function moderateWish(
   actor: Actor | null,
@@ -209,6 +233,60 @@ export async function moderateWish(
     wish.status = status;
     return wish;
   });
+}
+
+function findWish(state: State, id: string) {
+  const wish = state.wishes.find((w) => w.id === id);
+  const invitation = state.invitations.find((i) => i.id === wish?.invitationId);
+  if (!wish || !invitation)
+    throw new DomainError("Ucapan tidak ditemukan.", 404);
+  return { wish, invitation };
+}
+
+export async function deleteWish(actor: Actor | null, id: string) {
+  return mutateState((state) => {
+    const { wish, invitation } = findWish(state, id);
+    authorize(actor, invitation);
+    state.wishes = state.wishes.filter((w) => w !== wish);
+    return { id: wish.id, deleted: true };
+  });
+}
+
+/** Balasan kosong menghapus balasan yang ada. */
+export async function replyToWish(
+  actor: Actor | null,
+  id: string,
+  reply: unknown,
+) {
+  const text = replySchema.parse(reply ?? "");
+  return mutateState((state) => {
+    const { wish, invitation } = findWish(state, id);
+    authorize(actor, invitation);
+    if (text) {
+      wish.reply = text;
+      wish.repliedAt = new Date().toISOString();
+    } else {
+      delete wish.reply;
+      delete wish.repliedAt;
+    }
+    return wish;
+  });
+}
+
+export async function exportRsvpCsv(actor: Actor | null, slug: string) {
+  const state = await readState();
+  const invitation = requireBySlug(state, slug);
+  authorize(actor, invitation);
+  const rows = state.rsvps.filter((r) => r.invitationId === invitation.id);
+  return { slug: invitation.slug, csv: rsvpsToCsv(rows) };
+}
+
+export async function exportWishesCsv(actor: Actor | null, slug: string) {
+  const state = await readState();
+  const invitation = requireBySlug(state, slug);
+  authorize(actor, invitation);
+  const rows = state.wishes.filter((w) => w.invitationId === invitation.id);
+  return { slug: invitation.slug, csv: wishesToCsv(rows) };
 }
 
 export async function renameInvitation(

@@ -152,6 +152,9 @@ export type Wish = {
   message: string;
   status: "pending" | "approved" | "hidden";
   createdAt: string;
+  /** Balasan mempelai; hanya tampil ke publik bila ucapannya disetujui. */
+  reply?: string;
+  repliedAt?: string;
 };
 export const rsvpSchema = z
   .object({

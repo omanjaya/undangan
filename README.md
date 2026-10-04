@@ -166,6 +166,8 @@ Gunakan [.env.example](.env.example) untuk development dan [.env.production.exam
 | `UPLOAD_STORAGE_MB` | Kuota total upload; default `1024` MB, contoh production memakai `2048` MB                             |
 | `UPLOAD_DIR`        | Direktori upload runtime; default `.data/uploads`, Compose memakai `/app/.data/uploads`                |
 | `DATA_DIR`          | Direktori state file development; default `.data`                                                      |
+| `TELEGRAM_BOT_TOKEN` | Opsional: token bot Telegram untuk notifikasi RSVP dan ucapan baru ke pemilik                         |
+| `TELEGRAM_CHAT_ID`  | Opsional: id chat Telegram penerima notifikasi; notifikasi nonaktif bila salah satu variabel kosong    |
 
 Compose memakai environment yang tercantum pada service. Mengubah lokasi data lewat variabel host saja tidak mengganti mount volume di dalam container.
 
