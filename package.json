@@ -11,9 +11,10 @@
     "test": "vitest run",
     "db:migrate": "node --env-file-if-exists=.env --import tsx db/migrate.ts",
     "db:seed": "node --env-file-if-exists=.env --import tsx db/seed.ts",
-    "format": "prettier --write src db *.mjs *.json",
-    "format:check": "prettier --check src db *.mjs *.json",
-    "deploy:check": "node --env-file=.env.production scripts/preflight.mjs"
+    "format": "prettier --write src db e2e *.mjs *.ts *.json",
+    "format:check": "prettier --check src db e2e *.mjs *.ts *.json",
+    "deploy:check": "node --env-file=.env.production scripts/preflight.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.6",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^24.0.0",
     "prettier": "^3.9.7",
     "prettier-plugin-astro": "^1.0.1",

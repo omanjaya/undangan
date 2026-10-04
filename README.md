@@ -309,6 +309,15 @@ npm run format:check
 
 Gunakan `npm run format` untuk merapikan kode. `npm run preview` tersedia untuk preview build lokal; production Docker menjalankan `dist/server/entry.mjs` secara langsung.
 
+### Tes end-to-end (Playwright)
+
+```sh
+npx playwright install chromium   # sekali saja
+npm run test:e2e
+```
+
+Tes menyalakan dev server sendiri di port 4399 (ubah dengan `E2E_PORT`) dengan data terisolasi di `.data-e2e/` yang dihapus setiap kali dijalankan, jadi tidak menyentuh `.data/`. Cakupan: seluruh preview tema (desktop dan viewport 390x844), reduced motion, alur tamu (RSVP dan ucapan), alur pemilik (moderasi, keluar), dan lightbox galeri. Di CI laporan HTML diunggah sebagai artifact bila gagal.
+
 Validasi Compose:
 
 ```sh
