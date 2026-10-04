@@ -907,3 +907,45 @@ section[id] {
 .collection-mode-links a:hover {
   background: #e9ecdf;
 }
+
+/*
+ * Animasi masuk saat bagian tergulir ke layar. Keadaan tersembunyi hanya
+ * berlaku setelah skrip menandai <html>, sehingga halaman tetap terbaca penuh
+ * bila JavaScript gagal dimuat. Skrip tidak menandai apa pun ketika pengguna
+ * meminta pengurangan gerak, jadi tidak ada aturan yang perlu dibatalkan.
+ */
+.js-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+}
+.js-reveal [data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.55s ease,
+    transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+/* Anak-anak sebuah bagian menyusul berurutan agar mata mengikuti satu arah. */
+.js-reveal [data-reveal-stagger] > * {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.js-reveal [data-reveal-stagger].is-revealed > * {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.js-reveal [data-reveal-stagger].is-revealed > *:nth-child(2) {
+  transition-delay: 0.08s;
+}
+.js-reveal [data-reveal-stagger].is-revealed > *:nth-child(3) {
+  transition-delay: 0.16s;
+}
+.js-reveal [data-reveal-stagger].is-revealed > *:nth-child(4) {
+  transition-delay: 0.24s;
+}
+.js-reveal [data-reveal-stagger].is-revealed > *:nth-child(n + 5) {
+  transition-delay: 0.32s;
+}

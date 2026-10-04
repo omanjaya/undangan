@@ -139,7 +139,11 @@ const faqs = [
       <Icon name="spark" size={16} />
       <span>Dibagikan dengan cinta</span>
     </div>
-    <section id="koleksi" class="landing-collection shell section-pad">
+    <section
+      id="koleksi"
+      class="landing-collection shell section-pad"
+      data-reveal
+    >
       <div class="section-heading">
         <div>
           <p class="eyebrow">01 / PILIH SUASANANYA</p>
@@ -156,7 +160,7 @@ const faqs = [
           <br class="desktop-break" /> dengan cerita kalian.
         </p>
       </div>
-      <div class="collection-grid">
+      <div class="collection-grid" data-reveal-stagger>
         {collections.map((theme, index) => (
           <article class={`collection-card collection-${theme.art}`}>
             <a
@@ -212,7 +216,7 @@ const faqs = [
         aksara Bali, dan pilihan tipografi.
       </p>
     </section>
-    <section id="pengalaman" class="experience-section">
+    <section id="pengalaman" class="experience-section" data-reveal>
       <div class="shell experience-layout">
         <div class="experience-art" aria-hidden="true">
           <img
@@ -250,7 +254,7 @@ const faqs = [
         </div>
       </div>
     </section>
-    <section id="fitur" class="shell section-pad landing-features">
+    <section id="fitur" class="shell section-pad landing-features" data-reveal>
       <div class="section-heading">
         <div>
           <p class="eyebrow">02 / INDAH SEKALIGUS MEMUDAHKAN</p>
@@ -266,7 +270,7 @@ const faqs = [
           Untuk mereka yang merayakan.
         </p>
       </div>
-      <div class="feature-grid">
+      <div class="feature-grid" data-reveal-stagger>
         {features.map((feature, index) => (
           <article>
             <div class="feature-top">
@@ -279,7 +283,7 @@ const faqs = [
         ))}
       </div>
     </section>
-    <section id="cara-kerja" class="shell process-section">
+    <section id="cara-kerja" class="shell process-section" data-reveal>
       <div>
         <p class="eyebrow">03 / DARI CERITA, JADI UNDANGAN</p>
         <h2>
@@ -316,7 +320,7 @@ const faqs = [
         ))}
       </ol>
     </section>
-    <section class="shell faq-section" id="pertanyaan">
+    <section class="shell faq-section" id="pertanyaan" data-reveal>
       <div>
         <p class="eyebrow">SEBELUM MEMULAI</p>
         <h2>
@@ -337,7 +341,7 @@ const faqs = [
         ))}
       </div>
     </section>
-    <section class="landing-closing">
+    <section class="landing-closing" data-reveal>
       <img
         src="/ornaments/covers/ivory-cover.webp"
         alt=""
@@ -378,3 +382,6 @@ const faqs = [
     <small>© {new Date().getFullYear()} Temu</small>
   </footer>
 </BaseLayout>
+<script>
+  import "../components/landing/reveal";
+</script>
