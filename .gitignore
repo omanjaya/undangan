@@ -9,3 +9,6 @@ backups/
 .data/
 coverage/
 test-results/
+.data-e2e/
+playwright-report/
+blob-report/
