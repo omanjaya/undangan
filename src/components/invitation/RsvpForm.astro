@@ -1,10 +1,15 @@
 ---
 import InviteIcon from "./InviteIcon.astro";
-const { slug } = Astro.props as { slug: string };
+const { slug, guest = null } = Astro.props as {
+  slug: string;
+  guest?: { code: string; name: string; maxPax: number | null } | null;
+};
+const maxPax = guest?.maxPax ?? 5;
 ---
 
 <form class="invite-rsvp-form" id="rsvp-form" action="/api/rsvp" method="post">
   <input type="hidden" name="slug" value={slug} />
+  {guest && <input type="hidden" name="g" value={guest.code} />}
   <div class="invite-rsvp-form-heading">
     <InviteIcon name="heart" size={22} />
     <div>
@@ -22,6 +27,7 @@ const { slug } = Astro.props as { slug: string };
       autocomplete="name"
       placeholder="Tuliskan nama Anda"
       data-i18n-placeholder="form.namePlaceholder"
+      value={guest?.name ?? ""}
       required
       minlength="2"
       maxlength="100"
@@ -46,21 +52,13 @@ const { slug } = Astro.props as { slug: string };
         Jumlah tamu
       </label>
       <select id="attendee-count" name="attendeeCount">
-        <option value="1" data-i18n="form.count1">
-          1 orang
-        </option>
-        <option value="2" data-i18n="form.count2">
-          2 orang
-        </option>
-        <option value="3" data-i18n="form.count3">
-          3 orang
-        </option>
-        <option value="4" data-i18n="form.count4">
-          4 orang
-        </option>
-        <option value="5" data-i18n="form.count5">
-          5 orang
-        </option>
+        {[1, 2, 3, 4, 5]
+          .filter((n) => n <= maxPax)
+          .map((n) => (
+            <option value={n} data-i18n={`form.count${n}`}>
+              {n} orang
+            </option>
+          ))}
       </select>
     </div>
   </div>
@@ -122,6 +120,7 @@ const { slug } = Astro.props as { slug: string };
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slug: data.get("slug"),
+          g: data.get("g") || undefined,
           name: data.get("name"),
           attendance: data.get("attendance"),
           attendeeCount:

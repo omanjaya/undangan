@@ -1,0 +1,122 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Icon from "../../components/Icon.astro";
+import { getActor } from "../../server/auth";
+import { getDashboardData } from "../../server/services";
+import { getGuests } from "../../server/guests";
+import "../../styles/dashboard.css";
+
+const actor = await getActor(Astro.request);
+if (!actor) return Astro.redirect("/login");
+Astro.response.headers.set("Cache-Control", "private, no-store");
+
+const selected = Astro.url.searchParams.get("undangan") || undefined;
+const { invitation, invitations } = await getDashboardData(actor, selected);
+const { summary } = await getGuests(actor, invitation.slug);
+const prefill = Astro.url.searchParams.get("kode") || "";
+---
+
+<BaseLayout title="Check-in tamu — Temu" noindex>
+  <main class="dashboard-main checkin-page">
+    <div class="dashboard-content">
+      <section
+        id="checkin"
+        class="dashboard-section"
+        data-slug={invitation.slug}
+        data-prefill={prefill}
+      >
+        <div class="dash-section-heading">
+          <div>
+            <span class="dash-kicker">PINTU MASUK</span>
+            <h2>Check-in tamu</h2>
+          </div>
+          <a
+            class="dash-button secondary"
+            href={`/dashboard?undangan=${invitation.slug}#guests`}
+          >
+            <Icon name="grid" size={16} /> Kembali ke dashboard
+          </a>
+        </div>
+
+        <div class="checkin-switch" aria-label="Pilih undangan">
+          {invitations.map((item) => (
+            <a
+              class:list={[
+                "dash-button",
+                item.slug !== invitation.slug && "secondary",
+              ]}
+              href={`/dashboard/checkin?undangan=${item.slug}`}
+            >
+              {item.ceremonyTitle || item.title}
+            </a>
+          ))}
+        </div>
+
+        <div class="budget-stats">
+          <article>
+            <span>Sudah check-in</span>
+            <strong data-stat="checkedIn">
+              {summary.checkedIn} · {summary.checkedInOrang} orang
+            </strong>
+          </article>
+          <article>
+            <span>RSVP hadir</span>
+            <strong data-stat="hadir">
+              {summary.hadir} · {summary.hadirOrang} orang
+            </strong>
+          </article>
+          <article>
+            <span>Total tamu</span>
+            <strong data-stat="total">{summary.total}</strong>
+          </article>
+        </div>
+
+        <div class="checkin-scanner">
+          <video id="checkin-video" playsinline muted hidden></video>
+          <div class="guest-form-actions">
+            <button
+              type="button"
+              class="dash-button"
+              id="checkin-scan-toggle"
+              hidden
+            >
+              Mulai pindai kamera
+            </button>
+          </div>
+          <p class="budget-intro" id="checkin-scan-note"></p>
+        </div>
+
+        <form class="checkin-manual" id="checkin-form">
+          <input
+            name="code"
+            id="checkin-code"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+            placeholder="Ketik kode tamu"
+            aria-label="Kode tamu"
+            required
+          />
+          <button type="submit" class="dash-button">
+            Check-in
+          </button>
+        </form>
+
+        <div
+          class="checkin-result"
+          id="checkin-result"
+          role="status"
+          aria-live="polite"
+          hidden
+        ></div>
+
+        <h3>Check-in terakhir</h3>
+        <div id="checkin-recent" class="guest-list"></div>
+      </section>
+    </div>
+  </main>
+  <div class="toast" id="toast" role="status" hidden></div>
+</BaseLayout>
+<script>
+  import "../../components/dashboard/checkin";
+</script>

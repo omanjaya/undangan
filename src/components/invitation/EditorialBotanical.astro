@@ -12,6 +12,7 @@ import SacredVerse from "./SacredVerse.astro";
 import "@fontsource/noto-serif-balinese/balinese-400.css";
 import EventCard from "./EventCard.astro";
 import RsvpForm from "./RsvpForm.astro";
+import GuestAccess from "./GuestAccess.astro";
 import Guestbook from "./Guestbook.astro";
 import GiftSection from "./GiftSection.astro";
 import LanguageSwitch from "./LanguageSwitch.astro";
@@ -39,12 +40,16 @@ interface Props {
   slug: string;
   preview?: boolean;
   sample?: boolean;
+  guest?: { code: string; name: string; maxPax: number | null } | null;
+  guestQr?: string;
 }
 const {
   content: savedContent,
   slug,
   preview = false,
   sample = false,
+  guest = null,
+  guestQr = "",
 } = Astro.props;
 const content = presentationContent(savedContent);
 const illustrated = content.photoMode === "illustrated";
@@ -191,9 +196,9 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         <p
           class="invite-cover-recipient"
           data-recipient
-          data-i18n="guest.default"
+          data-i18n={guest ? undefined : "guest.default"}
         >
-          Tamu undangan
+          {guest?.name ?? "Tamu undangan"}
         </p>
       </div>
       <button class="invite-button" data-open-invitation>
@@ -747,7 +752,10 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
             </p>
           </div>
         ) : (
-          <RsvpForm slug={slug} />
+          <>
+            <RsvpForm slug={slug} guest={guest} />
+            {guest && <GuestAccess slug={slug} guest={guest} qr={guestQr} />}
+          </>
         )}
       </section>
 

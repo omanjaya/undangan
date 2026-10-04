@@ -188,6 +188,8 @@ export type Rsvp = {
   name: string;
   attendance: "attending" | "declined";
   attendeeCount: number;
+  /** Tamu dari daftar tamu yang tautan pribadinya dipakai untuk RSVP ini. */
+  guestId?: string;
   updatedAt: string;
 };
 export type Wish = {
