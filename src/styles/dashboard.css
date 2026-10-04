@@ -11,6 +11,21 @@
   padding: 36px 23px;
   display: flex;
   flex-direction: column;
+  /* Menu bisa lebih tinggi dari layar laptop; tombol Keluar harus tetap
+     terjangkau. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (max-height: 820px) {
+  .sidebar {
+    padding-block: 24px;
+  }
+  .sidebar-label {
+    margin-top: 28px;
+  }
+  .sidebar-note {
+    padding-block: 16px 20px;
+  }
 }
 .dash-brand {
   font: 49px var(--serif);
