@@ -2,7 +2,8 @@
   --paper: #f8f6f0;
   --ink: #292f27;
   --olive: #4c5a40;
-  --muted: #7a7c70;
+  /* Kontras 5.76 pada --paper dan 6.23 pada putih: lolos WCAG AA untuk teks kecil. */
+  --muted: #5f6257;
   --line: #dfdfd3;
   --serif: "Italiana", Georgia, serif;
   --sans: "DM Sans", Arial, sans-serif;
