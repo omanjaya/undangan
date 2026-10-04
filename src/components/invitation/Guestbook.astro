@@ -28,7 +28,12 @@ const { slug } = Astro.props as { slug: string };
       })
       .then(
         (data: {
-          wishes: { name: string; message: string; createdAt: string }[];
+          wishes: {
+            name: string;
+            message: string;
+            createdAt: string;
+            reply?: string;
+          }[];
         }) => {
           guestbook.replaceChildren();
           if (!data.wishes.length) {
@@ -50,7 +55,18 @@ const { slug } = Astro.props as { slug: string };
             date.textContent = new Intl.DateTimeFormat("id-ID", {
               dateStyle: "long",
             }).format(new Date(wish.createdAt));
-            card.append(name, message, date);
+            card.append(name, message);
+            if (wish.reply) {
+              const reply = document.createElement("div");
+              reply.className = "invite-wish-reply";
+              const label = document.createElement("strong");
+              label.textContent = "Balasan mempelai";
+              const text = document.createElement("p");
+              text.textContent = wish.reply;
+              reply.append(label, text);
+              card.append(reply);
+            }
+            card.append(date);
             guestbook.append(card);
           });
         },

@@ -32,6 +32,8 @@ services:
       OWNER_EMAIL: ${OWNER_EMAIL:?Set OWNER_EMAIL}
       OWNER_PASSWORD: ${OWNER_PASSWORD:?Set OWNER_PASSWORD}
       APP_URL: ${APP_URL:?Set APP_URL to your public HTTPS origin}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     volumes:
       - app_data:/app/.data
     depends_on:

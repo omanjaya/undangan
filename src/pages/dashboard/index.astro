@@ -287,7 +287,16 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
               <span class="dash-kicker">ORANG-ORANG TERSAYANG</span>
               <h2>Konfirmasi kehadiran</h2>
             </div>
-            <span class="count-label">{stats.responses} respons</span>
+            <div class="dash-heading-actions">
+              <span class="count-label">{stats.responses} respons</span>
+              <a
+                class="dash-button secondary"
+                href={`/api/invitations/${invitation.slug}/rsvp.csv`}
+                download
+              >
+                Ekspor RSVP (CSV)
+              </a>
+            </div>
           </div>
           <div class="table-wrap">
             {rsvps.length ? (
@@ -345,7 +354,16 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
               <span class="dash-kicker">KATA-KATA YANG MENGHANGATKAN</span>
               <h2>Ucapan & doa</h2>
             </div>
-            <span class="count-label">{wishes.length} ucapan</span>
+            <div class="dash-heading-actions">
+              <span class="count-label">{wishes.length} ucapan</span>
+              <a
+                class="dash-button secondary"
+                href={`/api/invitations/${invitation.slug}/ucapan.csv`}
+                download
+              >
+                Ekspor ucapan (CSV)
+              </a>
+            </div>
           </div>
           <div class="wishes-list">
             {wishes.length ? (
@@ -364,6 +382,34 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
                       </span>
                     </h3>
                     <p>{w.message}</p>
+                    {w.reply && (
+                      <p class="wish-reply">
+                        <strong>Balasan Anda:</strong> {w.reply}
+                      </p>
+                    )}
+                    <form class="wish-reply-form" data-id={w.id}>
+                      <label>
+                        <span class="sr-only">Balasan untuk {w.name}</span>
+                        <textarea
+                          name="reply"
+                          maxlength="500"
+                          rows="2"
+                          placeholder="Tulis balasan singkat (maks. 500 karakter)"
+                        >{w.reply ?? ""}</textarea>
+                      </label>
+                      <button class="moderate" type="submit">
+                        {w.reply ? "Ubah balasan" : "Kirim balasan"}
+                      </button>
+                      {w.reply && (
+                        <button
+                          class="moderate secondary"
+                          type="button"
+                          data-clear-reply
+                        >
+                          Hapus balasan
+                        </button>
+                      )}
+                    </form>
                   </div>
                   <div class="wish-actions">
                     {w.status !== "approved" && (
@@ -384,6 +430,14 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
                         Sembunyikan
                       </button>
                     )}
+                    <button
+                      class="moderate danger"
+                      type="button"
+                      data-delete-wish={w.id}
+                      data-name={w.name}
+                    >
+                      Hapus
+                    </button>
                   </div>
                 </article>
               ))

@@ -23,6 +23,10 @@ Preflight membutuhkan Node 24 di host; runtime aplikasi berjalan di Docker. Cadd
 
 Buka `/dashboard`, masuk dengan kredensial yang diisi, lengkapi identitas keluarga, jadwal WITA, lokasi, tema, foto dan media. Preview dahulu lalu Terbitkan. Seed hanya membuat data contoh jika belum ada; tidak menimpa undangan lama. Tanggal Bali diisi manual berdasarkan informasi keluarga.
 
+## Notifikasi Telegram (opsional)
+
+Isi `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_CHAT_ID` di `.env.production` agar pemilik menerima pesan setiap ada RSVP atau ucapan baru. Buat bot lewat @BotFather, kirim satu pesan ke bot, lalu ambil chat id dari `https://api.telegram.org/bot<TOKEN>/getUpdates`. Jika salah satu kosong, notifikasi tidak dikirim. Pengiriman berjalan dari server aplikasi ke `api.telegram.org` (HTTPS keluar); CSP hanya membatasi browser sehingga tidak berpengaruh, tetapi firewall keluar server harus mengizinkannya. Kegagalan kirim hanya dicatat di log dan tidak mengganggu tamu.
+
 ## Media
 
 Foto JPG/PNG/WebP maksimal 10 MB dioptimasi menjadi WebP tanpa metadata. Video MP4/WebM maksimal 80 MB; gunakan MP4 H.264/AAC untuk kompatibilitas luas. Musik MP3/M4A/OGG/WAV maksimal 20 MB. Video/audio tidak ditranscode. Musik dimulai setelah tamu menekan Buka Undangan, mengikuti kebijakan browser. Kuota default 1 GB, dapat diatur lewat UPLOAD_STORAGE_MB. Hanya media yang sedang digunakan undangan terbit yang dapat dibaca publik.

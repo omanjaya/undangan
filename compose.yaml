@@ -16,6 +16,8 @@ services:
       DATABASE_URL: postgresql://undangan:${POSTGRES_PASSWORD:-undangan_local}@db:5432/undangan
       OWNER_EMAIL: ${OWNER_EMAIL:-owner@undangan.local}
       OWNER_PASSWORD: ${OWNER_PASSWORD:-demo-undangan-2026}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     volumes:
       - app_data:/app/.data
     depends_on:

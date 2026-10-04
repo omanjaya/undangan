@@ -1073,6 +1073,59 @@ document.querySelectorAll<HTMLButtonElement>(".moderate").forEach((button) =>
   }),
 );
 
+document
+  .querySelectorAll<HTMLButtonElement>("[data-delete-wish]")
+  .forEach((button) =>
+    button.addEventListener("click", async () => {
+      if (dirty) {
+        notify("Simpan perubahan sebelum menghapus ucapan.", true);
+        return;
+      }
+      if (
+        !confirm(
+          `Hapus ucapan dari ${button.dataset.name ?? "tamu"} secara permanen? Tindakan ini tidak dapat dibatalkan.`,
+        )
+      )
+        return;
+      button.disabled = true;
+      try {
+        await post("/api/wishes/delete", { id: button.dataset.deleteWish });
+        location.reload();
+      } catch (e) {
+        notify((e as Error).message, true);
+        button.disabled = false;
+      }
+    }),
+  );
+
+document
+  .querySelectorAll<HTMLFormElement>(".wish-reply-form")
+  .forEach((replyForm) => {
+    const send = async (reply: string) => {
+      if (dirty) {
+        notify("Simpan perubahan sebelum membalas ucapan.", true);
+        return;
+      }
+      replyForm.querySelectorAll("button").forEach((b) => (b.disabled = true));
+      try {
+        await post("/api/wishes/reply", { id: replyForm.dataset.id, reply });
+        location.reload();
+      } catch (e) {
+        notify((e as Error).message, true);
+        replyForm
+          .querySelectorAll("button")
+          .forEach((b) => (b.disabled = false));
+      }
+    };
+    replyForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void send(new FormData(replyForm).get("reply")?.toString() ?? "");
+    });
+    replyForm
+      .querySelector("[data-clear-reply]")
+      ?.addEventListener("click", () => void send(""));
+  });
+
 const slugForm = document.querySelector<HTMLFormElement>("#slug-form")!;
 slugForm.addEventListener("submit", async (event) => {
   event.preventDefault();
