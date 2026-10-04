@@ -155,6 +155,15 @@ function recoverBudgetItem(raw: unknown): BudgetItem[] {
   ];
 }
 
+/**
+ * Koleksi yang hilang atau bertipe salah dikembalikan sebagai array kosong.
+ * Tanpa ini, satu berkas state yang tidak lengkap membuat pemanggil berikutnya
+ * gagal pada `.filter` atau `.map` jauh dari sumber masalahnya.
+ */
+function arrayAman<T>(value: T[] | undefined): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
 /** Nilai yang tidak dapat dibaca sebagai rupiah dianggap nol, bukan menggagalkan pos. */
 function angkaAman(value: unknown) {
   const angka = typeof value === "string" ? Number(value.trim()) : value;
@@ -181,12 +190,24 @@ export function normalizeState(state: State): State {
       if (published.success) invitation.published = published.data;
     }
   }
-  state.revisions = state.revisions.map((revision) => ({
-    ...revision,
-    invitationId: revision.invitationId ?? fallbackId,
-    content: contentSchema.parse(revision.content),
-  }));
-  state.assets ??= [];
+  // Revisi hanya riwayat terbit, tidak pernah disajikan ke pengunjung, jadi
+  // entri yang isinya tidak lagi lolos skema dibuang alih-alih menggagalkan
+  // pembacaan seluruh state.
+  state.revisions = arrayAman(state.revisions).flatMap((revision) => {
+    const content = contentSchema.safeParse(revision?.content);
+    return content.success
+      ? [
+          {
+            ...revision,
+            invitationId: revision.invitationId ?? fallbackId,
+            content: content.data,
+          },
+        ]
+      : [];
+  });
+  state.rsvps = arrayAman(state.rsvps);
+  state.wishes = arrayAman(state.wishes);
+  state.assets = arrayAman(state.assets);
   state.budget = (state.budget ?? []).flatMap(recoverBudgetItem);
   const settings = budgetSettingsSchema.safeParse(state.budgetSettings ?? {});
   state.budgetSettings = settings.success ? settings.data : { cap: 0 };

@@ -66,3 +66,40 @@ describe("ketahanan antar undangan", () => {
     expect(hasil.invitations[1].draft.mapUrl).toBe("bukan-url");
   });
 });
+describe("ketahanan koleksi state", () => {
+  const dasar = () =>
+    ({
+      invitations: [structuredClone(demoInvitation)],
+      rsvps: [],
+      wishes: [],
+      revisions: [],
+      assets: [],
+    }) as unknown as State;
+
+  it("membuang revisi lama yang isinya tidak lagi lolos skema", () => {
+    const hasil = normalizeState({
+      ...dasar(),
+      revisions: [
+        { revision: 1, content: { bride: "" }, createdAt: "" },
+        {
+          revision: 2,
+          content: structuredClone(demoInvitation.draft),
+          createdAt: "",
+        },
+      ],
+    } as unknown as State);
+    expect(hasil.revisions).toHaveLength(1);
+    expect(hasil.revisions[0].revision).toBe(2);
+    expect(hasil.invitations).toHaveLength(1);
+  });
+  it("mengisi koleksi yang hilang atau bertipe salah", () => {
+    const hasil = normalizeState({
+      invitations: [structuredClone(demoInvitation)],
+      wishes: "rusak",
+    } as unknown as State);
+    expect(hasil.revisions).toEqual([]);
+    expect(hasil.rsvps).toEqual([]);
+    expect(hasil.wishes).toEqual([]);
+    expect(hasil.assets).toEqual([]);
+  });
+});
