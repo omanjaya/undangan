@@ -45,11 +45,17 @@ describe("invitation flow", () => {
     );
     await service.submitRsvp(
       "amara-raka",
-      { name: "Sari", attendance: "declined", attendeeCount: 2 },
+      {
+        name: "Sari",
+        attendance: "declined",
+        attendeeCount: 2,
+        message: "Selamat",
+      },
       "visitor-a",
     );
     const data = await service.getDashboardData(actor);
     expect(data.rsvps).toHaveLength(1);
+    expect(data.wishes).toHaveLength(1);
     expect(data.stats.guests).toBe(0);
     expect(await service.getWishes("amara-raka")).toHaveLength(0);
     await service.moderateWish(actor, data.wishes[0].id, "approved");

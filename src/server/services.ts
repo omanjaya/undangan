@@ -161,7 +161,15 @@ export async function submitRsvp(
     };
     if (previous) state.rsvps[state.rsvps.indexOf(previous)] = rsvp;
     else state.rsvps.push(rsvp);
-    if (data.message)
+    // Tamu yang memperbarui kehadirannya biasanya mengirim ulang ucapan yang
+    // sama; jangan sampai muncul ganda di antrean moderasi.
+    const duplicateWish = state.wishes.some(
+      (w) =>
+        w.invitationId === i.id &&
+        w.name === data.name &&
+        w.message === data.message,
+    );
+    if (data.message && !duplicateWish)
       state.wishes.push({
         id: randomUUID(),
         invitationId: i.id,
