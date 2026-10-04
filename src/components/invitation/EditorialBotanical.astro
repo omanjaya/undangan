@@ -13,12 +13,17 @@ import "@fontsource/noto-serif-balinese/balinese-400.css";
 import EventCard from "./EventCard.astro";
 import RsvpForm from "./RsvpForm.astro";
 import Guestbook from "./Guestbook.astro";
+import GiftSection from "./GiftSection.astro";
+import LanguageSwitch from "./LanguageSwitch.astro";
+import InvitationI18n from "./InvitationI18n.astro";
+import { safeHttpsUrl } from "../../modules/invitations/domain/links";
 import type { InvitationContent } from "../../modules/invitations/domain/invitation";
 import { themes } from "../../modules/invitations/domain/themes";
 import "../../styles/invitation.css";
 import "../../styles/guest-polish.css";
 import "../../styles/cover-polish.css";
 import "../../styles/illustrated-invitation.css";
+import "../../styles/guest-extras.css";
 import "@fontsource/cormorant-garamond/latin-400.css";
 import "@fontsource/cormorant-garamond/latin-400-italic.css";
 import "@fontsource/cinzel/latin-400.css";
@@ -70,6 +75,13 @@ const focusStyle = (slot: string) => {
   const focus = imageFocus[slot] || { x: 50, y: 50 };
   return `object-position:${focus.x}% ${focus.y}%`;
 };
+const showEnglish = content.showEnglish === true;
+const openingEn = content.openingEn?.trim() ?? "";
+const liveStreamUrl = safeHttpsUrl(content.liveStreamUrl);
+const gift = content.gift;
+const giftVisible =
+  gift?.enabled === true &&
+  (gift.accounts.length > 0 || Boolean(gift.qrisImage || gift.shippingAddress));
 const date = new Date(content.date);
 const dateLabel = new Intl.DateTimeFormat("id-ID", {
   day: "numeric",
@@ -114,7 +126,7 @@ const clockLabel = (value: string) =>
 const formatTime = (value: string, endValue?: string) =>
   endValue
     ? `${clockLabel(value)} – ${clockLabel(endValue)} WITA`
-    : `${clockLabel(value)} WITA — selesai`;
+    : `${clockLabel(value)} WITA`;
 const heroEndDate = events.find(
   (event) => Date.parse(event.date) === date.getTime(),
 )?.endDate;
@@ -139,6 +151,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
   data-ornament-density={ornamentDensity}
   data-preview={String(preview)}
   data-sample={String(sample)}
+  data-i18n-enabled={String(showEnglish)}
 >
   <div class="invite-cover" hidden>
     <img
@@ -152,8 +165,10 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
       fetchpriority="high"
     />
     <div class="invite-cover-inner">
+      {showEnglish && <LanguageSwitch variant="cover" />}
       <span class="invite-eyebrow">
-        UNDANGAN {content.ceremonyTitle || "PAWIWAHAN"}
+        <span data-i18n="cover.invite">UNDANGAN</span>{" "}
+        {content.ceremonyTitle || "PAWIWAHAN"}
       </span>
       <span class="invite-cover-seal" aria-hidden="true">
         {initials}
@@ -163,18 +178,31 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         <em>&</em>
         <span class="invite-couple-name">{content.bride}</span>
       </p>
-      <p class="invite-cover-date">{dateLabel}</p>
+      <p class="invite-cover-date">
+        <time data-dt={content.date} data-dt-fmt="date">
+          {dateLabel}
+        </time>
+      </p>
       <span class="invite-short-rule"></span>
       <div class="invite-cover-guest">
-        <p class="invite-eyebrow">KEPADA YTH. BAPAK / IBU / SAHABAT</p>
-        <p class="invite-cover-recipient" data-recipient>
+        <p class="invite-eyebrow" data-i18n="cover.guest">
+          KEPADA YTH. BAPAK / IBU / SAHABAT
+        </p>
+        <p
+          class="invite-cover-recipient"
+          data-recipient
+          data-i18n="guest.default"
+        >
           Tamu undangan
         </p>
       </div>
       <button class="invite-button" data-open-invitation>
-        Buka undangan <InviteIcon name="arrow" size={18} />
+        <span data-i18n="cover.open">Buka undangan</span>
+        <InviteIcon name="arrow" size={18} />
       </button>
-      <p class="invite-cover-note">Dengan bahagia, kami mengundang Anda.</p>
+      <p class="invite-cover-note" data-i18n="cover.note">
+        Dengan bahagia, kami mengundang Anda.
+      </p>
     </div>
   </div>
   {content.musicUrl && (
@@ -230,15 +258,30 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         {initials}
         <span aria-hidden="true">.</span>
       </a>
-      <nav aria-label="Navigasi undangan">
-        <a href="#couple">Mempelai</a>
-        <a href="#event">Acara</a>
+      <nav aria-label="Navigasi undangan" data-i18n-aria-label="nav.label">
+        <a href="#couple" data-i18n="nav.couple">
+          Mempelai
+        </a>
+        <a href="#event" data-i18n="nav.event">
+          Acara
+        </a>
         {(content.galleryPhotos?.length > 0 ||
           content.videoUrl ||
-          content.youtubeUrl) && <a href="#moments">Momen</a>}
+          content.youtubeUrl) && (
+          <a href="#moments" data-i18n="nav.moments">
+            Momen
+          </a>
+        )}
+        {giftVisible && (
+          <a href="#gift" data-i18n="nav.gift">
+            Hadiah
+          </a>
+        )}
       </nav>
+      {showEnglish && <LanguageSwitch />}
       <a class="invite-header-rsvp" href="#rsvp">
-        Konfirmasi hadir <InviteIcon name="arrow" size={16} />
+        <span data-i18n="nav.rsvp">Konfirmasi hadir</span>
+        <InviteIcon name="arrow" size={16} />
       </a>
     </header>
     <main>
@@ -255,7 +298,8 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         />
         <div class="invite-hero-copy">
           <p class="invite-eyebrow">
-            <span></span> PAWIWAHAN · BALI
+            <span></span>
+            <bdi data-i18n="hero.eyebrow">PAWIWAHAN · BALI</bdi>
           </p>
           <h1 id="wedding-title">
             <span class="invite-couple-name">{content.groom}</span>
@@ -263,20 +307,31 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
             <span class="invite-couple-name">{content.bride}</span>
           </h1>
           <p class="invite-hero-date">
-            {dayLabel}, {dateLabel}
+            <time data-dt={content.date} data-dt-fmt="full">
+              {dayLabel}, {dateLabel}
+            </time>
             <span class="invite-hero-time">
               {formatTime(content.date, heroEndDate)}
+              {!heroEndDate && " "}
+              {!heroEndDate && <span data-i18n="time.untilEnd">— selesai</span>}
             </span>
             <span class="invite-hero-venue">{content.venue}</span>
           </p>
           <div class="invite-recipient">
-            <span>KEPADA YTH. BAPAK / IBU / SAHABAT</span>
-            <p data-recipient>Tamu undangan</p>
+            <span data-i18n="cover.guest">
+              KEPADA YTH. BAPAK / IBU / SAHABAT
+            </span>
+            <p data-recipient data-i18n="guest.default">
+              Tamu undangan
+            </p>
           </div>
           <a class="invite-button" href="#event">
-            Lihat detail acara <InviteIcon name="arrow" size={18} />
+            <span data-i18n="hero.cta">Lihat detail acara</span>
+            <InviteIcon name="arrow" size={18} />
           </a>
-          <p class="invite-hero-footnote">Bersama, dalam doa dan restu.</p>
+          <p class="invite-hero-footnote" data-i18n="hero.footnote">
+            Bersama, dalam doa dan restu.
+          </p>
         </div>
         <div class="invite-hero-visual">
           <div class="invite-arch-frame">
@@ -311,11 +366,13 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
                   <Gapura class="invite-artwork-gate" />
                 )}
                 <p class="invite-artwork-initials">{initials}</p>
-                <span class="invite-eyebrow">SEBUAH JANJI, SELAMANYA</span>
+                <span class="invite-eyebrow" data-i18n="hero.promise">
+                  SEBUAH JANJI, SELAMANYA
+                </span>
               </div>
             )}
           </div>
-          <span class="invite-photo-side">
+          <span class="invite-photo-side" data-i18n="hero.side">
             DENGAN RESTU KELUARGA & ORANG TERKASIH
           </span>
           <div class="invite-date-stamp">
@@ -340,7 +397,8 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
           </div>
         </div>
         <a href="#couple" class="invite-scroll-label">
-          SCROLL TO DISCOVER <InviteIcon name="arrow" size={17} />
+          <span data-i18n="hero.scroll">SCROLL TO DISCOVER</span>
+          <InviteIcon name="arrow" size={17} />
         </a>
       </section>
 
@@ -349,14 +407,22 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         id="couple"
         aria-labelledby="couple-title"
       >
-        <p class="invite-eyebrow">DENGAN PENUH RASA SYUKUR</p>
+        <p class="invite-eyebrow" data-i18n="intro.eyebrow">
+          DENGAN PENUH RASA SYUKUR
+        </p>
         {content.balineseGreeting && (
           <p class="invite-balinese" lang="ban-Bali">
             {content.balineseGreeting}
           </p>
         )}
         <h2 id="couple-title">{content.greeting || "Om Swastyastu"}</h2>
-        <p class="invite-opening">{content.opening}</p>
+        <p
+          class="invite-opening"
+          data-opening-id={content.opening}
+          data-opening-en={openingEn}
+        >
+          {content.opening}
+        </p>
         <div class="invite-couple">
           <article>
             {content.groomPhoto ? (
@@ -377,7 +443,9 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
                 </div>
               )
             )}
-            <p class="invite-eyebrow">MEMPELAI PRIA</p>
+            <p class="invite-eyebrow" data-i18n="couple.groom">
+              MEMPELAI PRIA
+            </p>
             <h3>{content.groomFullName}</h3>
             <p>{content.groomParents}</p>
             <p class="invite-family-address">{content.groomAddress}</p>
@@ -404,7 +472,9 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
                 </div>
               )
             )}
-            <p class="invite-eyebrow">MEMPELAI WANITA</p>
+            <p class="invite-eyebrow" data-i18n="couple.bride">
+              MEMPELAI WANITA
+            </p>
             <h3>{content.brideFullName}</h3>
             <p>{content.brideParents}</p>
             <p class="invite-family-address">{content.brideAddress}</p>
@@ -415,7 +485,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
           <InviteIcon name="heart" size={18} />
           <span></span>
         </div>
-        <p class="invite-love-note">
+        <p class="invite-love-note" data-i18n="couple.note">
           Merupakan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan
           hadir dan memberikan doa restu.
         </p>
@@ -430,13 +500,15 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         aria-labelledby="event-title"
       >
         <div class="invite-event-copy">
-          <p class="invite-eyebrow">SAVE THE DATE</p>
-          <h2 id="event-title">
+          <p class="invite-eyebrow" data-i18n="event.eyebrow">
+            SAVE THE DATE
+          </p>
+          <h2 id="event-title" data-i18n="event.title">
             Hari yang
             <br />
             kami <em>nantikan.</em>
           </h2>
-          <p>
+          <p data-i18n="event.lead">
             Sebuah awal yang indah menjadi semakin berarti dengan kehadiran
             orang-orang terkasih.
           </p>
@@ -444,23 +516,24 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
             class="invite-countdown"
             data-wedding-date={content.date}
             aria-label="Hitung mundur menuju pernikahan"
+            data-i18n-aria-label="countdown.label"
           >
             <div>
               <strong data-days>—</strong>
-              <span>HARI</span>
+              <span data-i18n="countdown.days">HARI</span>
             </div>
             <span class="invite-countdown-colon">:</span>
             <div>
               <strong data-hours>—</strong>
-              <span>JAM</span>
+              <span data-i18n="countdown.hours">JAM</span>
             </div>
             <span class="invite-countdown-colon">:</span>
             <div>
               <strong data-minutes>—</strong>
-              <span>MENIT</span>
+              <span data-i18n="countdown.minutes">MENIT</span>
             </div>
           </div>
-          <p class="invite-countdown-message" hidden>
+          <p class="invite-countdown-message" data-i18n="countdown.done" hidden>
             Hari istimewa telah tiba. Terima kasih atas doa dan cinta Anda.
           </p>
           <a
@@ -469,9 +542,26 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
             target="_blank"
             rel="noopener noreferrer"
           >
-            <InviteIcon name="calendar" size={17} /> Simpan di kalender{" "}
+            <InviteIcon name="calendar" size={17} />
+            <span data-i18n="event.calendar">Simpan di kalender</span>
             <InviteIcon name="plus" size={16} />
           </a>
+          {liveStreamUrl && (
+            <a
+              class="invite-live-link"
+              href={liveStreamUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <InviteIcon name="arrow" size={17} />
+              {content.liveStreamLabel ? (
+                <span>{content.liveStreamLabel}</span>
+              ) : (
+                <span data-i18n="event.live">Saksikan secara langsung</span>
+              )}
+              <span class="sr-only"> (tab baru)</span>
+            </a>
+          )}
         </div>
         <div class="invite-event-list">
           {content.balineseDate && (
@@ -479,7 +569,7 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
           )}
           {content.dressCode && (
             <p class="invite-dress-code">
-              <span>Dress code</span>
+              <span data-i18n="event.dress">Dress code</span>
               {content.dressCode}
             </p>
           )}
@@ -487,7 +577,9 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
             <EventCard
               title={event.title}
               date={formatEvent(event.date)}
+              dateIso={event.date}
               time={formatTime(event.date, event.endDate)}
+              untilEnd={!event.endDate}
               venue={event.venue}
               address={event.address}
               mapUrl={event.mapUrl}
@@ -530,11 +622,13 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
                 <span>{initials}</span>
               </div>
             )}
-            <span>CERITA KAMI, SELAMANYA</span>
+            <span data-i18n="story.photo">CERITA KAMI, SELAMANYA</span>
           </div>
           <div class="invite-story-copy">
-            <p class="invite-eyebrow">AWAL DARI SELAMANYA</p>
-            <h2 id="story-title">
+            <p class="invite-eyebrow" data-i18n="story.eyebrow">
+              AWAL DARI SELAMANYA
+            </p>
+            <h2 id="story-title" data-i18n="story.title">
               Semesta punya
               <br />
               <em>cara yang indah.</em>
@@ -568,12 +662,14 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         >
           <div class="invite-gallery-heading">
             <div>
-              <p class="invite-eyebrow">POTONGAN CERITA KAMI</p>
-              <h2 id="moments-title">
+              <p class="invite-eyebrow" data-i18n="gallery.eyebrow">
+                POTONGAN CERITA KAMI
+              </p>
+              <h2 id="moments-title" data-i18n="gallery.title">
                 Untuk <em>dikenang.</em>
               </h2>
             </div>
-            <p>Kenangan yang tinggal selamanya.</p>
+            <p data-i18n="gallery.lead">Kenangan yang tinggal selamanya.</p>
           </div>
           <div class="invite-gallery">
             {(content.galleryPhotos || []).map((photo, index) => (
@@ -622,19 +718,22 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
           )}
         </section>
       )}
+      {giftVisible && <GiftSection gift={gift} />}
       <section
         class="invite-rsvp-section invite-section"
         id="rsvp"
         aria-labelledby="rsvp-title"
       >
         <div class="invite-rsvp-copy">
-          <p class="invite-eyebrow">KEHADIRAN ANDA BEGITU BERARTI</p>
-          <h2 id="rsvp-title">
+          <p class="invite-eyebrow" data-i18n="rsvp.eyebrow">
+            KEHADIRAN ANDA BEGITU BERARTI
+          </p>
+          <h2 id="rsvp-title" data-i18n="rsvp.title">
             Sampai jumpa
             <br />
             <em>di hari bahagia.</em>
           </h2>
-          <p>
+          <p data-i18n="rsvp.lead">
             Kehadiran dan doa Anda adalah hadiah terindah bagi kami. Kabari kami
             jika Anda dapat merayakan hari ini bersama.
           </p>
@@ -642,8 +741,8 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         {preview ? (
           <div class="invite-preview-rsvp">
             <InviteIcon name="heart" size={28} />
-            <h3>Konfirmasi kehadiran</h3>
-            <p>
+            <h3 data-i18n="rsvp.previewTitle">Konfirmasi kehadiran</h3>
+            <p data-i18n="rsvp.previewNote">
               Formulir RSVP tersedia untuk tamu setelah undangan dipublikasikan.
             </p>
           </div>
@@ -656,8 +755,10 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
         class="invite-wishes-section invite-section"
         aria-labelledby="wishes-title"
       >
-        <p class="invite-eyebrow">DOA DARI ORANG TERKASIH</p>
-        <h2 id="wishes-title">
+        <p class="invite-eyebrow" data-i18n="wishes.eyebrow">
+          DOA DARI ORANG TERKASIH
+        </p>
+        <h2 id="wishes-title" data-i18n="wishes.title">
           Titipan <em>doa & cinta.</em>
         </h2>
         {!preview && <Guestbook slug={slug} />}
@@ -678,39 +779,55 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
           groom={content.groom}
           ornament={densityCorner}
         />
-        <p class="invite-eyebrow">DENGAN SEGENAP CINTA</p>
+        <p class="invite-eyebrow" data-i18n="footer.eyebrow">
+          DENGAN SEGENAP CINTA
+        </p>
         <h2>
           {content.groom} <em>&</em> {content.bride}
         </h2>
-        <p>Terima kasih telah menjadi bagian dari cerita kami.</p>
+        <p data-i18n="footer.thanks">
+          Terima kasih telah menjadi bagian dari cerita kami.
+        </p>
         <p class="invite-closing">
           {content.closing || "Om Shanti Shanti Shanti Om"}
         </p>
-        <span class="invite-footer-date">{dateLabel}</span>
+        <span class="invite-footer-date">
+          <time data-dt={content.date} data-dt-fmt="date">
+            {dateLabel}
+          </time>
+        </span>
         <a href="/" class="invite-brand-credit">
-          Dibuat dengan sepenuh hati · Temu
+          <span data-i18n="footer.credit">
+            Dibuat dengan sepenuh hati · Temu
+          </span>
         </a>
       </footer>
     </main>
     <GalleryLightbox />
-    <nav class="invite-mobile-nav" aria-label="Navigasi cepat">
+    <nav
+      class="invite-mobile-nav"
+      aria-label="Navigasi cepat"
+      data-i18n-aria-label="mobile.label"
+    >
       <a href={content.mapUrl} target="_blank" rel="noopener noreferrer">
         <InviteIcon name="pin" size={18} />
-        <span>Lokasi</span>
+        <span data-i18n="mobile.location">Lokasi</span>
       </a>
       <a href={calendarUrl} target="_blank" rel="noopener noreferrer">
         <InviteIcon name="calendar" size={18} />
-        <span>Kalender</span>
+        <span data-i18n="mobile.calendar">Kalender</span>
       </a>
       <a href="#rsvp">
         <InviteIcon name="check" size={18} />
-        <span>RSVP</span>
+        <span data-i18n="mobile.rsvp">RSVP</span>
       </a>
     </nav>
   </div>
 </div>
 <InvitationMotion />
+{showEnglish && <InvitationI18n />}
 <script>
+  import { onLangChange, tr } from "./i18n-client";
   const invitation = document.querySelector<HTMLElement>(".invitation");
   const cover = document.querySelector<HTMLElement>(".invite-cover");
   const pageContent = document.querySelector<HTMLElement>(".invite-content");
@@ -732,13 +849,12 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
   const updateMusic = () => {
     const playing = !!audio && !audio.paused;
     musicButton?.setAttribute("aria-pressed", String(playing));
-    musicButton?.setAttribute(
-      "aria-label",
-      playing ? "Jeda musik" : "Putar musik",
-    );
+    const text = tr(playing ? "music.pause" : "music.play");
+    musicButton?.setAttribute("aria-label", text);
     const label = musicButton?.querySelector("[data-music-label]");
-    if (label) label.textContent = playing ? "Jeda musik" : "Putar musik";
+    if (label) label.textContent = text;
   };
+  onLangChange(() => updateMusic());
   musicButton?.addEventListener("click", () => {
     if (!audio) return;
     if (audio.paused) void audio.play().catch(updateMusic);

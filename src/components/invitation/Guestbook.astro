@@ -8,7 +8,9 @@ const { slug } = Astro.props as { slug: string };
   data-slug={slug}
   aria-live="polite"
 >
-  <p class="invite-guestbook-empty">Memuat doa dan ucapan…</p>
+  <p class="invite-guestbook-empty" data-i18n="wishes.loading">
+    Memuat doa dan ucapan…
+  </p>
 </div>
 <noscript>
   <p>
@@ -17,6 +19,7 @@ const { slug } = Astro.props as { slug: string };
   </p>
 </noscript>
 <script>
+  import { tr } from "./i18n-client";
   const guestbook = document.querySelector<HTMLElement>("#guestbook");
   if (guestbook) {
     fetch(
@@ -39,8 +42,8 @@ const { slug } = Astro.props as { slug: string };
           if (!data.wishes.length) {
             const empty = document.createElement("p");
             empty.className = "invite-guestbook-empty";
-            empty.textContent =
-              "Jadilah yang pertama menitipkan doa untuk perjalanan kami.";
+            empty.dataset.i18n = "wishes.empty";
+            empty.textContent = tr("wishes.empty");
             guestbook.append(empty);
           }
           data.wishes.forEach((wish) => {
@@ -72,8 +75,8 @@ const { slug } = Astro.props as { slug: string };
         },
       )
       .catch(() => {
-        guestbook.textContent =
-          "Ucapan belum dapat dimuat. Silakan muat ulang halaman.";
+        guestbook.dataset.i18n = "wishes.error";
+        guestbook.textContent = tr("wishes.error");
       });
   }
 </script>

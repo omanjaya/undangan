@@ -1,0 +1,99 @@
+<script>
+  import { labels, type LabelKey } from "../../modules/invitations/domain/i18n";
+  import { setCurrentLang } from "./i18n-client";
+  import type { Lang } from "../../modules/invitations/domain/i18n";
+
+  const STORAGE_KEY = "invite-lang";
+  const root = document.querySelector<HTMLElement>(".invitation");
+
+  if (root?.dataset.i18nEnabled === "true") {
+    const hasRecipient = Boolean(
+      new URLSearchParams(location.search).get("to")?.trim(),
+    );
+    const find = (key: string) =>
+      key in labels ? labels[key as LabelKey] : undefined;
+    const locale = (lang: Lang) => (lang === "en" ? "en-GB" : "id-ID");
+    const dateFormats: Record<string, Intl.DateTimeFormatOptions> = {
+      date: { day: "numeric", month: "long", year: "numeric" },
+      full: {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      },
+    };
+
+    const apply = (lang: Lang) => {
+      setCurrentLang(lang);
+      document.documentElement.lang = lang;
+      root.querySelectorAll<HTMLElement>("[data-i18n]").forEach((node) => {
+        if (hasRecipient && node.hasAttribute("data-recipient")) return;
+        const entry = find(node.dataset.i18n ?? "");
+        if (entry) node.innerHTML = entry[lang];
+      });
+      root
+        .querySelectorAll<HTMLElement>("[data-i18n-aria-label]")
+        .forEach((node) => {
+          const entry = find(node.dataset.i18nAriaLabel ?? "");
+          if (entry) node.setAttribute("aria-label", entry[lang]);
+        });
+      root
+        .querySelectorAll<HTMLElement>("[data-i18n-placeholder]")
+        .forEach((node) => {
+          const entry = find(node.dataset.i18nPlaceholder ?? "");
+          if (entry) node.setAttribute("placeholder", entry[lang]);
+        });
+      root
+        .querySelectorAll<HTMLElement>("[data-opening-id]")
+        .forEach((node) => {
+          const english = node.dataset.openingEn?.trim();
+          node.textContent =
+            lang === "en" && english
+              ? english
+              : (node.dataset.openingId ?? node.textContent);
+        });
+      root.querySelectorAll<HTMLElement>("time[data-dt]").forEach((node) => {
+        const format = dateFormats[node.dataset.dtFmt ?? "date"];
+        const value = new Date(node.dataset.dt ?? "");
+        if (!format || Number.isNaN(value.getTime())) return;
+        node.textContent = new Intl.DateTimeFormat(locale(lang), {
+          ...format,
+          timeZone: "Asia/Makassar",
+        }).format(value);
+      });
+      root
+        .querySelectorAll<HTMLButtonElement>("[data-lang-switch] [data-lang]")
+        .forEach((button) =>
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.lang === lang),
+          ),
+        );
+      window.dispatchEvent(new CustomEvent("invite:lang", { detail: lang }));
+    };
+
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(STORAGE_KEY);
+    } catch {
+      stored = null;
+    }
+    const choose = (lang: Lang) => {
+      apply(lang);
+      try {
+        localStorage.setItem(STORAGE_KEY, lang);
+      } catch {
+        // Penyimpanan diblokir; pilihan tetap berlaku untuk kunjungan ini.
+      }
+    };
+
+    root
+      .querySelectorAll<HTMLButtonElement>("[data-lang-switch] [data-lang]")
+      .forEach((button) =>
+        button.addEventListener("click", () =>
+          choose(button.dataset.lang === "en" ? "en" : "id"),
+        ),
+      );
+    if (stored === "en") apply("en");
+  }
+</script>

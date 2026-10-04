@@ -1,0 +1,22 @@
+---
+interface Props {
+  variant?: "header" | "cover";
+}
+const { variant = "header" } = Astro.props;
+---
+
+<div
+  class="lang-switch"
+  data-variant={variant}
+  data-lang-switch
+  role="group"
+  aria-label="Pilih bahasa"
+  data-i18n-aria-label="lang.label"
+>
+  <button type="button" data-lang="id" lang="id" aria-pressed="true">
+    ID
+  </button>
+  <button type="button" data-lang="en" lang="en" aria-pressed="false">
+    EN
+  </button>
+</div>

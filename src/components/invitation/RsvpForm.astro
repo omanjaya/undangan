@@ -8,17 +8,20 @@ const { slug } = Astro.props as { slug: string };
   <div class="invite-rsvp-form-heading">
     <InviteIcon name="heart" size={22} />
     <div>
-      <p>Balasan Anda</p>
-      <h3>Konfirmasi kehadiran</h3>
+      <p data-i18n="form.kicker">Balasan Anda</p>
+      <h3 data-i18n="form.title">Konfirmasi kehadiran</h3>
     </div>
   </div>
   <div class="invite-form-field">
-    <label for="guest-name">Nama lengkap</label>
+    <label for="guest-name" data-i18n="form.name">
+      Nama lengkap
+    </label>
     <input
       id="guest-name"
       name="name"
       autocomplete="name"
       placeholder="Tuliskan nama Anda"
+      data-i18n-placeholder="form.namePlaceholder"
       required
       minlength="2"
       maxlength="100"
@@ -26,41 +29,63 @@ const { slug } = Astro.props as { slug: string };
   </div>
   <div class="invite-form-row">
     <div class="invite-form-field">
-      <label for="attendance">Konfirmasi kehadiran</label>
+      <label for="attendance" data-i18n="form.attendance">
+        Konfirmasi kehadiran
+      </label>
       <select id="attendance" name="attendance" required>
-        <option value="attending">Dengan senang hati, hadir</option>
-        <option value="declined">Maaf, belum bisa hadir</option>
+        <option value="attending" data-i18n="form.attending">
+          Dengan senang hati, hadir
+        </option>
+        <option value="declined" data-i18n="form.declined">
+          Maaf, belum bisa hadir
+        </option>
       </select>
     </div>
     <div class="invite-form-field">
-      <label for="attendee-count">Jumlah tamu</label>
+      <label for="attendee-count" data-i18n="form.count">
+        Jumlah tamu
+      </label>
       <select id="attendee-count" name="attendeeCount">
-        <option value="1">1 orang</option>
-        <option value="2">2 orang</option>
-        <option value="3">3 orang</option>
-        <option value="4">4 orang</option>
-        <option value="5">5 orang</option>
+        <option value="1" data-i18n="form.count1">
+          1 orang
+        </option>
+        <option value="2" data-i18n="form.count2">
+          2 orang
+        </option>
+        <option value="3" data-i18n="form.count3">
+          3 orang
+        </option>
+        <option value="4" data-i18n="form.count4">
+          4 orang
+        </option>
+        <option value="5" data-i18n="form.count5">
+          5 orang
+        </option>
       </select>
     </div>
   </div>
   <div class="invite-form-field">
     <label for="guest-message">
-      Doa & ucapan <span class="invite-optional">(opsional)</span>
+      <span data-i18n="form.message">Doa &amp; ucapan</span>
+      <span class="invite-optional" data-i18n="form.optional">
+        (opsional)
+      </span>
     </label>
     <textarea
       id="guest-message"
       name="message"
       placeholder="Bagikan doa dan harapan hangat Anda…"
+      data-i18n-placeholder="form.messagePlaceholder"
       rows="4"
       maxlength="1000"
     ></textarea>
   </div>
-  <p class="invite-form-note">
+  <p class="invite-form-note" data-i18n="form.note">
     Ucapan akan ditampilkan setelah disetujui oleh pasangan. Konfirmasi dapat
     diperbarui dari browser yang sama.
   </p>
   <button class="invite-button" type="submit">
-    <span>Kirim konfirmasi</span>
+    <span data-i18n="form.submit">Kirim konfirmasi</span>
     <InviteIcon name="arrow" size={18} />
   </button>
   <p
@@ -71,6 +96,7 @@ const { slug } = Astro.props as { slug: string };
   ></p>
 </form>
 <script>
+  import { tr } from "./i18n-client";
   const form = document.querySelector<HTMLFormElement>("#rsvp-form");
   const attendance = document.querySelector<HTMLSelectElement>("#attendance");
   const attendeeCount =
@@ -88,7 +114,7 @@ const { slug } = Astro.props as { slug: string };
     const data = new FormData(form);
     button.disabled = true;
     button.setAttribute("aria-busy", "true");
-    status.textContent = "Mengirim konfirmasi…";
+    status.textContent = tr("form.sending");
     delete status.dataset.error;
     try {
       const response = await fetch("/api/rsvp", {
@@ -108,22 +134,20 @@ const { slug } = Astro.props as { slug: string };
       const result = await response.json();
       if (!response.ok)
         throw new Error(
-          typeof result.error === "string"
-            ? result.error
-            : "Konfirmasi belum tersimpan. Silakan coba kembali.",
+          typeof result.error === "string" ? result.error : tr("form.failed"),
         );
       status.textContent =
         data.get("attendance") === "attending"
-          ? `Konfirmasi tersimpan — kehadiran ${data.get("attendeeCount")} orang tercatat.`
-          : "Konfirmasi tersimpan. Terima kasih sudah memberi kabar.";
+          ? tr("form.savedAttending", { n: String(data.get("attendeeCount")) })
+          : tr("form.savedDeclined");
       form.dataset.submitted = "true";
-      button.querySelector("span")!.textContent = "Perbarui konfirmasi";
+      const label = button.querySelector("span")!;
+      label.dataset.i18n = "form.update";
+      label.textContent = tr("form.update");
     } catch (error) {
       status.dataset.error = "true";
       status.textContent =
-        error instanceof Error
-          ? error.message
-          : "Tidak dapat terhubung. Silakan coba kembali.";
+        error instanceof Error ? error.message : tr("form.offline");
     } finally {
       button.disabled = false;
       button.removeAttribute("aria-busy");

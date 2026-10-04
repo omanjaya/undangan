@@ -148,3 +148,92 @@ describe("jadwal acara", () => {
     ).toBe(false);
   });
 });
+describe("amplop digital, siaran langsung, dan bahasa Inggris", () => {
+  const account = {
+    provider: "BCA",
+    holder: "Amara Putri",
+    number: "1234567890",
+  };
+  const parse = (extra: Record<string, unknown>) =>
+    contentSchema.safeParse({ ...demoContent, ...extra });
+  it("memberi nilai bawaan untuk undangan lama", () => {
+    const {
+      gift: _gift,
+      liveStreamUrl: _live,
+      liveStreamLabel: _label,
+      showEnglish: _en,
+      openingEn: _openingEn,
+      ...legacy
+    } = demoContent;
+    const parsed = contentSchema.parse(legacy);
+    expect(parsed.gift).toEqual({
+      enabled: false,
+      accounts: [],
+      qrisImage: "",
+      shippingRecipient: "",
+      shippingAddress: "",
+    });
+    expect(parsed.liveStreamUrl).toBe("");
+    expect(parsed.showEnglish).toBe(false);
+    expect(parsed.openingEn).toBe("");
+  });
+  it("melengkapi bagian amplop yang hanya terisi sebagian", () => {
+    const result = parse({ gift: { enabled: true } });
+    expect(result.data?.gift.accounts).toEqual([]);
+    expect(result.data?.gift.qrisImage).toBe("");
+  });
+  it("menerima maksimal tiga rekening dengan nomor yang wajar", () => {
+    const accounts = [account, account, { ...account, number: "0812 3456-78" }];
+    expect(parse({ gift: { enabled: true, accounts } }).success).toBe(true);
+    expect(
+      parse({ gift: { enabled: true, accounts: [...accounts, account] } })
+        .success,
+    ).toBe(false);
+  });
+  it("menolak rekening kosong, nomor aneh, atau teks terlalu panjang", () => {
+    for (const bad of [
+      { ...account, provider: "" },
+      { ...account, holder: " " },
+      { ...account, number: "12" },
+      { ...account, number: "<script>" },
+      { ...account, number: "1".repeat(35) },
+      { ...account, provider: "B".repeat(61) },
+    ])
+      expect(parse({ gift: { accounts: [bad] } }).success).toBe(false);
+    expect(parse({ gift: { shippingAddress: "x".repeat(301) } }).success).toBe(
+      false,
+    );
+  });
+  it("hanya menerima QRIS dari pustaka media bergambar webp", () => {
+    const ok = "/media/11111111-1111-1111-1111-111111111111.webp";
+    expect(parse({ gift: { qrisImage: ok } }).success).toBe(true);
+    expect(parse({ gift: { qrisImage: "https://x.id/q.png" } }).success).toBe(
+      false,
+    );
+    expect(
+      parse({
+        gift: { qrisImage: "/media/11111111-1111-1111-1111-111111111111.mp4" },
+      }).success,
+    ).toBe(false);
+  });
+  it("hanya menerima tautan siaran langsung HTTPS", () => {
+    expect(
+      parse({ liveStreamUrl: "https://www.youtube.com/live/abc" }).success,
+    ).toBe(true);
+    expect(parse({ liveStreamUrl: "" }).success).toBe(true);
+    for (const bad of [
+      "http://zoom.us/j/1",
+      "javascript:alert(1)",
+      "https://a:b@zoom.us/j/1",
+      "zoom.us/j/1",
+    ])
+      expect(parse({ liveStreamUrl: bad }).success).toBe(false);
+    expect(parse({ liveStreamLabel: "x".repeat(81) }).success).toBe(false);
+  });
+  it("membatasi teks pembuka bahasa Inggris", () => {
+    expect(
+      parse({ showEnglish: true, openingEn: "Join us." }).data?.openingEn,
+    ).toBe("Join us.");
+    expect(parse({ openingEn: "x".repeat(1001) }).success).toBe(false);
+  });
+});

@@ -73,6 +73,7 @@ const slots = [
     <a href="#editor-details">Mempelai & acara</a>
     <a href="#editor-media">Foto & media</a>
     <a href="#editor-words">Kata-kata</a>
+    <a href="#editor-extras">Fitur tambahan</a>
   </nav>
   <section class="editor-panel" id="editor-design">
     <div class="panel-heading">
@@ -409,10 +410,158 @@ const slots = [
       ))}
     </div>
   </section>
+  <section class="editor-panel" id="editor-extras">
+    <div class="panel-heading">
+      <span class="dash-kicker">06 / FITUR TAMBAHAN</span>
+      <h3>Siaran langsung, amplop digital & bahasa.</h3>
+      <p>
+        Semua opsional. Bagian yang dimatikan atau dikosongkan tidak tampil di
+        undangan.
+      </p>
+    </div>
+    <fieldset class="extras-group">
+      <legend>Siaran langsung</legend>
+      <div class="form-grid">
+        <label class="wide">
+          Tautan siaran langsung (HTTPS)
+          <input
+            type="url"
+            name="liveStreamUrl"
+            maxlength="2048"
+            value={c.liveStreamUrl || ""}
+            placeholder="https://youtube.com/live/…"
+          />
+          <small>
+            YouTube Live, Zoom, atau layanan lain. Tampil sebagai tombol di
+            bagian acara dan terbuka di tab baru.
+          </small>
+        </label>
+        <label class="wide">
+          Teks tombol (opsional)
+          <input
+            name="liveStreamLabel"
+            maxlength="80"
+            value={c.liveStreamLabel || ""}
+            placeholder="Saksikan secara langsung"
+          />
+        </label>
+      </div>
+    </fieldset>
+    <fieldset class="extras-group">
+      <legend>Amplop digital & hadiah</legend>
+      <label class="toggle-field">
+        <input
+          type="checkbox"
+          id="gift-enabled"
+          checked={c.gift?.enabled === true}
+        />
+        <span>
+          Tampilkan amplop digital di undangan
+          <small>
+            Bagian ini tampil di dekat formulir RSVP bila ada rekening, QRIS,
+            atau alamat pengiriman yang terisi.
+          </small>
+        </span>
+      </label>
+      <div id="gift-options" hidden={c.gift?.enabled !== true}>
+        <h4>Rekening & dompet digital</h4>
+        <p class="editor-hint">
+          Maksimal 3. Nomor rekening dapat disalin tamu dengan satu ketukan.
+        </p>
+        <div id="gift-accounts"></div>
+        <button
+          type="button"
+          class="dash-button secondary"
+          id="add-gift-account"
+        >
+          Tambah rekening
+        </button>
+        <div class="media-slots">
+          <div
+            class="media-slot"
+            data-slot="qrisImage"
+            data-kind="image"
+            data-no-focus
+          >
+            <h4>Gambar QRIS (opsional)</h4>
+            <input
+              type="hidden"
+              name="qrisImage"
+              value={c.gift?.qrisImage || ""}
+            />
+            <div class="slot-preview"></div>
+            <div class="slot-actions">
+              <button
+                type="button"
+                class="dash-button secondary"
+                data-select-media="qrisImage"
+              >
+                Unggah / pilih foto
+              </button>
+              <button
+                type="button"
+                class="subtle-button"
+                data-clear-media="qrisImage"
+              >
+                Lepaskan
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <label>
+            Nama penerima hadiah fisik (opsional)
+            <input
+              id="gift-shipping-recipient"
+              maxlength="100"
+              value={c.gift?.shippingRecipient || ""}
+            />
+          </label>
+          <label class="wide">
+            Alamat pengiriman hadiah fisik (opsional)
+            <textarea
+              id="gift-shipping-address"
+              maxlength="300"
+              rows="3"
+            >{c.gift?.shippingAddress || ""}</textarea>
+          </label>
+        </div>
+      </div>
+    </fieldset>
+    <fieldset class="extras-group">
+      <legend>Bahasa Inggris</legend>
+      <label class="toggle-field">
+        <input
+          type="checkbox"
+          name="showEnglish"
+          value="true"
+          checked={c.showEnglish === true}
+        />
+        <span>
+          Tampilkan pilihan bahasa Inggris
+          <small>
+            Tamu dapat beralih ID/EN. Label tetap (judul, tombol, formulir)
+            diterjemahkan otomatis; nama, cerita, dan alamat tidak berubah.
+          </small>
+        </span>
+      </label>
+      <label class="font-picker">
+        Kalimat undangan (English, opsional)
+        <textarea
+          name="openingEn"
+          maxlength="1000"
+          rows="3"
+        >{c.openingEn || ""}</textarea>
+        <small>
+          Jika kosong, tamu tetap melihat kalimat undangan Indonesia.
+        </small>
+      </label>
+    </fieldset>
+  </section>
   <section class="editor-panel" id="editor-preview">
     <div class="panel-heading preview-heading">
       <div>
-        <span class="dash-kicker">06 / CEK HASIL</span>
+        <span class="dash-kicker">07 / CEK HASIL</span>
         <h3>Pratinjau langsung.</h3>
         <p>Pratinjau diperbarui setelah draft tersimpan otomatis.</p>
       </div>
@@ -436,7 +585,7 @@ const slots = [
   </section>
   <section class="editor-panel publish-checklist" id="publish-checklist">
     <div class="panel-heading">
-      <span class="dash-kicker">07 / SIAP TERBIT</span>
+      <span class="dash-kicker">08 / SIAP TERBIT</span>
       <h3>Pemeriksaan sebelum terbit.</h3>
     </div>
     <ul id="checklist" aria-live="polite"></ul>

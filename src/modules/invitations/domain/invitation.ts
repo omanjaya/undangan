@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { youtubeId } from "./video";
 import { isGoogleMapEmbedUrl } from "./maps";
+import { isSafeHttpsUrl } from "./links";
 const mapEmbed = z
   .string()
   .trim()
@@ -20,6 +21,37 @@ const mediaUrl = z
   .string()
   .regex(/^$|^\/media\/[a-f0-9-]+\.(?:webp|mp4|webm|mp3|m4a|ogg|wav)$/)
   .default("");
+const giftAccount = z.object({
+  provider: z.string().trim().min(1).max(60),
+  holder: z.string().trim().min(1).max(100),
+  number: z
+    .string()
+    .trim()
+    .min(4)
+    .max(34)
+    .regex(
+      /^[0-9A-Za-z][0-9A-Za-z .+-]*$/,
+      "Nomor rekening hanya boleh berisi angka, huruf, spasi, titik, plus, atau strip",
+    ),
+});
+export const giftSchema = z.object({
+  enabled: z.boolean().default(false),
+  accounts: z.array(giftAccount).max(3).default([]),
+  qrisImage: z
+    .string()
+    .regex(/^$|^\/media\/[a-f0-9-]+\.webp$/)
+    .default(""),
+  shippingRecipient: z.string().trim().max(100).default(""),
+  shippingAddress: z.string().trim().max(300).default(""),
+});
+export type GiftContent = z.infer<typeof giftSchema>;
+const emptyGift: GiftContent = {
+  enabled: false,
+  accounts: [],
+  qrisImage: "",
+  shippingRecipient: "",
+  shippingAddress: "",
+};
 export const contentSchema = z.object({
   theme: z
     .enum([
@@ -87,6 +119,19 @@ export const contentSchema = z.object({
       "Masukkan tautan video YouTube HTTPS yang valid",
     )
     .default(""),
+  gift: giftSchema.default(emptyGift),
+  liveStreamUrl: z
+    .string()
+    .trim()
+    .max(2048)
+    .refine(
+      (v) => !v || isSafeHttpsUrl(v),
+      "Masukkan tautan siaran langsung HTTPS yang valid",
+    )
+    .default(""),
+  liveStreamLabel: z.string().trim().max(80).default(""),
+  showEnglish: z.boolean().default(false),
+  openingEn: z.string().trim().max(1000).default(""),
   musicUrl: mediaUrl,
   musicTitle: z.string().trim().max(150).default(""),
   galleryPhotos: z.array(mediaUrl).max(12).default([]),
@@ -184,6 +229,18 @@ export const demoContent: InvitationContent = contentSchema.parse({
   opening:
     "Dengan penuh rasa syukur dan bahagia, kami mengundang Bapak, Ibu, dan sahabat untuk menjadi bagian dari hari istimewa kami.",
   mapUrl: "https://maps.google.com/?q=Taman+Bhagawan+Bali",
+  showEnglish: true,
+  openingEn:
+    "With heartfelt gratitude and joy, we invite you to be part of our special day.",
+  gift: {
+    enabled: true,
+    accounts: [
+      { provider: "BCA", holder: "Amara Putri", number: "1234567890" },
+      { provider: "GoPay", holder: "Raka Pratama", number: "081234567890" },
+    ],
+    shippingRecipient: "Amara Putri",
+    shippingAddress: "Jl. Pratama No. 70, Tanjung Benoa, Bali",
+  },
 });
 export const demoInvitation: Invitation = {
   id: "inv-amara-raka",

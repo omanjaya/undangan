@@ -1,0 +1,164 @@
+---
+import InviteIcon from "./InviteIcon.astro";
+import type { GiftContent } from "../../modules/invitations/domain/invitation";
+
+interface Props {
+  gift: GiftContent;
+}
+const { gift } = Astro.props;
+const hasShipping = Boolean(gift.shippingAddress);
+---
+
+<section
+  class="invite-gift-section invite-section"
+  id="gift"
+  aria-labelledby="gift-title"
+>
+  <div class="invite-gift-copy">
+    <p class="invite-eyebrow" data-i18n="gift.eyebrow">
+      TANDA KASIH
+    </p>
+    <h2 id="gift-title" data-i18n="gift.title">
+      Amplop <em>digital.</em>
+    </h2>
+    <p data-i18n="gift.lead">
+      Doa restu Anda sudah sangat berarti bagi kami. Jika ingin berbagi tanda
+      kasih, Anda dapat mengirimkannya melalui informasi berikut.
+    </p>
+  </div>
+  <div class="invite-gift-list">
+    {gift.accounts.map((account) => (
+      <div class="invite-gift-card">
+        <p class="invite-gift-provider">{account.provider}</p>
+        <p class="invite-gift-number" data-gift-number>
+          {account.number}
+        </p>
+        <p class="invite-gift-holder">
+          <span data-i18n="gift.accountName">a.n.</span>
+          {account.holder}
+        </p>
+        <button
+          type="button"
+          class="invite-gift-copy-button"
+          data-gift-copy={account.number}
+          data-gift-provider={account.provider}
+        >
+          <InviteIcon name="plus" size={16} />
+          <span data-gift-copy-label data-i18n="gift.copy">
+            Salin
+          </span>
+          <span class="sr-only">{account.provider}</span>
+        </button>
+      </div>
+    ))}
+    {gift.qrisImage && (
+      <div class="invite-gift-card invite-gift-qris">
+        <p class="invite-gift-provider" data-i18n="gift.qris">
+          Pindai QRIS
+        </p>
+        <img
+          src={gift.qrisImage}
+          alt="QRIS"
+          width="320"
+          height="320"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    )}
+    {hasShipping && (
+      <div class="invite-gift-card">
+        <p class="invite-gift-provider" data-i18n="gift.shipping">
+          Kirim hadiah fisik
+        </p>
+        {gift.shippingRecipient && (
+          <p class="invite-gift-holder">
+            <span data-i18n="gift.recipient">Penerima</span>
+            {gift.shippingRecipient}
+          </p>
+        )}
+        <p class="invite-gift-address">{gift.shippingAddress}</p>
+      </div>
+    )}
+  </div>
+  <p
+    class="invite-gift-status"
+    role="status"
+    aria-live="polite"
+    data-gift-status
+  ></p>
+</section>
+<script>
+  import { onLangChange, tr } from "./i18n-client";
+
+  const status = document.querySelector<HTMLElement>("[data-gift-status]");
+  const timers = new WeakMap<HTMLElement, number>();
+
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Lanjut ke cadangan untuk browser lama atau konteks tidak aman.
+    }
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+    document.body.append(field);
+    field.select();
+    field.setSelectionRange(0, text.length);
+    try {
+      return document.execCommand("copy");
+    } catch {
+      return false;
+    } finally {
+      field.remove();
+    }
+  }
+
+  function selectNumber(button: HTMLElement) {
+    const number = button
+      .closest(".invite-gift-card")
+      ?.querySelector("[data-gift-number]");
+    if (!number) return;
+    const range = document.createRange();
+    range.selectNodeContents(number);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-gift-copy]")
+    .forEach((button) => {
+      const label = button.querySelector<HTMLElement>("[data-gift-copy-label]");
+      const reset = () => {
+        button.removeAttribute("data-copied");
+        if (label) {
+          label.dataset.i18n = "gift.copy";
+          label.textContent = tr("gift.copy");
+        }
+      };
+      button.addEventListener("click", async () => {
+        const ok = await copyText(button.dataset.giftCopy ?? "");
+        window.clearTimeout(timers.get(button));
+        if (!ok) {
+          selectNumber(button);
+          if (status) status.textContent = tr("gift.copyFailed");
+          return;
+        }
+        button.setAttribute("data-copied", "true");
+        if (label) {
+          label.dataset.i18n = "gift.copied";
+          label.textContent = tr("gift.copied");
+        }
+        if (status)
+          status.textContent = `${tr("gift.copied")}: ${button.dataset.giftProvider ?? ""}`;
+        timers.set(button, window.setTimeout(reset, 2400));
+      });
+    });
+  onLangChange(() => {
+    if (status) status.textContent = "";
+  });
+</script>
