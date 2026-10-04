@@ -1,17 +1,147 @@
 <style is:global>
+  /*
+   * Kepribadian gerak tiap tema diatur lewat variabel CSS pada
+   * .invitation[data-theme] (lihat juga styles/invitation.css):
+   *   --im-reveal-x / --im-reveal-distance  arah & jarak muncul
+   *   --im-reveal-scale / --im-reveal-blur  mekar & kabut saat muncul
+   *   --im-fade-ms / --im-slide-ms / --im-ease  tempo
+   *   --im-stagger  jeda antarelemen dalam satu kelompok
+   *   --im-cover-exit-ms  lama transisi saat cover dibuka
+   */
+  @property --im-split {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 0%;
+  }
+
+  .invitation[data-theme="jepun-ivory"] {
+    --im-reveal-distance: 24px;
+    --im-reveal-blur: 4px;
+    --im-fade-ms: 900ms;
+    --im-slide-ms: 1100ms;
+    --im-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --im-stagger: 90ms;
+    --im-cover-exit-ms: 1100;
+  }
+  .invitation[data-theme="puri-emerald"] {
+    --im-reveal-distance: 26px;
+    --im-reveal-scale: 0.97;
+    --im-fade-ms: 1000ms;
+    --im-slide-ms: 1250ms;
+    --im-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --im-stagger: 100ms;
+    --im-cover-exit-ms: 1500;
+  }
+  .invitation[data-theme="senja-terracotta"] {
+    --im-reveal-distance: 28px;
+    --im-reveal-blur: 3px;
+    --im-fade-ms: 900ms;
+    --im-slide-ms: 1150ms;
+    --im-ease: cubic-bezier(0.25, 0.7, 0.3, 1);
+    --im-stagger: 85ms;
+    --im-cover-exit-ms: 1200;
+  }
+  .invitation[data-theme="lotus-rosa"] {
+    --im-reveal-scale: 0.96;
+    --im-reveal-blur: 6px;
+    --im-stagger: 95ms;
+    --im-cover-exit-ms: 1300;
+  }
+  .invitation[data-theme="samudra-biru"] {
+    --im-reveal-blur: 5px;
+    --im-stagger: 110ms;
+    --im-cover-exit-ms: 1400;
+  }
+  .invitation[data-theme="sawah-hijau"] {
+    --im-stagger: 60ms;
+    --im-cover-exit-ms: 950;
+  }
+  .invitation[data-theme="malam-keemasan"] {
+    --im-stagger: 130ms;
+    --im-cover-exit-ms: 1500;
+  }
+  .invitation[data-theme="pasir-putih"] {
+    --im-stagger: 70ms;
+    --im-cover-exit-ms: 900;
+  }
+  .invitation[data-theme="midnight-monochrome"] {
+    --im-stagger: 140ms;
+    --im-cover-exit-ms: 1600;
+  }
+
+  /* ---------- Reveal saat digulir ---------- */
+
   .invitation.im-ready .im-reveal {
     opacity: 0;
     translate: var(--im-reveal-x, 0px) var(--im-reveal-distance, 22px);
+    scale: var(--im-reveal-scale, 1);
     transition:
-      opacity var(--im-fade-ms, 700ms) var(--im-ease, ease) var(--im-delay, 0ms),
+      opacity var(--im-fade-ms, 700ms) var(--im-ease, ease),
       translate var(--im-slide-ms, 850ms)
-        var(--im-ease, cubic-bezier(0.2, 0.65, 0.3, 1)) var(--im-delay, 0ms);
+        var(--im-ease, cubic-bezier(0.2, 0.65, 0.3, 1)),
+      scale var(--im-slide-ms, 850ms) var(--im-ease, ease),
+      filter var(--im-fade-ms, 700ms) var(--im-ease, ease),
+      clip-path var(--im-slide-ms, 850ms) var(--im-ease, ease),
+      transform 0.4s;
+    transition-delay: calc(var(--im-delay, 0ms) + var(--im-open-delay, 0ms));
+  }
+
+  .invitation.im-ready:is(
+      [data-theme="jepun-ivory"],
+      [data-theme="senja-terracotta"],
+      [data-theme="lotus-rosa"],
+      [data-theme="samudra-biru"]
+    )
+    .im-reveal:not(.im-visible) {
+    filter: blur(var(--im-reveal-blur, 0px));
   }
 
   .invitation.im-ready .im-reveal.im-visible {
     opacity: 1;
     translate: 0 0;
+    scale: none;
   }
+
+  /* Foto dan kartu muncul sedikit membesar, apa pun arah tema. */
+  .invitation.im-ready .im-media {
+    --im-reveal-x: 0px;
+    --im-reveal-distance: 18px;
+    --im-reveal-scale: 0.94;
+  }
+
+  /* Judul punya aksen khusus pada tema tertentu. */
+  .invitation.im-ready[data-theme="midnight-monochrome"] .im-heading {
+    clip-path: inset(-30% -10% -30% -10%);
+  }
+  .invitation.im-ready[data-theme="midnight-monochrome"]
+    .im-heading:not(.im-visible) {
+    clip-path: inset(-30% 110% -30% -10%);
+  }
+  .invitation.im-ready[data-theme="pasir-putih"] .im-heading {
+    clip-path: inset(-30% -10% -30% -10%);
+  }
+  .invitation.im-ready[data-theme="pasir-putih"] .im-heading:not(.im-visible) {
+    clip-path: inset(100% -10% -30% -10%);
+  }
+  .invitation.im-ready[data-theme="malam-keemasan"]
+    .im-heading:not(.im-visible) {
+    filter: brightness(1.9) blur(6px);
+  }
+  .invitation.im-ready[data-theme="puri-emerald"] .im-heading:not(.im-visible) {
+    --im-reveal-scale: 0.92;
+  }
+
+  /* Bagian hero menunggu cover dibuka, lalu mengalir masuk. */
+  html.invite-locked .invitation.im-ready .im-reveal.im-visible {
+    opacity: 0;
+    translate: var(--im-reveal-x, 0px) var(--im-reveal-distance, 22px);
+    scale: var(--im-reveal-scale, 1);
+  }
+  .invitation.im-opening {
+    --im-open-delay: calc(var(--im-cover-exit-ms, 800) * 0.35ms);
+  }
+
+  /* ---------- Parallax ---------- */
 
   .invitation.im-ready .im-parallax {
     translate: 0 var(--im-shift, 0px);
@@ -19,6 +149,11 @@
 
   .invitation.im-ready .im-photo {
     scale: 1.08;
+    transition: scale 2.6s cubic-bezier(0.2, 0.6, 0.2, 1);
+  }
+
+  html.invite-locked .invitation.im-ready .invite-hero-image.im-photo {
+    scale: 1.2;
   }
 
   .invitation .invite-parallax-clip {
@@ -31,9 +166,192 @@
     will-change: translate;
   }
 
+  /* ---------- Cover: masuk ---------- */
+
+  .invitation .invite-cover:not([hidden]) .invite-cover-art {
+    animation:
+      im-fade-in 1.8s ease-out both,
+      im-cover-drift 22s ease-in-out 1.8s infinite alternate;
+  }
+
+  .invitation .invite-cover:not([hidden]) .invite-cover-inner {
+    animation: im-fade-in 1.2s ease-out 0.1s both;
+  }
+
+  .invitation .invite-cover:not([hidden]) .invite-cover-inner > * {
+    animation: im-cover-rise var(--im-slide-ms, 900ms)
+      var(--im-ease, cubic-bezier(0.2, 0.65, 0.3, 1)) both;
+    animation-delay: calc(0.25s + var(--im-cover-step, 0) * 0.11s);
+  }
+  .invitation .invite-cover-inner > :nth-child(2) {
+    --im-cover-step: 1;
+  }
+  .invitation .invite-cover-inner > :nth-child(3) {
+    --im-cover-step: 2;
+  }
+  .invitation .invite-cover-inner > :nth-child(4) {
+    --im-cover-step: 3;
+  }
+  .invitation .invite-cover-inner > :nth-child(5) {
+    --im-cover-step: 4;
+  }
+  .invitation .invite-cover-inner > :nth-child(6) {
+    --im-cover-step: 5;
+  }
+  .invitation .invite-cover-inner > :nth-child(7) {
+    --im-cover-step: 6;
+  }
+  .invitation .invite-cover-inner > :nth-child(n + 8) {
+    --im-cover-step: 7;
+  }
+
+  .invitation .invite-cover:not([hidden]) .invite-cover-seal {
+    animation: im-seal-in 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s both;
+  }
+
+  .invitation .invite-cover:not([hidden]) [data-open-invitation] {
+    animation:
+      im-cover-rise var(--im-slide-ms, 900ms)
+        var(--im-ease, cubic-bezier(0.2, 0.65, 0.3, 1)) both,
+      im-cover-pulse 2.8s ease-out 2.2s infinite;
+    animation-delay: calc(0.25s + var(--im-cover-step, 0) * 0.11s), 2.2s;
+  }
+
+  /* ---------- Cover: dibuka (berbeda per tema) ---------- */
+
+  .invitation .invite-cover {
+    transition:
+      opacity calc(var(--im-cover-exit-ms, 800) * 1ms) ease,
+      transform calc(var(--im-cover-exit-ms, 800) * 1ms)
+        cubic-bezier(0.7, 0, 0.2, 1),
+      filter calc(var(--im-cover-exit-ms, 800) * 1ms) ease,
+      --im-split calc(var(--im-cover-exit-ms, 800) * 1ms)
+        cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  .invitation .invite-cover.is-opening .invite-cover-inner {
+    opacity: 0;
+    scale: 0.97;
+    transition:
+      opacity 0.45s ease,
+      scale 0.45s ease;
+  }
+  .invitation .invite-cover.is-opening .invite-cover-inner,
+  .invitation .invite-cover.is-opening .invite-cover-inner > *,
+  .invitation .invite-cover.is-opening .invite-cover-art {
+    animation: none;
+  }
+
+  .invitation[data-theme="jepun-ivory"] .invite-cover.is-opening {
+    transform: translateY(-3%);
+    filter: blur(6px);
+  }
+  .invitation[data-theme="senja-terracotta"] .invite-cover.is-opening {
+    transform: translateY(-6%);
+    filter: sepia(0.35) brightness(1.15) blur(4px);
+  }
+  .invitation[data-theme="lotus-rosa"] .invite-cover.is-opening {
+    transform: scale(1.12);
+    filter: blur(10px);
+  }
+  .invitation[data-theme="samudra-biru"] .invite-cover.is-opening {
+    transform: translateY(8%);
+    filter: blur(12px);
+  }
+  .invitation[data-theme="sawah-hijau"] .invite-cover.is-opening {
+    opacity: 1;
+    transform: translateY(-100%);
+  }
+  .invitation[data-theme="malam-keemasan"] .invite-cover.is-opening {
+    transform: scale(1.04);
+    filter: brightness(1.9) blur(8px);
+  }
+  .invitation[data-theme="pasir-putih"] .invite-cover.is-opening {
+    transform: none;
+  }
+
+  /* Puri Emerald membuka seperti dua daun pintu gapura; Midnight Monochrome
+     seperti layar bioskop yang terbelah atas-bawah. */
+  .invitation:is(
+      [data-theme="puri-emerald"],
+      [data-theme="midnight-monochrome"]
+    )
+    .invite-cover.is-opening {
+    --im-split: 51%;
+    opacity: 1;
+    transform: none;
+    mask-image: linear-gradient(
+      var(--im-split-direction, 90deg),
+      #000 calc(50% - var(--im-split)),
+      transparent calc(50% - var(--im-split)),
+      transparent calc(50% + var(--im-split)),
+      #000 calc(50% + var(--im-split))
+    );
+  }
+  .invitation[data-theme="midnight-monochrome"] .invite-cover {
+    --im-split-direction: 180deg;
+  }
+
+  /* ---------- Aksen kecil ---------- */
+
+  .invitation .invite-scroll-label span {
+    display: inline-block;
+    animation: im-bob 2.4s ease-in-out infinite;
+  }
+
+  @keyframes im-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes im-cover-rise {
+    from {
+      opacity: 0;
+      translate: var(--im-reveal-x, 0px) var(--im-reveal-distance, 18px);
+      filter: blur(var(--im-reveal-blur, 0px));
+    }
+  }
+  @keyframes im-cover-drift {
+    from {
+      scale: 1.06;
+    }
+    to {
+      scale: 1;
+    }
+  }
+  @keyframes im-seal-in {
+    from {
+      opacity: 0;
+      rotate: -120deg;
+      scale: 0.6;
+    }
+  }
+  @keyframes im-cover-pulse {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--iv-gold) 55%, transparent);
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 14px transparent;
+    }
+  }
+  @keyframes im-bob {
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 6px;
+    }
+  }
+
   @media (max-width: 760px) {
     .invitation.im-ready .im-reveal {
       --im-reveal-distance: 14px;
+    }
+    .invitation.im-ready[data-theme="midnight-monochrome"] .im-reveal {
+      --im-reveal-x: -18px;
+      --im-reveal-distance: 0px;
     }
 
     .invitation.im-ready .im-photo {
@@ -45,11 +363,28 @@
     .invitation.im-ready :is(.im-reveal, .im-parallax) {
       opacity: 1;
       translate: none;
+      scale: none;
+      filter: none;
+      clip-path: none;
       transition: none;
     }
 
-    .invitation.im-ready .im-photo {
+    .invitation.im-ready .im-photo,
+    html.invite-locked .invitation.im-ready .invite-hero-image.im-photo {
       scale: none;
+    }
+
+    .invitation .invite-cover,
+    .invitation .invite-cover *,
+    .invitation .invite-scroll-label span {
+      animation: none !important;
+    }
+
+    .invitation .invite-cover.is-opening {
+      transform: none !important;
+      filter: none !important;
+      mask-image: none !important;
+      opacity: 0 !important;
     }
   }
 </style>
@@ -100,23 +435,51 @@
       ":scope > p",
       ":scope > div",
     ].join(",");
+    // Foto & kartu yang berdiri sendiri; tiap kelompok diberi jeda bertahap.
+    const mediaGroups = [
+      ".invite-hero-visual",
+      ".invite-story-photo",
+      ".invite-gallery > .invite-gallery-item",
+      ".invite-gallery-section .youtube-film, .invite-gallery-section .invite-video",
+    ];
 
-    const revealItems = Array.from(
-      new Set(
-        revealGroups.flatMap((selector) =>
-          Array.from(
-            invitation.querySelectorAll<HTMLElement>(selector),
-          ).flatMap((group) =>
+    const stagger = () =>
+      Number.parseFloat(
+        getComputedStyle(invitation).getPropertyValue("--im-stagger"),
+      ) || 75;
+
+    const revealItems: HTMLElement[] = [];
+    const register = (items: HTMLElement[], extraClass?: string) => {
+      const step = stagger();
+      items
+        .filter((item) => !revealItems.includes(item))
+        .forEach((item, index) => {
+          revealItems.push(item);
+          item.classList.add("im-reveal");
+          if (extraClass) item.classList.add(extraClass);
+          if (/^H[12]$/.test(item.tagName)) item.classList.add("im-heading");
+          item.style.setProperty(
+            "--im-delay",
+            `${Math.min(index, 5) * step}ms`,
+          );
+        });
+    };
+
+    revealGroups.forEach((selector) =>
+      invitation
+        .querySelectorAll<HTMLElement>(selector)
+        .forEach((group) =>
+          register(
             Array.from(group.querySelectorAll<HTMLElement>(revealSelector)),
           ),
         ),
+    );
+    mediaGroups.forEach((selector) =>
+      register(
+        Array.from(invitation.querySelectorAll<HTMLElement>(selector)),
+        "im-media",
       ),
     );
-
-    revealItems.forEach((item, index) => {
-      item.classList.add("im-reveal");
-      item.style.setProperty("--im-delay", `${(index % 5) * 75}ms`);
-    });
 
     const parallaxItems = [
       ...invitation.querySelectorAll<HTMLElement>(
@@ -184,17 +547,28 @@
     const enableMotion = () => {
       invitation.classList.add("im-ready");
 
+      // Judul yang disingkap dengan clip-path dianggap tak terlihat oleh
+      // IntersectionObserver, jadi yang diamati adalah induknya.
+      const targets = new Map<Element, HTMLElement[]>();
+      revealItems.forEach((item) => {
+        const target = item.classList.contains("im-heading")
+          ? item.parentElement || item
+          : item;
+        targets.set(target, [...(targets.get(target) ?? []), item]);
+      });
       revealObserver = new IntersectionObserver(
         (entries, observer) => {
           entries.forEach((entry) => {
             if (!entry.isIntersecting) return;
-            entry.target.classList.add("im-visible");
+            targets
+              .get(entry.target)
+              ?.forEach((item) => item.classList.add("im-visible"));
             observer.unobserve(entry.target);
           });
         },
         { threshold: 0.08, rootMargin: "0px 0px -24px" },
       );
-      revealItems.forEach((item) => revealObserver?.observe(item));
+      targets.forEach((_, target) => revealObserver?.observe(target));
 
       visibilityObserver = new IntersectionObserver(
         (entries) => {
@@ -235,7 +609,7 @@
       disableMotion();
       controller.abort();
       revealItems.forEach((item) => {
-        item.classList.remove("im-reveal");
+        item.classList.remove("im-reveal", "im-media", "im-heading");
         item.style.removeProperty("--im-delay");
       });
       parallaxItems.forEach((item) =>

@@ -815,18 +815,26 @@ const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE
       () => {
         // Audio starts only inside the guest's explicit opening gesture.
         if (audio) void audio.play().catch(updateMusic);
+        // Lama transisi dibuka ditentukan tema (--im-cover-exit-ms).
+        const exitMs = reducedMotion
+          ? 0
+          : Number.parseFloat(
+              getComputedStyle(cover).getPropertyValue("--im-cover-exit-ms"),
+            ) || 800;
+        invitation?.classList.add("im-opening");
         cover.classList.add("is-opening");
         pageContent.inert = false;
         document.documentElement.classList.remove("invite-locked");
         if (musicButton) musicButton.hidden = false;
+        window.setTimeout(() => {
+          cover.hidden = true;
+          const title = document.querySelector<HTMLElement>("#wedding-title");
+          title?.setAttribute("tabindex", "-1");
+          title?.focus({ preventScroll: true });
+        }, exitMs);
         window.setTimeout(
-          () => {
-            cover.hidden = true;
-            const title = document.querySelector<HTMLElement>("#wedding-title");
-            title?.setAttribute("tabindex", "-1");
-            title?.focus({ preventScroll: true });
-          },
-          reducedMotion ? 0 : 800,
+          () => invitation?.classList.remove("im-opening"),
+          exitMs + 2500,
         );
       },
       { once: true },
