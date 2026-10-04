@@ -1166,25 +1166,28 @@ document.querySelector("#copy-link")?.addEventListener("click", async () => {
     notify(`Tautan undangan: ${url}`);
   }
 });
-document.querySelectorAll<HTMLButtonElement>(".moderate").forEach((button) =>
-  button.addEventListener("click", async () => {
-    if (dirty) {
-      notify("Simpan perubahan sebelum memoderasi ucapan.", true);
-      return;
-    }
-    button.disabled = true;
-    try {
-      await post("/api/wishes", {
-        id: button.dataset.id,
-        status: button.dataset.status,
-      });
-      location.reload();
-    } catch (e) {
-      notify((e as Error).message, true);
-      button.disabled = false;
-    }
-  }),
-);
+// Hanya tombol status; tombol balas & hapus juga bergaya .moderate.
+document
+  .querySelectorAll<HTMLButtonElement>(".moderate[data-status]")
+  .forEach((button) =>
+    button.addEventListener("click", async () => {
+      if (dirty) {
+        notify("Simpan perubahan sebelum memoderasi ucapan.", true);
+        return;
+      }
+      button.disabled = true;
+      try {
+        await post("/api/wishes", {
+          id: button.dataset.id,
+          status: button.dataset.status,
+        });
+        location.reload();
+      } catch (e) {
+        notify((e as Error).message, true);
+        button.disabled = false;
+      }
+    }),
+  );
 
 document
   .querySelectorAll<HTMLButtonElement>("[data-delete-wish]")
