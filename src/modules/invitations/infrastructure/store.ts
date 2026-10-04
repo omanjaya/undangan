@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import postgres from "postgres";
 import {
@@ -17,6 +17,11 @@ import {
   type BudgetItem,
   type BudgetSettings,
 } from "../domain/budget";
+import {
+  GUEST_CODE_PATTERN,
+  generateGuestCode,
+  type Guest,
+} from "../domain/guests";
 export type MediaAsset = {
   id: string;
   workspaceId: string;
@@ -41,6 +46,10 @@ export type State = {
   budget?: BudgetItem[];
   budgetSettings?: BudgetSettings;
   wishes: Wish[];
+  /** Daftar tamu; tiap tamu terikat ke satu undangan lewat `invitationId`. */
+  guests?: Guest[];
+  /** Templat pesan WhatsApp per id undangan. */
+  guestTemplates?: Record<string, string>;
   revisions: {
     invitationId?: string;
     revision: number;
@@ -52,6 +61,8 @@ const initial = (): State => ({
   invitations: [structuredClone(demoInvitation)],
   rsvps: [],
   wishes: [],
+  guests: [],
+  guestTemplates: {},
   budget: [],
   budgetSettings: { cap: 0 },
   revisions: [
@@ -164,6 +175,54 @@ function arrayAman<T>(value: T[] | undefined): T[] {
   return Array.isArray(value) ? value : [];
 }
 
+/**
+ * Tamu yang cacat diperbaiki seadanya agar satu baris rusak tidak menjatuhkan
+ * seluruh daftar. Kode yang hilang, tidak sah, atau kembar diganti baru: kode
+ * harus unik karena menjadi kunci tautan pribadi.
+ */
+function recoverGuests(raw: unknown, invitationIds: Set<string>): Guest[] {
+  if (!Array.isArray(raw)) return [];
+  const codes = new Set<string>();
+  const text = (v: unknown, max: number) =>
+    typeof v === "string" ? v.trim().slice(0, max) : "";
+  const time = (v: unknown) => (typeof v === "string" && v ? v : null);
+  const result: Guest[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const g = item as Record<string, unknown>;
+    if (
+      typeof g.invitationId !== "string" ||
+      !invitationIds.has(g.invitationId)
+    )
+      continue;
+    const code =
+      typeof g.code === "string" &&
+      GUEST_CODE_PATTERN.test(g.code) &&
+      !codes.has(g.code)
+        ? g.code
+        : generateGuestCode((n) => randomBytes(n), codes);
+    codes.add(code);
+    const created = time(g.createdAt) ?? new Date(0).toISOString();
+    const pax = Number(g.maxPax);
+    result.push({
+      id: typeof g.id === "string" && g.id ? g.id : randomUUID(),
+      invitationId: g.invitationId,
+      code,
+      name: text(g.name, 100) || "Tamu tanpa nama",
+      phone: /^\d{8,15}$/.test(String(g.phone ?? "")) ? String(g.phone) : "",
+      group: text(g.group, 60),
+      maxPax: Number.isInteger(pax) && pax >= 1 && pax <= 5 ? pax : null,
+      sentAt: time(g.sentAt),
+      firstOpenedAt: time(g.firstOpenedAt),
+      openCount: angkaAman(g.openCount),
+      checkedInAt: time(g.checkedInAt),
+      createdAt: created,
+      updatedAt: time(g.updatedAt) ?? created,
+    });
+  }
+  return result;
+}
+
 /** Nilai yang tidak dapat dibaca sebagai rupiah dianggap nol, bukan menggagalkan pos. */
 function angkaAman(value: unknown) {
   const angka = typeof value === "string" ? Number(value.trim()) : value;
@@ -208,6 +267,16 @@ export function normalizeState(state: State): State {
   state.rsvps = arrayAman(state.rsvps);
   state.wishes = arrayAman(state.wishes);
   state.assets = arrayAman(state.assets);
+  state.guests = recoverGuests(
+    state.guests,
+    new Set(state.invitations.map((i) => i.id)),
+  );
+  const templates: Record<string, string> = {};
+  if (state.guestTemplates && typeof state.guestTemplates === "object")
+    for (const [id, value] of Object.entries(state.guestTemplates))
+      if (typeof value === "string" && value.trim())
+        templates[id] = value.slice(0, 1000);
+  state.guestTemplates = templates;
   state.budget = (state.budget ?? []).flatMap(recoverBudgetItem);
   const settings = budgetSettingsSchema.safeParse(state.budgetSettings ?? {});
   state.budgetSettings = settings.success ? settings.data : { cap: 0 };

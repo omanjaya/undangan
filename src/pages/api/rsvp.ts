@@ -24,6 +24,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       String(data.slug || "amara-raka"),
       data,
       token,
+      data.g,
     );
     return json(result, 200, {
       "Set-Cookie": `invitation_visitor=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000${process.env.NODE_ENV === "production" ? "; Secure" : ""}`,

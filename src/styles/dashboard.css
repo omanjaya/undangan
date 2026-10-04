@@ -1967,3 +1967,209 @@ td {
   align-items: center;
   cursor: pointer;
 }
+
+/* Daftar tamu */
+.guest-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.guest-details {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+.guest-details summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.guest-details textarea,
+.guest-toolbar input,
+.guest-toolbar select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13px;
+  background: #fff;
+}
+.guest-details textarea {
+  margin-top: 8px;
+}
+.guest-import-result {
+  white-space: pre-wrap;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+#guest-error {
+  color: #a33a2a;
+  font-size: 12px;
+  margin-top: 8px;
+  min-height: 1em;
+}
+.guest-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) 1fr 1fr auto auto;
+  gap: 10px;
+  margin: 18px 0 14px;
+  align-items: center;
+}
+.guest-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: 6px;
+  background: #fff;
+  margin-bottom: 10px;
+}
+.guest-row.is-checked-in {
+  border-left-color: #6e7f55;
+}
+.guest-info h4 {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.guest-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.guest-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+.guest-status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: #eee9dd;
+  color: #5b5446;
+  white-space: nowrap;
+}
+.guest-status[data-status="terkirim"] {
+  background: #f3e8c4;
+  color: #6d5a14;
+}
+.guest-status[data-status="dibuka"] {
+  background: #dce8ef;
+  color: #274a5e;
+}
+.guest-status[data-status="hadir"],
+.guest-status[data-status="checkin"] {
+  background: #dfe9d3;
+  color: #3f5a24;
+}
+.guest-status[data-status="tidak-hadir"] {
+  background: #f1dcd6;
+  color: #7a3326;
+}
+.guest-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.guest-action {
+  padding: 7px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--ink, #2b2420);
+  background: var(--ink, #2b2420);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.guest-action.secondary {
+  background: #fff;
+  color: var(--ink, #2b2420);
+  border-color: var(--line);
+}
+.guest-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .guest-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+  .guest-toolbar input[type="search"] {
+    grid-column: 1 / -1;
+  }
+  .guest-row {
+    grid-template-columns: 1fr;
+  }
+  .guest-badges {
+    justify-content: flex-start;
+  }
+}
+
+/* Check-in */
+.checkin-scanner video {
+  width: 100%;
+  max-height: 320px;
+  background: #111;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.checkin-manual {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+.checkin-manual input {
+  flex: 1 1 220px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+}
+.checkin-result {
+  padding: 18px 20px;
+  border-radius: 8px;
+  border: 2px solid var(--line);
+  background: #fff;
+  margin-bottom: 18px;
+}
+.checkin-result[data-state="ok"] {
+  border-color: #6e7f55;
+  background: #f1f6ea;
+}
+.checkin-result[data-state="duplicate"] {
+  border-color: #c9a227;
+  background: #fbf5dc;
+}
+.checkin-result[data-state="error"] {
+  border-color: #a33a2a;
+  background: #fbeeea;
+}
+.checkin-result h3 {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+.checkin-result p {
+  font-size: 13px;
+}
+.checkin-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}

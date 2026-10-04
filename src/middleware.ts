@@ -14,7 +14,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()",
+    // Kamera hanya dibuka untuk pemindai check-in milik pemilik.
+    `camera=${context.url.pathname.startsWith("/dashboard/checkin") ? "(self)" : "()"}, microphone=(), geolocation=()`,
   );
   // Astro menyusun CSP beserta hash script/style-nya sendiri (lihat security.csp
   // di astro.config.mjs): lewat <meta> untuk halaman prerender, lewat header ini

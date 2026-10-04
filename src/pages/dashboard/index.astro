@@ -5,6 +5,7 @@ import Icon from "../../components/Icon.astro";
 import { getActor } from "../../server/auth";
 import { getDashboardData } from "../../server/services";
 import { getBudget } from "../../server/budget";
+import { getGuests } from "../../server/guests";
 import {
   BUDGET_CATEGORIES,
   BUDGET_BEARERS,
@@ -19,6 +20,7 @@ const selected = Astro.url.searchParams.get("undangan") || undefined;
 const { invitation, invitations, stats, rsvps, wishes } =
   await getDashboardData(actor, selected);
 const budget = await getBudget(actor);
+const guestSummary = (await getGuests(actor, invitation.slug)).summary;
 const rupiah = (value: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -51,6 +53,14 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
         <a href="#responses">
           <Icon name="users" size={19} /> Kehadiran{" "}
           <span>{stats.responses}</span>
+        </a>
+        <a href="#guests">
+          <Icon name="mail" size={19} /> Daftar tamu{" "}
+          <span data-guest-nav-count>{guestSummary.total}</span>
+        </a>
+        <a href={`/dashboard/checkin?undangan=${invitation.slug}`}>
+          <Icon name="check" size={19} /> Check-in{" "}
+          <span>{guestSummary.checkedIn}</span>
         </a>
         <a href="#wishes">
           <Icon name="heart" size={19} /> Ucapan{" "}
@@ -398,6 +408,206 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
             )}
           </div>
         </section>
+        <section
+          id="guests"
+          class="dashboard-section"
+          data-slug={invitation.slug}
+        >
+          <div class="dash-section-heading">
+            <div>
+              <span class="dash-kicker">UNDANGAN PERSONAL</span>
+              <h2>Daftar tamu</h2>
+            </div>
+            <span class="count-label" id="guest-count">
+              {guestSummary.total} tamu
+            </span>
+          </div>
+          <p class="budget-intro">
+            Daftar ini khusus untuk undangan /i/{invitation.slug}. Tiap tamu
+            mendapat tautan pribadi dan kode QR masuk.
+          </p>
+          <div class="budget-stats guest-stats">
+            {[
+              ["total", "Total tamu", String(guestSummary.total)],
+              [
+                "belumDikirim",
+                "Belum dikirim",
+                String(guestSummary.belumDikirim),
+              ],
+              ["terkirim", "Terkirim", String(guestSummary.terkirim)],
+              ["dibuka", "Dibuka", String(guestSummary.dibuka)],
+              [
+                "hadir",
+                "RSVP hadir",
+                `${guestSummary.hadir} · ${guestSummary.hadirOrang} orang`,
+              ],
+              ["tidakHadir", "Tidak hadir", String(guestSummary.tidakHadir)],
+              [
+                "checkedIn",
+                "Sudah check-in",
+                `${guestSummary.checkedIn} · ${guestSummary.checkedInOrang} orang`,
+              ],
+            ].map(([key, label, value]) => (
+              <article>
+                <span>{label}</span>
+                <strong data-stat={key}>{value}</strong>
+              </article>
+            ))}
+          </div>
+
+          <form class="budget-form" id="guest-form">
+            <h3 id="guest-form-title">Tambah tamu</h3>
+            <div class="form-grid">
+              <label>
+                Nama tamu
+                <input
+                  name="name"
+                  required
+                  maxlength="100"
+                  placeholder="Bapak I Made Wirawan"
+                />
+              </label>
+              <label>
+                Nomor WhatsApp
+                <input
+                  name="phone"
+                  maxlength="40"
+                  inputmode="tel"
+                  placeholder="0812 3456 7890 (opsional)"
+                />
+              </label>
+              <label>
+                Grup / kategori
+                <input
+                  name="group"
+                  maxlength="60"
+                  list="guest-groups"
+                  placeholder="Keluarga, Kolega… (opsional)"
+                />
+                <datalist id="guest-groups"></datalist>
+              </label>
+              <label>
+                Jatah orang
+                <input
+                  type="number"
+                  name="maxPax"
+                  min="1"
+                  max="5"
+                  placeholder="Opsional"
+                />
+              </label>
+            </div>
+            <div class="guest-form-actions">
+              <button type="submit" class="dash-button" id="guest-submit">
+                Tambah tamu
+              </button>
+              <button
+                type="button"
+                class="dash-button secondary"
+                id="guest-cancel"
+                hidden
+              >
+                Batal
+              </button>
+            </div>
+            <p id="guest-error" role="alert"></p>
+          </form>
+
+          <details class="guest-details">
+            <summary>Impor banyak tamu</summary>
+            <p class="budget-intro">
+              Satu tamu per baris: nama, nomor, grup (dipisah koma, titik koma,
+              atau tab). Baris dengan nama dan nomor yang sudah ada dilewati.
+            </p>
+            <textarea
+              id="guest-import-text"
+              rows="6"
+              placeholder={
+                "Bapak Made Wirawan, 081234567890, Keluarga\nIbu Sari, 0812-9999-0000, Kolega"
+              }
+            ></textarea>
+            <div class="guest-form-actions">
+              <button
+                type="button"
+                class="dash-button"
+                id="guest-import-submit"
+              >
+                Impor daftar
+              </button>
+              <label class="dash-button secondary budget-import-label">
+                Pilih berkas CSV
+                <input
+                  type="file"
+                  id="guest-import-file"
+                  accept=".csv,.txt,text/csv,text/plain"
+                  hidden
+                />
+              </label>
+            </div>
+            <pre id="guest-import-result" class="guest-import-result"></pre>
+          </details>
+
+          <details class="guest-details">
+            <summary>Pesan WhatsApp</summary>
+            <p class="budget-intro">
+              Gunakan <code>{"{nama}"}</code> untuk nama tamu dan{" "}
+              <code>{"{tautan}"}</code> untuk tautan pribadinya.
+            </p>
+            <textarea id="guest-template" rows="9" maxlength="1000"></textarea>
+            <div class="guest-form-actions">
+              <button
+                type="button"
+                class="dash-button"
+                id="guest-template-save"
+              >
+                Simpan pesan
+              </button>
+              <button
+                type="button"
+                class="dash-button secondary"
+                id="guest-template-reset"
+              >
+                Pakai pesan bawaan
+              </button>
+            </div>
+          </details>
+
+          <div class="guest-toolbar">
+            <input
+              type="search"
+              id="guest-search"
+              placeholder="Cari nama, nomor, atau grup"
+              aria-label="Cari tamu"
+            />
+            <select id="guest-status-filter" aria-label="Saring status">
+              <option value="">Semua status</option>
+              <option value="belum-dikirim">Belum dikirim</option>
+              <option value="terkirim">Terkirim</option>
+              <option value="dibuka">Dibuka</option>
+              <option value="hadir">RSVP hadir</option>
+              <option value="tidak-hadir">Tidak hadir</option>
+              <option value="belum-checkin">Hadir, belum check-in</option>
+              <option value="checkin">Sudah check-in</option>
+            </select>
+            <select id="guest-group-filter" aria-label="Saring grup">
+              <option value="">Semua grup</option>
+            </select>
+            <a
+              class="dash-button secondary"
+              href={`/api/guests/export.csv?slug=${encodeURIComponent(invitation.slug)}`}
+              download
+            >
+              Ekspor CSV
+            </a>
+            <a
+              class="dash-button secondary"
+              href={`/dashboard/checkin?undangan=${invitation.slug}`}
+            >
+              Buka check-in
+            </a>
+          </div>
+          <div id="guest-list" class="guest-list"></div>
+        </section>
         <section id="budget" class="dashboard-section">
           <div class="dash-section-heading">
             <div>
@@ -573,4 +783,5 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
 <script>
   import "../../components/dashboard/editor";
   import "../../components/dashboard/budget";
+  import "../../components/dashboard/guests";
 </script>

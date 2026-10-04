@@ -1,0 +1,113 @@
+---
+import InviteIcon from "./InviteIcon.astro";
+const { slug, guest, qr } = Astro.props as {
+  slug: string;
+  guest: { code: string; name: string };
+  qr: string;
+};
+---
+
+<section
+  class="invite-guest-access"
+  data-guest-access
+  data-slug={slug}
+  data-code={guest.code}
+>
+  {qr && (
+    <>
+      <button class="invite-button" type="button" data-qr-open>
+        <span>QR masuk</span>
+        <InviteIcon name="arrow" size={18} />
+      </button>
+      <dialog class="invite-qr-dialog" data-qr-dialog aria-label="QR masuk">
+        <p class="invite-eyebrow">TUNJUKKAN DI LOKASI ACARA</p>
+        <h3>{guest.name}</h3>
+        <div class="invite-qr-code" set:html={qr} />
+        <p class="invite-qr-note">
+          Petugas akan memindai kode ini saat Anda tiba.
+        </p>
+        <button class="invite-button" type="button" data-qr-close>
+          <span>Tutup</span>
+        </button>
+      </dialog>
+    </>
+  )}
+</section>
+
+<style>
+  .invite-guest-access {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .invite-qr-dialog {
+    border: 1px solid currentColor;
+    border-radius: 18px;
+    padding: 28px 24px;
+    max-width: min(340px, calc(100vw - 32px));
+    text-align: center;
+    background: #fffdf8;
+    color: #2b2420;
+  }
+  .invite-qr-dialog::backdrop {
+    background: rgb(0 0 0 / 55%);
+  }
+  .invite-qr-dialog h3 {
+    margin: 4px 0 14px;
+    font-size: 1.4rem;
+    overflow-wrap: anywhere;
+  }
+  .invite-qr-code {
+    width: min(260px, 100%);
+    margin: 0 auto 12px;
+    background: #fff;
+    border-radius: 10px;
+  }
+  .invite-qr-code :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .invite-qr-note {
+    font-size: 0.9rem;
+    margin: 0 0 16px;
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>("[data-guest-access]");
+  if (root) {
+    const { slug, code } = root.dataset;
+    const key = `guest-open:${slug}:${code}`;
+    let counted = false;
+    try {
+      counted = sessionStorage.getItem(key) === "1";
+    } catch {
+      /* penyimpanan sesi bisa diblokir */
+    }
+    // Sekali per sesi peramban; kegagalan dibiarkan senyap karena hanya pencatatan.
+    if (!counted) {
+      try {
+        sessionStorage.setItem(key, "1");
+      } catch {
+        /* abaikan */
+      }
+      void fetch("/api/guests/open", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, code }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+    const dialog = root.querySelector<HTMLDialogElement>("[data-qr-dialog]");
+    root
+      .querySelector("[data-qr-open]")
+      ?.addEventListener("click", () => dialog?.showModal());
+    root
+      .querySelector("[data-qr-close]")
+      ?.addEventListener("click", () => dialog?.close());
+    dialog?.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+  }
+</script>

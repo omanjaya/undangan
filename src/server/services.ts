@@ -13,6 +13,7 @@ import {
   rsvpSchema,
   type Invitation,
 } from "../modules/invitations/domain/invitation";
+import { findGuestByCode } from "../modules/invitations/domain/guests";
 import {
   readState,
   mutateState,
@@ -141,15 +142,39 @@ export async function submitRsvp(
   slug: string,
   input: unknown,
   visitorId: string,
+  guestCode?: unknown,
 ) {
   const data = rsvpSchema.parse(input);
   return mutateState((state) => {
     const i = findBySlug(state, slug);
     if (!i || i.status !== "published")
       throw new DomainError("Undangan tidak tersedia.", 404);
-    const previous = state.rsvps.find(
-      (r) => r.visitorId === visitorId && r.invitationId === i.id,
-    );
+    // Kode tamu yang tidak dikenal diabaikan: RSVP tetap diterima seperti
+    // biasa, hanya tidak tertaut ke daftar tamu.
+    const guest = findGuestByCode(state.guests, i.id, guestCode);
+    if (
+      guest?.maxPax &&
+      data.attendance === "attending" &&
+      data.attendeeCount > guest.maxPax
+    )
+      throw new DomainError(
+        `Jatah undangan ini maksimal ${guest.maxPax} orang.`,
+      );
+    // Satu perangkat bisa dipakai beberapa tamu, jadi RSVP bertaut tamu dicari
+    // lewat tamunya dulu; cookie hanya menyambung RSVP yang belum bertaut ke
+    // tamu lain.
+    const previous = guest
+      ? (state.rsvps.find(
+          (r) => r.guestId === guest.id && r.invitationId === i.id,
+        ) ??
+        state.rsvps.find(
+          (r) =>
+            r.visitorId === visitorId && r.invitationId === i.id && !r.guestId,
+        ))
+      : state.rsvps.find(
+          (r) => r.visitorId === visitorId && r.invitationId === i.id,
+        );
+    const guestId = guest?.id ?? previous?.guestId;
     const rsvp = {
       id: previous?.id || randomUUID(),
       invitationId: i.id,
@@ -157,6 +182,7 @@ export async function submitRsvp(
       name: data.name,
       attendance: data.attendance,
       attendeeCount: data.attendance === "declined" ? 0 : data.attendeeCount,
+      ...(guestId ? { guestId } : {}),
       updatedAt: new Date().toISOString(),
     };
     if (previous) state.rsvps[state.rsvps.indexOf(previous)] = rsvp;
@@ -324,6 +350,10 @@ export async function deleteInvitation(actor: Actor | null, slug: string) {
     state.invitations = state.invitations.filter((i) => i !== invitation);
     state.rsvps = state.rsvps.filter((r) => r.invitationId !== invitation.id);
     state.wishes = state.wishes.filter((w) => w.invitationId !== invitation.id);
+    state.guests = (state.guests ?? []).filter(
+      (g) => g.invitationId !== invitation.id,
+    );
+    delete state.guestTemplates?.[invitation.id];
     state.revisions = state.revisions.filter(
       (r) => r.invitationId !== invitation.id,
     );

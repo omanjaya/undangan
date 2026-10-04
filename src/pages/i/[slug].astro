@@ -2,6 +2,8 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EditorialBotanical from "../../components/invitation/EditorialBotanical.astro";
 import { getInvitation } from "../../server/services";
+import { getGuestForPage } from "../../server/guests";
+import { qrSvg } from "../../server/qr";
 import { getActor } from "../../server/auth";
 export const prerender = false;
 const preview = Astro.url.searchParams.get("preview") === "1";
@@ -25,6 +27,21 @@ if (content && invitation && Astro.params.slug !== invitation.slug) {
   canonical.pathname = `/i/${encodeURIComponent(invitation.slug)}`;
   return Astro.redirect(canonical.pathname + canonical.search, 308);
 }
+// Kode tamu hanya dikenali pada tampilan publik; pratinjau pemilik tidak
+// menandai tamu mana pun sebagai sudah membuka.
+const guest =
+  content && invitation && !preview
+    ? await getGuestForPage(invitation.slug, Astro.url.searchParams.get("g"))
+    : null;
+const checkinOrigin = process.env.APP_URL
+  ? new URL(process.env.APP_URL).origin
+  : Astro.url.origin;
+const guestQr =
+  guest && guest.attendance !== "declined"
+    ? await qrSvg(
+        `${checkinOrigin}/dashboard/checkin?undangan=${encodeURIComponent(invitation!.slug)}&kode=${guest.code}`,
+      )
+    : "";
 if (!content) Astro.response.status = 404;
 Astro.response.headers.set("Cache-Control", "private, no-store");
 Astro.response.headers.set("Referrer-Policy", "no-referrer");
@@ -49,6 +66,8 @@ Astro.response.headers.set("Referrer-Policy", "no-referrer");
       content={content}
       slug={invitation!.slug}
       preview={preview}
+      guest={guest}
+      guestQr={guestQr}
     />
   ) : (
     <main style="min-height:80vh;display:grid;place-content:center;text-align:center;padding:32px">
