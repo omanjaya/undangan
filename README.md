@@ -1,8 +1,8 @@
 # Temu — Undangan Online
 
-Website undangan pernikahan dan Pawiwahan Bali dengan Astro dan TypeScript. Temu menyediakan halaman tamu responsif, tiga tema dengan ornamen khusus, serta dashboard untuk mengelola konten, media, kehadiran, dan ucapan.
+Website undangan pernikahan dan Pawiwahan Bali dengan Astro dan TypeScript. Temu menyediakan halaman tamu responsif dengan sembilan tema beranimasi, dashboard pelanggan, penagihan transfer manual, dan panel admin untuk menjual undangan sebagai layanan.
 
-Temu adalah platform **multi-pelanggan**: pelanggan mendaftar sendiri, memperoleh ruang kerja (workspace) sendiri, dan menyusun undangan di sana, sedangkan **admin** (penjual) mengelola semuanya. Satu ruang kerja dapat menampung beberapa undangan, misalnya upacara dan tiap sesi resepsi, yang berbagi satu pustaka media, daftar tamu, dan anggaran. Data antar-ruang-kerja terisolasi penuh. Pembayaran transfer manual dan panel admin dibangun menyusul di atas fondasi ini; lihat [Multi-akun](#multi-akun-dan-paket).
+Temu adalah platform **multi-pelanggan**: pelanggan mendaftar sendiri, memperoleh ruang kerja (workspace) sendiri, dan menyusun undangan di sana, sedangkan **admin** (penjual) mengelola semuanya. Satu ruang kerja dapat menampung beberapa undangan, misalnya upacara dan tiap sesi resepsi, yang berbagi satu pustaka media, daftar tamu, dan anggaran. Data antar-ruang-kerja terisolasi penuh. Pelanggan membeli paket lewat transfer bank yang diverifikasi admin; lihat [Multi-akun](#multi-akun-dan-paket), [Penagihan](#penagihan-transfer-manual), dan [Panel admin](#panel-admin).
 
 ## Daftar isi
 
@@ -34,6 +34,9 @@ Temu adalah platform **multi-pelanggan**: pelanggan mendaftar sendiri, memperole
 - Musik setelah tamu membuka undangan, video unggahan, dan embed YouTube dengan koordinasi playback.
 - RSVP hingga lima orang per respons dan ucapan yang ditampilkan setelah moderasi.
 - Navigasi cepat di HP serta gambar berbagi Open Graph 1200×630 dari konten terbit.
+- Animasi cover, pembukaan, dan singkapan foto yang khas per tema.
+- Amplop digital (rekening, QRIS, alamat kado), tautan siaran langsung, dan pilihan bahasa Inggris.
+- Tautan tamu pribadi (`?to=&g=`), QR masuk untuk check-in, dan balasan mempelai pada ucapan.
 
 ### Dashboard pemilik
 
@@ -46,6 +49,15 @@ Temu adalah platform **multi-pelanggan**: pelanggan mendaftar sendiri, memperole
 - Checklist sebelum publish, pengaturan slug, publish/unpublish, dan pembuat tautan penerima.
 - Rekap RSVP serta moderasi ucapan.
 - Anggaran pernikahan dengan estimasi, realisasi, pembayaran, pagu, dan ekspor CSV.
+- Daftar tamu dengan impor, kirim via WhatsApp, status (terkirim/dibuka/RSVP), dan check-in QR dengan kamera.
+- Ekspor RSVP dan ucapan ke CSV, hapus/balas ucapan, notifikasi Telegram.
+- Paket & tagihan (transfer manual, unggah bukti, invoice cetak), pengaturan akun, lupa kata sandi, unduh/hapus data.
+
+### Penjualan dan admin
+
+- Landing page dengan daftar harga dari paket yang diatur admin, FAQ, halaman legal, kontak WhatsApp, sitemap, dan JSON-LD.
+- Pendaftaran mandiri dengan masa uji coba (menyusun boleh, menerbitkan setelah membayar) dan hak fitur per paket.
+- Panel admin: ringkasan pendapatan, persiapan sebelum berjualan, verifikasi pesanan, paket & harga, rekening tujuan, pelanggan (tangguhkan, masuk sebagai pelanggan, atur paket manual, akun klien untuk jasa), dan log aktivitas.
 
 ## Teknologi
 
@@ -407,7 +419,7 @@ Ikuti [DEPLOYMENT.md](DEPLOYMENT.md) untuk konfigurasi lengkap, backup, dan rest
 - Ucapan publik hanya yang sudah disetujui pemilik. URL embed divalidasi dan halaman memakai security headers.
 - Rate limit masih berada dalam memori satu instance.
 - RSVP mengenali browser melalui cookie; tidak memverifikasi identitas dan tidak menyinkronkan respons lintas perangkat.
-- Belum tersedia pembayaran, panel admin, verifikasi email, custom domain per undangan, S3, undangan privat bertoken, MFA, atau pengiriman pesan otomatis. Notifikasi Telegram masih satu tujuan global.
+- Belum tersedia payment gateway, verifikasi email, custom domain per undangan, S3, undangan privat bertoken, MFA, atau pengiriman WhatsApp otomatis (kirim WA memakai tautan wa.me). Notifikasi Telegram masih satu tujuan global (penjual).
 
 ## Pemecahan masalah
 
