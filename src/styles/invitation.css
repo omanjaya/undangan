@@ -886,15 +886,23 @@
   color: #b4bfa3 !important;
   opacity: 0.4;
 }
-.invite-brand-credit {
-  display: block;
-  border-top: 1px solid #73806270;
-  max-width: 1050px;
-  margin: 74px auto 0;
-  padding-top: 25px;
-  font-size: 9px;
-  letter-spacing: 0.8px;
-  color: #bac5af !important;
+/* Tanda merek (BrandingBadge) di footer gelap; hanya untuk paket tanpa penghapusan branding. */
+.invite-footer .invite-branding-wrap a.branding-badge {
+  margin-top: 56px;
+  padding: 25px 0 0;
+  font-size: 10px;
+  color: #bac5af;
+  border-top-color: #73806270;
+}
+.invite-footer .invite-branding-wrap a.branding-badge u {
+  color: #e3e8d8;
+}
+.invite-footer .invite-branding-wrap a.branding-badge:hover u,
+.invite-footer .invite-branding-wrap a.branding-badge:focus-visible u {
+  color: #fff;
+}
+.invite-footer .invite-branding-wrap a.branding-badge:focus-visible {
+  outline-color: #e3e8d8;
 }
 .invite-mobile-nav {
   display: none;
@@ -1306,9 +1314,12 @@
     left: -45px;
     bottom: 40px;
   }
-  .invite-brand-credit {
-    margin-top: 48px;
-    font-size: 8px;
+  .invite-footer .invite-branding-wrap {
+    /* Ruang agar tanda merek tidak tertutup navigasi cepat yang melayang. */
+    padding-bottom: 72px;
+  }
+  .invite-footer .invite-branding-wrap a.branding-badge {
+    margin-top: 40px;
   }
   .invite-mobile-nav {
     position: fixed;

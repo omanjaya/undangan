@@ -37,6 +37,12 @@ services:
       APP_URL: ${APP_URL:?Set APP_URL to your public HTTPS origin}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_SECURE: ${SMTP_SECURE:-}
+      MAIL_FROM: ${MAIL_FROM:-}
       SITE_NAME: ${SITE_NAME:-}
       SITE_URL: ${SITE_URL:-}
       CONTACT_WHATSAPP: ${CONTACT_WHATSAPP:-}

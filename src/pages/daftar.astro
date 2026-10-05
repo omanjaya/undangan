@@ -1,9 +1,11 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Icon from "../components/Icon.astro";
+import PasswordField from "../components/auth/PasswordField.astro";
 import { getActor } from "../server/auth";
-if (await getActor(Astro.request)) return Astro.redirect("/dashboard");
+import "../styles/auth.css";
 Astro.response.headers.set("Cache-Control", "private, no-store");
+if (await getActor(Astro.request)) return Astro.redirect("/dashboard");
 ---
 
 <BaseLayout title="Daftar — Temu" noindex>
@@ -23,38 +25,39 @@ Astro.response.headers.set("Cache-Control", "private, no-store");
         pernikahan di ruang kerja milik sendiri.
       </p>
       <form id="register-form">
-        <label>
-          Nama
-          <input
-            required
-            type="text"
-            name="name"
-            autocomplete="name"
-            minlength="2"
-            maxlength="100"
-          />
-        </label>
-        <label>
-          Email
-          <input required type="email" name="email" autocomplete="email" />
-        </label>
-        <label>
-          Nomor WhatsApp (opsional)
-          <input type="tel" name="phone" autocomplete="tel" maxlength="30" />
-        </label>
-        <label>
-          Kata sandi
-          <input
-            required
-            type="password"
-            name="password"
-            autocomplete="new-password"
-            minlength="8"
-            maxlength="200"
-          />
-          <small>Minimal 8 karakter.</small>
-        </label>
-        <p id="register-error" role="alert"></p>
+        <div class="field">
+          <label>
+            Nama
+            <input
+              required
+              type="text"
+              name="name"
+              autocomplete="name"
+              minlength="2"
+              maxlength="100"
+            />
+          </label>
+        </div>
+        <div class="field">
+          <label>
+            Email
+            <input required type="email" name="email" autocomplete="email" />
+          </label>
+        </div>
+        <div class="field">
+          <label>
+            Nomor WhatsApp (opsional)
+            <input type="tel" name="phone" autocomplete="tel" maxlength="30" />
+          </label>
+        </div>
+        <PasswordField
+          label="Kata sandi"
+          name="password"
+          autocomplete="new-password"
+          minlength={8}
+          hint="Minimal 8 karakter."
+        />
+        <p id="register-error" class="form-msg" role="alert"></p>
         <button type="submit">
           Buat akun <Icon name="arrow" size={18} />
         </button>
@@ -69,117 +72,11 @@ Astro.response.headers.set("Cache-Control", "private, no-store");
     <span class="login-bottom">CERITA INDAH DIMULAI DARI SINI.</span>
   </main>
 </BaseLayout>
-<style>
-  .login-shell {
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
-    background:
-      radial-gradient(ellipse at 10% 20%, #e1e6d4 0, transparent 50%),
-      var(--paper);
-  }
-  .login-brand {
-    font: 52px var(--serif);
-    letter-spacing: -3px;
-    margin-bottom: 35px;
-  }
-  .login-card {
-    width: 100%;
-    max-width: 430px;
-    padding: 35px;
-    background: #fffdf8;
-    border: 1px solid var(--line);
-    border-radius: 5px;
-  }
-  .kicker {
-    font-size: 8px;
-    letter-spacing: 2px;
-    color: var(--muted);
-  }
-  h1 {
-    font: 44px/1.1 var(--serif);
-    margin: 20px 0;
-  }
-  h1 em {
-    font-style: normal;
-    color: var(--olive);
-  }
-  .login-card > p {
-    font-size: 12px;
-    line-height: 1.8;
-    color: var(--muted);
-  }
-  label {
-    display: block;
-    font-size: 11px;
-    margin-top: 20px;
-  }
-  input {
-    display: block;
-    width: 100%;
-    margin-top: 9px;
-    padding: 13px;
-    border: 1px solid var(--line);
-    border-radius: 3px;
-    background: #fff;
-    font-size: 13px;
-  }
-  button {
-    width: 100%;
-    background: var(--olive);
-    color: white;
-    border: 0;
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: 3px;
-    font-size: 12px;
-  }
-  small {
-    display: block;
-    margin-top: 6px;
-    font-size: 10px;
-    color: var(--muted);
-  }
-  .back {
-    display: block;
-    text-align: center;
-    font-size: 10px;
-    margin-top: 25px;
-    color: var(--muted);
-  }
-  .switch {
-    text-align: center;
-    font-size: 12px;
-    margin-top: 22px;
-    color: var(--muted);
-  }
-  .switch a {
-    color: var(--olive);
-    text-decoration: underline;
-  }
-  #register-error {
-    font-size: 11px;
-    color: #a14737;
-    line-height: 1.6;
-    margin: 12px 0;
-  }
-  .login-bottom {
-    font-size: 8px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    margin-top: 30px;
-  }
-</style>
 <script>
   const form = document.querySelector<HTMLFormElement>("#register-form");
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const button = form.querySelector("button")!;
+    const button = form.querySelector<HTMLButtonElement>("[type=submit]")!;
     const error = document.querySelector<HTMLElement>("#register-error")!;
     button.disabled = true;
     error.textContent = "";

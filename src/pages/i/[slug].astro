@@ -5,6 +5,12 @@ import { getInvitation } from "../../server/services";
 import { getGuestForPage } from "../../server/guests";
 import { qrSvg } from "../../server/qr";
 import { getActor } from "../../server/auth";
+import { loadEntitlements } from "../../server/tenant";
+import {
+  gateContent,
+  mayShowGuestQr,
+  mayTrackGuests,
+} from "../../modules/billing/gating";
 export const prerender = false;
 const preview = Astro.url.searchParams.get("preview") === "1";
 const invitation = await getInvitation(Astro.params.slug ?? "");
@@ -14,7 +20,7 @@ if (preview) {
   permitted =
     !!actor && !!invitation && actor.workspaceId === invitation.workspaceId;
 }
-const content =
+const saved =
   invitation && permitted
     ? preview
       ? invitation.draft
@@ -22,6 +28,13 @@ const content =
         ? invitation.published
         : null
     : null;
+// Hak paket pemilik menentukan fitur yang tampil (pratinjau pun sama). Isi
+// tersimpan tidak diubah; hanya tampilannya yang disaring.
+const features =
+  saved && invitation
+    ? (await loadEntitlements(invitation.workspaceId)).features
+    : null;
+const content = saved && features ? gateContent(saved, features) : null;
 if (content && invitation && Astro.params.slug !== invitation.slug) {
   const canonical = new URL(Astro.url);
   canonical.pathname = `/i/${encodeURIComponent(invitation.slug)}`;
@@ -30,14 +43,17 @@ if (content && invitation && Astro.params.slug !== invitation.slug) {
 // Kode tamu hanya dikenali pada tampilan publik; pratinjau pemilik tidak
 // menandai tamu mana pun sebagai sudah membuka.
 const guest =
-  content && invitation && !preview
+  content && invitation && !preview && features && mayTrackGuests(features)
     ? await getGuestForPage(invitation.slug, Astro.url.searchParams.get("g"))
     : null;
 const checkinOrigin = process.env.APP_URL
   ? new URL(process.env.APP_URL).origin
   : Astro.url.origin;
 const guestQr =
-  guest && guest.attendance !== "declined"
+  guest &&
+  features &&
+  mayShowGuestQr(features) &&
+  guest.attendance !== "declined"
     ? await qrSvg(
         `${checkinOrigin}/dashboard/checkin?undangan=${encodeURIComponent(invitation!.slug)}&kode=${guest.code}`,
       )
@@ -68,6 +84,7 @@ Astro.response.headers.set("Referrer-Policy", "no-referrer");
       preview={preview}
       guest={guest}
       guestQr={guestQr}
+      branding={!features?.removeBranding}
     />
   ) : (
     <main style="min-height:80vh;display:grid;place-content:center;text-align:center;padding:32px">

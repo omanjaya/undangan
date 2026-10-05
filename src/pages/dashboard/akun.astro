@@ -1,0 +1,321 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Icon from "../../components/Icon.astro";
+import PasswordField from "../../components/auth/PasswordField.astro";
+import "../../styles/dashboard.css";
+import "../../styles/account.css";
+import { getAccount, DELETE_CONFIRMATION } from "../../server/account";
+import { cookieValue, getActor } from "../../server/auth";
+
+const actor = await getActor(Astro.request);
+if (!actor)
+  return Astro.redirect("/login?next=" + encodeURIComponent("/dashboard/akun"));
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const { profile, sessions } = await getAccount(
+  actor,
+  cookieValue(Astro.request, "invitation_session"),
+);
+const others = sessions.filter((s) => !s.current).length;
+const impersonating = !!actor.impersonatorUserId;
+const isAdmin = profile.role === "admin";
+const when = (ms: number) =>
+  new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Makassar",
+  }).format(new Date(ms));
+const joined = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Asia/Makassar",
+}).format(new Date(profile.createdAt));
+---
+
+<BaseLayout title="Pengaturan akun — Temu" noindex>
+  <main class="account-page">
+    <div class="account-inner">
+      <header class="account-head">
+        <div>
+          <span class="dash-kicker">PENGATURAN AKUN</span>
+          <h1>Akun saya</h1>
+          <p>
+            {profile.email} · bergabung {joined}
+          </p>
+        </div>
+        <a class="dash-button secondary" href="/dashboard">
+          <Icon name="grid" size={16} /> Kembali ke dashboard
+        </a>
+      </header>
+
+      {impersonating && (
+        <p class="account-note" role="status">
+          Anda sedang menyamar sebagai pengguna ini. Pengaturan akun tidak dapat
+          diubah selama penyamaran.
+        </p>
+      )}
+
+      <section class="account-card" id="profil">
+        <h2>Profil</h2>
+        <form data-account-form="profile" data-ok="Profil disimpan.">
+          <div class="field">
+            <label for="acc-name">Nama</label>
+            <input
+              id="acc-name"
+              name="name"
+              required
+              minlength="2"
+              maxlength="100"
+              autocomplete="name"
+              value={profile.name}
+              disabled={impersonating}
+            />
+          </div>
+          <div class="field">
+            <label for="acc-phone">Nomor WhatsApp (opsional)</label>
+            <input
+              id="acc-phone"
+              name="phone"
+              type="tel"
+              maxlength="30"
+              autocomplete="tel"
+              value={profile.phone}
+              disabled={impersonating}
+            />
+          </div>
+          <p class="form-msg" role="status"></p>
+          <button type="submit" class="dash-button" disabled={impersonating}>
+            Simpan profil
+          </button>
+        </form>
+      </section>
+
+      <section class="account-card" id="email">
+        <h2>Ganti email</h2>
+        <p class="account-hint">
+          Email dipakai untuk masuk dan menerima tautan atur ulang kata sandi.
+          Masukkan kata sandi saat ini untuk mengonfirmasi.
+        </p>
+        <form data-account-form="email" data-ok="Email diperbarui." data-reset>
+          <div class="field">
+            <label for="acc-email">Email baru</label>
+            <input
+              id="acc-email"
+              name="email"
+              type="email"
+              required
+              maxlength="254"
+              autocomplete="email"
+              placeholder={profile.email}
+              disabled={impersonating}
+            />
+          </div>
+          <PasswordField
+            label="Kata sandi saat ini"
+            name="currentPassword"
+            id="acc-email-pw"
+            autocomplete="current-password"
+          />
+          <p class="form-msg" role="status"></p>
+          <button type="submit" class="dash-button" disabled={impersonating}>
+            Ganti email
+          </button>
+        </form>
+      </section>
+
+      <section class="account-card" id="sandi">
+        <h2>Ganti kata sandi</h2>
+        <p class="account-hint">
+          Perangkat lain akan otomatis keluar; perangkat ini tetap masuk.
+        </p>
+        <form
+          data-account-form="password"
+          data-ok="Kata sandi diganti. Perangkat lain telah keluar."
+          data-reset
+          data-reload
+        >
+          <PasswordField
+            label="Kata sandi saat ini"
+            name="currentPassword"
+            id="acc-pw-current"
+            autocomplete="current-password"
+          />
+          <PasswordField
+            label="Kata sandi baru"
+            name="newPassword"
+            id="acc-pw-new"
+            autocomplete="new-password"
+            minlength={8}
+            hint="Minimal 8 karakter."
+          />
+          <PasswordField
+            label="Ulangi kata sandi baru"
+            name="confirmPassword"
+            id="acc-pw-confirm"
+            autocomplete="new-password"
+            minlength={8}
+          />
+          <p class="form-msg" role="status"></p>
+          <button type="submit" class="dash-button" disabled={impersonating}>
+            Ganti kata sandi
+          </button>
+        </form>
+      </section>
+
+      <section class="account-card" id="sesi">
+        <h2>Perangkat yang sedang masuk</h2>
+        <ul class="session-list">
+          {sessions.map((s) => (
+            <li>
+              <span>
+                Masuk {when(s.createdAt)}
+                {s.current && <em class="session-current">Perangkat ini</em>}
+              </span>
+              <small>Berlaku sampai {when(s.expiresAt)}</small>
+            </li>
+          ))}
+        </ul>
+        <form
+          data-account-form="sessions"
+          data-ok="Semua perangkat lain telah keluar."
+          data-reload
+        >
+          <p class="form-msg" role="status"></p>
+          <button
+            type="submit"
+            class="dash-button secondary"
+            disabled={impersonating || others === 0}
+          >
+            Keluar dari semua perangkat lain
+          </button>
+        </form>
+      </section>
+
+      <section class="account-card" id="data">
+        <h2>Unduh data saya</h2>
+        <p class="account-hint">
+          Salinan profil dan seluruh isi ruang kerja Anda (undangan, tamu, RSVP,
+          ucapan, anggaran) dalam format JSON. Tidak memuat kata sandi atau data
+          pengguna lain.
+        </p>
+        <a
+          class="dash-button secondary"
+          href="/api/account/export"
+          download
+          aria-disabled={impersonating}
+        >
+          Unduh data (JSON)
+        </a>
+      </section>
+
+      <section class="account-card danger" id="hapus">
+        <h2>Hapus akun</h2>
+        {isAdmin ? (
+          <p class="account-hint">
+            Akun admin tidak dapat dihapus dari halaman ini.
+          </p>
+        ) : (
+          <>
+            <p class="account-hint">
+              Menghapus akun akan menghapus permanen profil, undangan, daftar
+              tamu, RSVP, ucapan, anggaran, dan semua media Anda. Tautan
+              undangan akan berhenti berfungsi. Catatan pesanan tetap kami
+              simpan untuk pembukuan. Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <form data-account-form="delete" data-ok="Akun dihapus.">
+              <div class="field">
+                <label for="acc-del-confirm">
+                  Ketik <strong>{DELETE_CONFIRMATION}</strong> untuk memastikan
+                </label>
+                <input
+                  id="acc-del-confirm"
+                  name="confirmation"
+                  required
+                  autocomplete="off"
+                  disabled={impersonating}
+                />
+              </div>
+              <PasswordField
+                label="Kata sandi saat ini"
+                name="password"
+                id="acc-del-pw"
+                autocomplete="current-password"
+              />
+              <p class="form-msg" role="status"></p>
+              <button
+                type="submit"
+                class="dash-button danger"
+                disabled={impersonating}
+              >
+                Hapus akun saya
+              </button>
+            </form>
+          </>
+        )}
+      </section>
+    </div>
+  </main>
+</BaseLayout>
+<script>
+  const labels: Record<string, string> = {
+    profile: "/api/account/profile",
+    email: "/api/account/email",
+    password: "/api/account/password",
+    sessions: "/api/account/sessions",
+    delete: "/api/account/delete",
+  };
+  document
+    .querySelectorAll<HTMLFormElement>("[data-account-form]")
+    .forEach((form) => {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const kind = form.dataset.accountForm!;
+        const message = form.querySelector<HTMLElement>(".form-msg")!;
+        const button = form.querySelector<HTMLButtonElement>(
+          "button[type=submit]",
+        )!;
+        const fields = Object.fromEntries(new FormData(form));
+        message.className = "form-msg";
+        if (
+          kind === "password" &&
+          fields.newPassword !== fields.confirmPassword
+        ) {
+          message.textContent = "Konfirmasi kata sandi tidak sama.";
+          return;
+        }
+        if (
+          kind === "delete" &&
+          !confirm("Hapus akun dan semua data Anda secara permanen?")
+        )
+          return;
+        button.disabled = true;
+        message.textContent = "";
+        try {
+          const response = await fetch(labels[kind], {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fields),
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error);
+          message.textContent = form.dataset.ok ?? "Tersimpan.";
+          message.classList.add("is-ok");
+          if (kind === "delete") {
+            window.location.href = "/";
+            return;
+          }
+          if (form.hasAttribute("data-reset")) form.reset();
+          if (form.hasAttribute("data-reload"))
+            window.setTimeout(() => window.location.reload(), 1200);
+          else button.disabled = false;
+        } catch (error) {
+          message.textContent =
+            error instanceof Error ? error.message : "Gagal. Coba lagi.";
+          button.disabled = false;
+        }
+      });
+    });
+</script>

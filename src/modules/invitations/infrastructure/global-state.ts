@@ -34,6 +34,15 @@ export type Session = {
   impersonatorUserId?: string;
 };
 
+/** Token atur ulang kata sandi: hanya hash-nya disimpan, berlaku sekali pakai. */
+export type PasswordResetToken = {
+  /** SHA-256 heksadesimal dari token pada tautan email. */
+  tokenHash: string;
+  userId: string;
+  createdAt: number;
+  expiresAt: number;
+};
+
 export type WorkspacePlan = {
   id: string;
   status: "trial" | "active" | "expired";
@@ -141,6 +150,7 @@ export type GlobalState = {
   siteSettings: SiteSettings;
   /** Jejak tindakan admin; dipangkas ke entri terbaru. */
   auditLog: AuditEntry[];
+  passwordResets: PasswordResetToken[];
 };
 
 export const emptyGlobal = (): GlobalState => ({
@@ -153,6 +163,7 @@ export const emptyGlobal = (): GlobalState => ({
   packages: [],
   siteSettings: {},
   auditLog: [],
+  passwordResets: [],
 });
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -177,6 +188,9 @@ export function normalizeGlobal(raw: unknown): GlobalState {
       ? (source.siteSettings as SiteSettings)
       : {},
     auditLog: list<AuditEntry>(source.auditLog).filter(isRecord),
+    passwordResets: list<PasswordResetToken>(source.passwordResets).filter(
+      isRecord,
+    ),
   };
 }
 

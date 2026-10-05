@@ -39,6 +39,15 @@ const readOwn = (actor: Actor | null) =>
 const mutateOwn = <T>(actor: Actor | null, fn: (state: State) => T) =>
   mutateWorkspace(requireActor(actor).workspaceId, fn);
 
+/** Daftar tamu hanya ada di paket yang memilikinya; selain itu 403 dengan pesan jelas. */
+async function requireGuestList(actor: Actor | null) {
+  requireFeature(
+    await loadEntitlements(requireActor(actor).workspaceId),
+    "guestList",
+    "daftar tamu",
+  );
+}
+
 /** Batas tamu per undangan: yang lebih kecil antara batas sistem dan paket. */
 async function guestLimit(actor: Actor | null) {
   const entitlements = await loadEntitlements(requireActor(actor).workspaceId);
@@ -116,6 +125,7 @@ function parsePhone(raw: string) {
 }
 
 export async function getGuests(actor: Actor | null, slug: string) {
+  await requireGuestList(actor);
   const state = await readOwn(actor);
   const invitation = requireInvitation(state, actor, slug);
   const guests = viewsFor(state, invitation);
@@ -167,6 +177,7 @@ export async function updateGuest(
   id: string,
   input: unknown,
 ) {
+  await requireGuestList(actor);
   const data = guestInputSchema.parse(input);
   const phone = parsePhone(data.phone);
   return mutateOwn(actor, (state) => {
@@ -177,6 +188,7 @@ export async function updateGuest(
 }
 
 export async function removeGuest(actor: Actor | null, id: string) {
+  await requireGuestList(actor);
   return mutateOwn(actor, (state) => {
     const { guest } = requireGuest(state, actor, id);
     state.guests = (state.guests ?? []).filter((g) => g !== guest);
@@ -193,6 +205,7 @@ export async function markGuestSent(
   id: string,
   sent = true,
 ) {
+  await requireGuestList(actor);
   return mutateOwn(actor, (state) => {
     const { guest } = requireGuest(state, actor, id);
     const now = new Date().toISOString();
@@ -207,6 +220,7 @@ export async function saveWaTemplate(
   slug: string,
   template: unknown,
 ) {
+  await requireGuestList(actor);
   const text = waTemplateSchema.parse(template);
   return mutateOwn(actor, (state) => {
     const invitation = requireInvitation(state, actor, slug);
@@ -284,6 +298,7 @@ export async function exportGuestsCsv(
   slug: string,
   origin: string,
 ) {
+  await requireGuestList(actor);
   const state = await readOwn(actor);
   const invitation = requireInvitation(state, actor, slug);
   return guestsToCsv(viewsFor(state, invitation), (g) =>
@@ -299,6 +314,9 @@ export async function recordGuestOpen(slug: string, code: unknown) {
   // Kode asal-asalan tidak boleh memicu penulisan state.
   const known = await resolvePublic(slug);
   if (!known || !findGuestByCode(known.state.guests, known.invitation.id, code))
+    return false;
+  // Paket tanpa daftar tamu tidak melacak pembukaan undangan.
+  if (!(await loadEntitlements(known.workspaceId)).features.guestList)
     return false;
   return mutateWorkspace(known.workspaceId, (state) => {
     const invitation = state.invitations.find(
@@ -375,6 +393,11 @@ export async function checkInGuest(
 }
 
 export async function undoCheckIn(actor: Actor | null, id: string) {
+  requireFeature(
+    await loadEntitlements(requireActor(actor).workspaceId),
+    "qrCheckin",
+    "check-in QR",
+  );
   return mutateOwn(actor, (state) => {
     const { guest } = requireGuest(state, actor, id);
     guest.checkedInAt = null;

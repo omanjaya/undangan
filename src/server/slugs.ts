@@ -29,6 +29,8 @@ export const SLUG_RESERVED = [
   "dashboard",
   "login",
   "daftar",
+  "lupa-sandi",
+  "reset-sandi",
   "admin",
   "preview",
   "templates",

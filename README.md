@@ -171,6 +171,8 @@ Gunakan [.env.example](.env.example) untuk development dan [.env.production.exam
 | `DATA_DIR`          | Direktori state file development (`global.json`, `workspaces/`); default `.data`                       |
 | `TELEGRAM_BOT_TOKEN` | Opsional: token bot Telegram untuk notifikasi RSVP dan ucapan baru ke pemilik                         |
 | `TELEGRAM_CHAT_ID`  | Opsional: id chat Telegram penerima notifikasi; notifikasi nonaktif bila salah satu variabel kosong    |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | Opsional: server SMTP untuk email atur ulang kata sandi (port bawaan 587; `SMTP_SECURE=true` atau port 465 memakai TLS langsung) |
+| `MAIL_FROM`         | Pengirim email, mis. `Temu <halo@domain.com>`; SMTP dianggap siap bila `SMTP_HOST` dan `MAIL_FROM` terisi |
 | `SITE_NAME`         | Nama merek di footer, judul, dan JSON-LD; default `Temu`                                               |
 | `SITE_URL`          | Origin publik untuk canonical, sitemap, dan Open Graph; jatuh ke `APP_URL`                             |
 | `CONTACT_WHATSAPP`  | Nomor WhatsApp format internasional tanpa `+` (mis. `6281234567890`)                                   |
@@ -292,7 +294,7 @@ src/
   modules/invitations/
     domain/                    Skema dan aturan konten
     infrastructure/            Persistence PostgreSQL / file development
-  modules/accounts/            Hash kata sandi (scrypt)
+  modules/accounts/            Hash kata sandi (scrypt), sanitasi `next`
   modules/billing/             Kontrak hak paket (entitlements)
   server/                      Use case, autentikasi, validasi request, media
   styles/                      Gaya bersama dan variasi tema
@@ -327,7 +329,13 @@ Detail implementasi tersedia di [db/README.md](db/README.md).
 - **Kata sandi dan sesi**: scrypt dengan salt per pengguna (`scrypt$N$r$p$salt$hash`), perbandingan `timingSafeEqual` yang selalu berjalan walau email tidak dikenal. Sesi berlaku 7 hari sejak login (tetap, tidak diperpanjang otomatis), hanya hash token yang disimpan, logout dan `setPassword` mencabut sesi. Akun yang ditangguhkan (`status: "suspended"`) tidak dapat masuk dan sesinya langsung tidak berlaku.
 - **Isolasi**: semua layanan pemilik hanya membaca dan menulis ruang kerja milik `actor`; `authorize` tetap menjadi lapisan pertahanan tambahan. Halaman tamu hanya menyajikan undangan terbit; media draf hanya untuk anggota ruang kerja pemiliknya.
 - **Hak paket**: `getEntitlements(workspace)` di `src/modules/billing/entitlements.ts` menentukan `canPublish`, `maxInvitations`, `maxGuests` (per undangan), `maxMediaBytes`, dan flag fitur. Ruang kerja admin dan paket `active` tanpa batas; `trial` tidak boleh menerbitkan, 1 undangan, 50 tamu, 200 MB, tanpa penghapusan branding. Dipaksakan pada publish, buat undangan, tambah/impor tamu, unggah media, check-in QR, dan alamat kustom.
-- **Belum ada** (dikerjakan menyusul): pembayaran, panel admin, reset kata sandi, verifikasi email, pengaturan akun.
+- **Lupa kata sandi**: `/lupa-sandi` mengirim tautan `/reset-sandi?token=…` lewat email (`src/server/mail.ts`, nodemailer). Token acak 32 byte, hanya hash SHA-256 yang disimpan di `global.passwordResets`, berlaku 1 jam, sekali pakai, dan token lama dicabut saat yang baru dibuat. Jawaban selalu sama untuk email terdaftar atau tidak; dibatasi per IP (5 per 15 menit) dan per email (3 per 15 menit, kelebihan diam-diam tidak dikirim). Setelah reset, semua sesi dicabut. Tanpa SMTP: development mencatat email (judul dan tautan) di konsol server dan menyimpannya di memori; production tidak mengirim dan halaman menyuruh pengguna menghubungi admin lewat WhatsApp.
+- **Hook uji email**: `GET /api/dev/last-mail?to=<email>` mengembalikan email terakhir yang "dikirim" dan **hanya ada** bila `NODE_ENV !== "production"` dan `DATABASE_URL` kosong (selain itu 404). Dipakai `e2e/account.spec.ts`.
+- **Pengaturan akun** `/dashboard/akun`: ubah nama/telepon, ganti email dan kata sandi (wajib kata sandi saat ini; ganti kata sandi mencabut sesi lain), daftar sesi aktif dan "Keluar dari semua perangkat lain", **Unduh data saya** (JSON profil dan isi ruang kerja tanpa hash kata sandi/sesi atau data pengguna lain), dan **Hapus akun** (ketik `HAPUS AKUN` + kata sandi; menghapus akun, sesi, ruang kerja, indeks slug/media, dan berkas media; ditolak untuk admin). Pesanan dan berkas bukti transfernya dibiarkan untuk pembukuan, sehingga baris pesanan dapat merujuk pengguna/ruang kerja yang sudah tidak ada. Semua tindakan ini ditolak saat admin sedang menyamar.
+- **`/login?next=`**: hanya jalur relatif satu origin yang dipakai (`src/modules/accounts/next-path.ts`; menolak `//`, URL absolut, backslash, karakter kontrol). Pengguna yang sudah masuk diarahkan dari `/login`, `/daftar`, dan `/lupa-sandi` ke `/dashboard`.
+- **Pembatasan login**: per IP (8/menit) dan per email (10 kegagalan per 15 menit, pesan sama untuk email tak dikenal). Halaman autentikasi `no-store`, kolom kata sandi memakai `autocomplete` yang tepat dan tombol lihat/sembunyi.
+- **Hak paket di UI dan halaman tamu**: `gateContent` (`src/modules/billing/gating.ts`) menyaring tampilan tamu menurut `getEntitlements` tanpa menghapus data tersimpan: tanpa `music` musik tidak dirender, tanpa `video` video unggahan dan YouTube disembunyikan, tanpa `gift` bagian hadiah disembunyikan, tanpa `guestList` kode `g` diabaikan (tanpa nama sapaan, QR, pelacakan, dan tautan ke daftar tamu), tanpa `qrCheckin` tombol QR disembunyikan, tanpa `removeBranding` tampil `BrandingBadge` (menggantikan kredit lama). Pratinjau editor memakai aturan yang sama; halaman contoh `/themes/...` tidak disaring. Editor mengunci kolom di luar paket dengan petunjuk "Tersedia di paket berbayar" menuju `/dashboard/paket`; menyimpan draf tetap berhasil. API daftar tamu dan check-in membalas 403 dengan pesan jelas.
+- **Belum ada** (dikerjakan menyusul): pembayaran dan panel admin lanjutan, verifikasi email, MFA, penanda perangkat pada daftar sesi.
 
 ## Deployment
 
@@ -355,7 +363,7 @@ Ikuti [DEPLOYMENT.md](DEPLOYMENT.md) untuk konfigurasi lengkap, backup, dan rest
 - Ucapan publik hanya yang sudah disetujui pemilik. URL embed divalidasi dan halaman memakai security headers.
 - Rate limit masih berada dalam memori satu instance.
 - RSVP mengenali browser melalui cookie; tidak memverifikasi identitas dan tidak menyinkronkan respons lintas perangkat.
-- Belum tersedia pembayaran, panel admin, reset kata sandi, verifikasi email, custom domain per undangan, S3, undangan privat bertoken, MFA, atau pengiriman pesan otomatis. Notifikasi Telegram masih satu tujuan global.
+- Belum tersedia pembayaran, panel admin, verifikasi email, custom domain per undangan, S3, undangan privat bertoken, MFA, atau pengiriman pesan otomatis. Notifikasi Telegram masih satu tujuan global.
 
 ## Pemecahan masalah
 

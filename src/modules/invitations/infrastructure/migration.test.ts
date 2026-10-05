@@ -239,6 +239,7 @@ describe("ketahanan penyimpanan global", () => {
       packages: [],
       siteSettings: {},
       auditLog: [],
+      passwordResets: [],
     });
   });
 });

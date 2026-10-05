@@ -2279,3 +2279,31 @@ td {
   gap: 8px;
   margin-bottom: 16px;
 }
+
+/* Fitur di luar paket: terkunci dengan petunjuk menuju halaman paket. */
+.plan-lock,
+.plan-lock-hint {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #7a6a3f;
+  margin: 6px 0 10px;
+}
+.plan-lock {
+  background: #f7f1e1;
+  border: 1px solid #e7dbb8;
+  border-radius: 4px;
+  padding: 12px 14px;
+}
+.plan-lock a,
+.plan-lock-hint a {
+  color: var(--olive);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.is-plan-locked .slot-preview {
+  opacity: 0.55;
+}
+input[readonly] {
+  background: #f3f2ec;
+  color: var(--muted);
+}

@@ -233,6 +233,8 @@ export const labels = {
     id: "Dibuat dengan sepenuh hati · Temu",
     en: "Made with love · Temu",
   },
+  "branding.made": { id: "Dibuat dengan Temu", en: "Made with Temu" },
+  "branding.cta": { id: "Buat undanganmu", en: "Create yours" },
   "mobile.label": { id: "Navigasi cepat", en: "Quick navigation" },
   "mobile.location": { id: "Lokasi", en: "Location" },
   "mobile.calendar": { id: "Kalender", en: "Calendar" },

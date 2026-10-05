@@ -1,0 +1,95 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Icon from "../components/Icon.astro";
+import PasswordField from "../components/auth/PasswordField.astro";
+import { isResetTokenValid } from "../server/password-reset";
+import "../styles/auth.css";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+// Token ada di query string: jangan bocor lewat header Referer ke situs lain.
+Astro.response.headers.set("Referrer-Policy", "no-referrer");
+const token = Astro.url.searchParams.get("token") ?? "";
+const valid = await isResetTokenValid(token);
+if (!valid) Astro.response.status = 400;
+---
+
+<BaseLayout title="Atur ulang kata sandi — Temu" noindex>
+  <main class="login-shell">
+    <a href="/" class="login-brand">
+      temu.
+    </a>
+    <section class="login-card">
+      <span class="kicker">PEMULIHAN AKUN</span>
+      <h1>
+        Kata sandi
+        <br />
+        <em>baru.</em>
+      </h1>
+      {valid ? (
+        <>
+          <p>
+            Pilih kata sandi baru untuk akun Anda. Setelah disimpan, semua
+            perangkat akan keluar dan Anda perlu masuk kembali.
+          </p>
+          <form id="reset-form" data-token={token}>
+            <PasswordField
+              label="Kata sandi baru"
+              name="password"
+              autocomplete="new-password"
+              minlength={8}
+              hint="Minimal 8 karakter."
+            />
+            <PasswordField
+              label="Ulangi kata sandi baru"
+              name="confirm"
+              autocomplete="new-password"
+              minlength={8}
+            />
+            <p id="reset-error" class="form-msg" role="alert" />
+            <button type="submit">
+              Simpan kata sandi <Icon name="arrow" size={18} />
+            </button>
+          </form>
+        </>
+      ) : (
+        <p class="notice" role="alert">
+          Tautan atur ulang tidak valid atau sudah kedaluwarsa. Tautan hanya
+          berlaku 1 jam dan satu kali pakai.{" "}
+          <a href="/lupa-sandi">Minta tautan baru</a>.
+        </p>
+      )}
+      <a class="back" href="/login">
+        Kembali ke halaman masuk
+      </a>
+    </section>
+    <span class="login-bottom">CERITA INDAH DIMULAI DARI SINI.</span>
+  </main>
+</BaseLayout>
+<script>
+  const form = document.querySelector<HTMLFormElement>("#reset-form");
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const button = form.querySelector<HTMLButtonElement>("[type=submit]")!;
+    const error = document.querySelector<HTMLElement>("#reset-error")!;
+    const fields = Object.fromEntries(new FormData(form));
+    error.textContent = "";
+    if (fields.password !== fields.confirm) {
+      error.textContent = "Konfirmasi kata sandi tidak sama.";
+      return;
+    }
+    button.disabled = true;
+    try {
+      const res = await fetch("/api/auth/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...fields, token: form.dataset.token }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      window.location.href = "/login?reset=1";
+    } catch (e) {
+      error.textContent =
+        e instanceof Error ? e.message : "Tidak dapat menyimpan. Coba lagi.";
+      button.disabled = false;
+    }
+  });
+</script>

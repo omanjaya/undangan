@@ -183,6 +183,9 @@ const passwordSchema = z
   )
   .max(PASSWORD_MAX_LENGTH, "Kata sandi terlalu panjang.");
 
+/** Memeriksa kata sandi baru tanpa mengubah apa pun; melempar ZodError bila tidak sah. */
+export const validatePassword = (value: unknown) => passwordSchema.parse(value);
+
 /**
  * Titik masuk bersama untuk ganti dan atur ulang kata sandi. Semua sesi lama
  * dicabut agar kata sandi yang bocor tidak tetap berlaku.
@@ -198,6 +201,10 @@ export async function setPassword(
     const user = global.users.find((u) => u.id === userId);
     if (!user) throw new DomainError("Akun tidak ditemukan.", 404);
     user.passwordHash = passwordHash;
+    // Tautan atur ulang yang masih beredar tidak boleh berlaku setelah ini.
+    global.passwordResets = global.passwordResets.filter(
+      (t) => t.userId !== userId,
+    );
   });
   await revokeUserSessions(userId, options.keepToken);
 }
