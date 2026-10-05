@@ -1,0 +1,163 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { adminPage } from "../../../server/admin-page";
+import {
+  adminCustomerChoices,
+  adminListPackages,
+  adminListOrders,
+  ORDER_FILTERS,
+} from "../../../server/billing";
+import { STATUS_LABELS } from "../../../modules/billing/orders";
+import { formatRupiah } from "../../../modules/billing/catalog";
+import { formatDateTime } from "../../../modules/billing/plan-status";
+import "../../../styles/billing.css";
+
+export const prerender = false;
+
+const guard = await adminPage(Astro);
+if (guard instanceof Response) return guard;
+const actor = guard;
+
+const q = Astro.url.searchParams.get("q") ?? "";
+const list = await adminListOrders(actor, {
+  status: Astro.url.searchParams.get("status") ?? "semua",
+  q,
+});
+const customers = await adminCustomerChoices(actor);
+const packages = await adminListPackages(actor);
+const tabLabel = (key: (typeof ORDER_FILTERS)[number]) =>
+  key === "semua" ? "Semua" : STATUS_LABELS[key];
+const tabHref = (key: string) =>
+  `/admin/pesanan?${new URLSearchParams({ ...(key === "semua" ? {} : { status: key }), ...(q ? { q } : {}) })}`;
+---
+
+<AdminLayout title="Pesanan" active="orders" adminName={actor.name}>
+  <nav class="bill-tabs" aria-label="Filter status">
+    {ORDER_FILTERS.map((key) => (
+      <a
+        href={tabHref(key)}
+        aria-current={list.status === key ? "page" : undefined}
+      >
+        {tabLabel(key)}
+        <span>{list.counts[key]}</span>
+      </a>
+    ))}
+  </nav>
+
+  <form class="bill-search" method="get" action="/admin/pesanan" role="search">
+    {list.status !== "semua" && (
+      <input type="hidden" name="status" value={list.status} />
+    )}
+    <input
+      type="search"
+      name="q"
+      value={q}
+      placeholder="Cari nomor, nama, atau email"
+      aria-label="Cari pesanan"
+    />
+    <button class="admin-button secondary" type="submit">
+      Cari
+    </button>
+  </form>
+
+  <section class="admin-card" style="padding:0">
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Nomor</th>
+            <th>Pelanggan</th>
+            <th>Paket</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Dibuat</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.rows.length === 0 && (
+            <tr>
+              <td colspan="6">Tidak ada pesanan yang cocok.</td>
+            </tr>
+          )}
+          {list.rows.map((row) => (
+            <tr>
+              <td>
+                <a
+                  href={`/admin/pesanan/${row.number}`}
+                  style="text-decoration:underline;text-underline-offset:3px"
+                >
+                  {row.number}
+                </a>
+              </td>
+              <td>
+                {row.customerName}
+                <br />
+                <small>{row.customerEmail}</small>
+              </td>
+              <td>
+                {row.packageSnapshot.name}
+                {row.createdByAdmin && <small> (admin)</small>}
+              </td>
+              <td>{formatRupiah(row.total)}</td>
+              <td>
+                <span class="bill-badge" data-status={row.status}>
+                  {row.statusLabel}
+                </span>
+              </td>
+              <td>{formatDateTime(row.createdAt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <details class="admin-card bill-details" style="margin-top:20px">
+    <summary>Buat pesanan untuk pelanggan</summary>
+    <p class="bill-muted">
+      Untuk klien jasa atau pembayaran di luar sistem. Centang "langsung lunas"
+      agar paket aktif seketika tanpa menunggu transfer.
+    </p>
+    <form
+      class="bill-form"
+      data-ajax="/api/admin/orders"
+      data-redirect="order"
+      id="admin-order-form"
+    >
+      <div class="bill-two">
+        <label>
+          Pelanggan
+          <select name="workspaceId" required>
+            <option value="">Pilih pelanggan</option>
+            {customers.map((c) => (
+              <option value={c.workspaceId}>{c.label}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Paket
+          <select name="packageId" required>
+            {packages.map((p) => (
+              <option value={p.id}>
+                {p.name} ({formatRupiah(p.price)})
+                {p.active ? "" : " - nonaktif"}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div class="bill-checks" style="margin-top:14px">
+        <label>
+          <input type="checkbox" name="markPaid" /> Tandai langsung lunas
+        </label>
+      </div>
+      <button class="admin-button" type="submit" style="margin-top:16px">
+        Buat pesanan
+      </button>
+    </form>
+  </details>
+</AdminLayout>
+<script>
+  import { bindAjaxForms } from "../../../components/billing/client";
+  bindAjaxForms();
+</script>

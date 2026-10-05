@@ -101,7 +101,11 @@ describe("migrasi data single-owner lama", () => {
       }),
     ]);
     expect(global.orders).toEqual([]);
-    expect(global.packages).toEqual([]);
+    expect(global.packages.map((p) => p.id)).toEqual([
+      "esensial",
+      "premium",
+      "eksklusif",
+    ]);
     expect(global.siteSettings).toEqual({});
     expect(global.sessions).toEqual([]);
 
@@ -229,6 +233,7 @@ describe("migrasi data single-owner lama", () => {
 describe("ketahanan penyimpanan global", () => {
   it("melengkapi koleksi yang hilang", async () => {
     const { normalizeGlobal } = await import("./global-state");
+    const { seedPackages } = await import("../../billing/packages");
     expect(normalizeGlobal({ users: "x", slugs: [] })).toEqual({
       users: [],
       sessions: [],
@@ -236,7 +241,7 @@ describe("ketahanan penyimpanan global", () => {
       slugs: {},
       mediaIndex: {},
       orders: [],
-      packages: [],
+      packages: seedPackages(),
       siteSettings: {},
       auditLog: [],
     });

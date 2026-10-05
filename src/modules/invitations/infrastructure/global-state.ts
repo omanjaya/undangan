@@ -6,6 +6,7 @@
  * ada di `State` (state.ts).
  */
 import type { PackageDefinition } from "../../billing/catalog";
+import { seedPackages } from "../../billing/packages";
 
 export type UserRole = "admin" | "customer";
 export type UserStatus = "active" | "suspended";
@@ -174,7 +175,10 @@ export function normalizeGlobal(raw: unknown): GlobalState {
       ? (source.mediaIndex as GlobalState["mediaIndex"])
       : {},
     orders: list<Order>(source.orders).filter(isRecord),
-    packages: list<PackageRecord>(source.packages).filter(isRecord),
+    // Penyimpanan baru (atau lama yang belum berisi paket) memakai katalog bawaan.
+    packages: ((packages) => (packages.length ? packages : seedPackages()))(
+      list<PackageRecord>(source.packages).filter(isRecord),
+    ),
     siteSettings: isRecord(source.siteSettings)
       ? (source.siteSettings as SiteSettings)
       : {},

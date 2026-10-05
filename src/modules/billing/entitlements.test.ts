@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_PACKAGES } from "./catalog";
 import { getEntitlements, UNLIMITED } from "./entitlements";
 
 const plan = (p: Parameters<typeof getEntitlements>[0]["plan"]) => ({
@@ -52,6 +53,94 @@ describe("getEntitlements", () => {
           expiresAt: "2026-10-04T00:00:00Z",
         }),
         now,
+      ).canPublish,
+    ).toBe(false);
+  });
+});
+
+describe("getEntitlements dari paket yang dibeli", () => {
+  const now = Date.parse("2026-10-05T00:00:00Z");
+  const active = {
+    id: "esensial",
+    status: "active",
+    expiresAt: "2027-01-01T00:00:00Z",
+  } as const;
+  const [esensial, premium] = DEFAULT_PACKAGES;
+
+  it("memakai batas dan flag paket, ruang media dalam byte", () => {
+    const ent = getEntitlements({ id: "w1", plan: active }, now, {
+      packages: DEFAULT_PACKAGES,
+    });
+    expect(ent).toMatchObject({
+      canPublish: true,
+      maxInvitations: 1,
+      maxGuests: 150,
+      maxMediaBytes: 100 * 1024 * 1024,
+    });
+    expect(ent.features).toEqual(esensial.flags);
+    expect(ent.features.music).toBe(false);
+  });
+
+  it("mengikuti perubahan paket di penyimpanan", () => {
+    const edited = {
+      ...esensial,
+      limits: { ...esensial.limits, maxGuests: 99 },
+    };
+    expect(
+      getEntitlements({ id: "w1", plan: active }, now, { packages: [edited] })
+        .maxGuests,
+    ).toBe(99);
+  });
+
+  it("memakai salinan pesanan lunas terbaru bila paket sudah dihapus", () => {
+    const order = (paidAt: string, maxGuests: number) => ({
+      workspaceId: "w1",
+      packageId: "esensial",
+      status: "paid" as const,
+      paidAt,
+      packageSnapshot: {
+        ...premium,
+        id: "esensial",
+        limits: { ...premium.limits, maxGuests },
+      },
+    });
+    const ent = getEntitlements({ id: "w1", plan: active }, now, {
+      packages: [premium],
+      orders: [
+        order("2026-01-01T00:00:00Z", 10),
+        order("2026-06-01T00:00:00Z", 321),
+        { ...order("2026-09-01T00:00:00Z", 5), workspaceId: "w2" },
+      ],
+    });
+    expect(ent.maxGuests).toBe(321);
+    expect(ent.features.music).toBe(true);
+  });
+
+  it("paket tak dikenal tetap tanpa batas; admin, uji coba, dan kedaluwarsa tidak berubah", () => {
+    expect(
+      getEntitlements({ id: "w1", plan: active }, now, { packages: [premium] })
+        .maxGuests,
+    ).toBe(UNLIMITED);
+    const source = { packages: DEFAULT_PACKAGES };
+    expect(
+      getEntitlements(
+        { id: "w", plan: { id: "admin", status: "active" } },
+        now,
+        source,
+      ).maxGuests,
+    ).toBe(UNLIMITED);
+    expect(
+      getEntitlements(
+        { id: "w", plan: { id: "trial", status: "trial" } },
+        now,
+        source,
+      ).canPublish,
+    ).toBe(false);
+    expect(
+      getEntitlements(
+        { id: "w", plan: { ...active, expiresAt: "2026-10-01T00:00:00Z" } },
+        now,
+        source,
       ).canPublish,
     ).toBe(false);
   });

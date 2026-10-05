@@ -2,7 +2,19 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Icon from "../components/Icon.astro";
 import { getActor } from "../server/auth";
-if (await getActor(Astro.request)) return Astro.redirect("/dashboard");
+import { listSellablePackages } from "../server/billing";
+import { formatRupiah } from "../modules/billing/catalog";
+
+// Tombol "Mulai sekarang" di halaman harga membawa `?paket=<id>`; hanya id
+// berbentuk wajar yang diteruskan, dan hanya paket yang memang dijual.
+const requested = (Astro.url.searchParams.get("paket") ?? "").toLowerCase();
+const chosen = /^[a-z0-9-]{1,40}$/.test(requested)
+  ? (await listSellablePackages()).find((p) => p.id === requested)
+  : undefined;
+const next = chosen
+  ? `/dashboard/paket?paket=${encodeURIComponent(chosen.id)}`
+  : "/dashboard";
+if (await getActor(Astro.request)) return Astro.redirect(next);
 Astro.response.headers.set("Cache-Control", "private, no-store");
 ---
 
@@ -22,7 +34,14 @@ Astro.response.headers.set("Cache-Control", "private, no-store");
         Daftar untuk mulai menyusun undangan, daftar tamu, dan anggaran
         pernikahan di ruang kerja milik sendiri.
       </p>
-      <form id="register-form">
+      {chosen && (
+        <p class="chosen-package" role="note">
+          Paket pilihan: <strong>{chosen.name}</strong> (
+          {formatRupiah(chosen.price)}). Setelah mendaftar Anda langsung
+          diarahkan ke pembayarannya.
+        </p>
+      )}
+      <form id="register-form" data-next={next}>
         <label>
           Nama
           <input
@@ -162,6 +181,13 @@ Astro.response.headers.set("Cache-Control", "private, no-store");
     color: var(--olive);
     text-decoration: underline;
   }
+  .chosen-package {
+    background: #eef0e4;
+    border: 1px solid #d3d9c2;
+    border-radius: 4px;
+    padding: 10px 12px;
+    color: #3f4a35 !important;
+  }
   #register-error {
     font-size: 11px;
     color: #a14737;
@@ -191,7 +217,7 @@ Astro.response.headers.set("Cache-Control", "private, no-store");
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      window.location.href = "/dashboard";
+      window.location.href = form.dataset.next || "/dashboard";
     } catch (e) {
       error.textContent =
         e instanceof Error ? e.message : "Tidak dapat mendaftar. Coba lagi.";

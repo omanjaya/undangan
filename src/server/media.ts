@@ -66,6 +66,7 @@ export function validateMediaReferences(
     if (
       !state.assets?.some(
         (a) =>
+          !a.purpose &&
           a.url === reference.url &&
           a.kind === reference.kind &&
           a.workspaceId === workspaceId,
@@ -82,6 +83,8 @@ export function canReadAsset(
   actor: Actor | null,
 ) {
   if (actor?.workspaceId === asset.workspaceId) return true;
+  // Bukti transfer: hanya pemilik ruang kerja dan admin, tidak pernah publik.
+  if (asset.purpose) return actor?.role === "admin";
   // Publik hanya boleh membaca media yang dipakai salah satu undangan terbit.
   return state.invitations.some(
     (invitation) =>
@@ -94,15 +97,27 @@ export async function listMedia(actor: Actor | null) {
   const { workspaceId } = requireActor(actor);
   const state = await readWorkspace(workspaceId);
   return (state.assets || [])
-    .filter((a) => a.workspaceId === workspaceId)
+    .filter((a) => a.workspaceId === workspaceId && !a.purpose)
     .map(({ workspaceId: _, filename: __, ...asset }) => asset);
 }
 // Unggahan diserialkan per ruang kerja agar pemeriksaan kuota tidak saling menyalip.
 const uploadQueues = new Map<string, Promise<unknown>>();
-export async function uploadMedia(actor: Actor | null, request: Request) {
+/** Pengaturan unggahan khusus; tanpa ini berlaku aturan pustaka media biasa. */
+export type UploadOptions = {
+  purpose?: MediaAsset["purpose"];
+  /** Batas ukuran berkas dalam MB, menggantikan batas per jenis. */
+  maxMB?: number;
+  imagesOnly?: boolean;
+};
+
+export async function uploadMedia(
+  actor: Actor | null,
+  request: Request,
+  options: UploadOptions = {},
+) {
   const { workspaceId } = requireActor(actor);
   const operation = (uploadQueues.get(workspaceId) ?? Promise.resolve()).then(
-    () => performUpload(actor, request),
+    () => performUpload(actor, request, options),
   );
   const tail = operation.catch(() => {});
   uploadQueues.set(workspaceId, tail);
@@ -112,16 +127,23 @@ export async function uploadMedia(actor: Actor | null, request: Request) {
   });
   return operation;
 }
-async function performUpload(actor: Actor | null, request: Request) {
+async function performUpload(
+  actor: Actor | null,
+  request: Request,
+  options: UploadOptions,
+) {
   const { workspaceId } = requireActor(actor);
   const state = await readWorkspace(workspaceId);
   const entitlements = await loadEntitlements(workspaceId);
   const mime = request.headers.get("content-type")?.split(";")[0].trim() || "";
   const format = formats[mime];
   if (!format) throw new DomainError("Format media tidak didukung.", 415);
-  const maximum = format.max * 1024 * 1024;
+  if (options.imagesOnly && format.kind !== "image")
+    throw new DomainError("Unggah berkas gambar (JPG, PNG, atau WebP).", 415);
+  const maxMB = Math.min(options.maxMB ?? format.max, format.max);
+  const maximum = maxMB * 1024 * 1024;
   if (Number(request.headers.get("content-length") || 0) > maximum)
-    throw new DomainError(`Ukuran maksimum ${format.max} MB.`, 413);
+    throw new DomainError(`Ukuran maksimum ${maxMB} MB.`, 413);
   // UPLOAD_STORAGE_MB menjadi batas atas per ruang kerja; paket bisa lebih kecil.
   const configured =
     Number(process.env.UPLOAD_STORAGE_MB || 1024) * 1024 * 1024;
@@ -130,8 +152,13 @@ async function performUpload(actor: Actor | null, request: Request) {
       "Kapasitas media belum dikonfigurasi dengan benar.",
       503,
     );
-  const storageLimit = Math.min(configured, entitlements.maxMediaBytes);
-  const used = (state.assets || []).reduce((n, a) => n + a.bytes, 0);
+  // Bukti transfer tidak dibatasi kuota agar pembayaran tak pernah terhalang.
+  const storageLimit = options.purpose
+    ? Number.POSITIVE_INFINITY
+    : Math.min(configured, entitlements.maxMediaBytes);
+  const counted = (assets: MediaAsset[] = []) =>
+    assets.filter((a) => !a.purpose).reduce((n, a) => n + a.bytes, 0);
+  const used = counted(state.assets);
   if (used >= storageLimit)
     throw new DomainError(
       storageLimit < configured
@@ -229,6 +256,7 @@ async function performUpload(actor: Actor | null, request: Request) {
               : mime,
       createdAt: new Date().toISOString(),
       ...dimensions,
+      ...(options.purpose ? { purpose: options.purpose } : {}),
     };
     // Indeks dulu, baru aset: indeks yatim tidak berbahaya, sedangkan aset
     // tanpa indeks tidak akan pernah bisa disajikan.
@@ -237,7 +265,7 @@ async function performUpload(actor: Actor | null, request: Request) {
     });
     indexed = true;
     await mutateWorkspace(workspaceId, (current) => {
-      const size = (current.assets || []).reduce((n, a) => n + a.bytes, 0);
+      const size = counted(current.assets);
       if (size + bytes > storageLimit)
         throw new DomainError("Penyimpanan media penuh.", 413);
       (current.assets ??= []).push(asset);

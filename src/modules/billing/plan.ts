@@ -2,6 +2,7 @@ import type {
   AuditEntry,
   GlobalState,
   Workspace,
+  WorkspacePlan,
 } from "../invitations/infrastructure/global-state";
 import { randomUUID } from "node:crypto";
 
@@ -32,6 +33,28 @@ export function activatePlan(
     expiresAt: new Date(base + durationDays * DAY).toISOString(),
   };
   return workspace.plan;
+}
+
+/** Lama undangan terbit tetap tampil publik setelah paket berakhir. */
+export const PUBLIC_GRACE_DAYS = 30;
+
+export type PublicAccess = "active" | "grace" | "lapsed";
+
+/**
+ * Aturan tampil publik undangan terbit milik sebuah ruang kerja:
+ * - paket berlaku (atau admin, atau tanpa tanggal berakhir): `active`
+ * - paket berakhir kurang dari 30 hari lalu: `grace`, undangan tetap tampil
+ * - lebih dari itu: `lapsed`, tamu melihat halaman "undangan tidak aktif"
+ * Data undangan tidak dihapus; memperpanjang paket langsung mengaktifkannya lagi.
+ */
+export function publicAccess(
+  plan: WorkspacePlan,
+  now = Date.now(),
+): PublicAccess {
+  if (plan.id === "admin" || !plan.expiresAt) return "active";
+  const end = Date.parse(plan.expiresAt);
+  if (!Number.isFinite(end) || end > now) return "active";
+  return now - end <= PUBLIC_GRACE_DAYS * DAY ? "grace" : "lapsed";
 }
 
 const AUDIT_LIMIT = 2000;

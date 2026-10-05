@@ -6,14 +6,14 @@ import SiteFooter from "../components/landing/SiteFooter.astro";
 import WhatsAppButton from "../components/landing/WhatsAppButton.astro";
 import { getSiteConfig } from "../config/site";
 import { buildLandingJsonLd, serializeJsonLd } from "../config/seo";
-import { DEFAULT_PACKAGES } from "../modules/billing/catalog";
+import { listSellablePackages } from "../server/billing";
 import "../styles/landing.css";
 import "../styles/site.css";
 import { themes } from "../modules/invitations/domain/themes";
 const collections = themes;
 const site = getSiteConfig();
-// Nanti diganti dengan paket dari penyimpanan admin; komponen hanya butuh daftar.
-const packages = DEFAULT_PACKAGES;
+// Paket dari penyimpanan admin; bila tidak terbaca, katalog bawaan.
+const packages = await listSellablePackages();
 const jsonLd = serializeJsonLd(buildLandingJsonLd(site, packages));
 const features = [
   {

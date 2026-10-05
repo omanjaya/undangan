@@ -1,0 +1,194 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { adminPage } from "../../server/admin-page";
+import { getSiteSettings } from "../../server/billing";
+import "../../styles/billing.css";
+
+export const prerender = false;
+
+const guard = await adminPage(Astro);
+if (guard instanceof Response) return guard;
+const actor = guard;
+const settings = await getSiteSettings(actor);
+// Minimal satu baris kosong agar form selalu punya tempat mengisi.
+const rows = settings.bankAccounts.length
+  ? settings.bankAccounts
+  : [{ bank: "", holder: "", number: "" }];
+---
+
+<AdminLayout title="Pengaturan" active="settings" adminName={actor.name}>
+  <form class="bill-form" id="settings-form">
+    <section class="admin-card">
+      <h2 style="font:22px var(--serif);margin:0 0 4px">
+        Rekening tujuan transfer
+      </h2>
+      <p class="bill-muted" style="margin:0">
+        Ditampilkan di setiap tagihan. Urutan di sini adalah urutan tampil.
+      </p>
+      <div id="bank-rows">
+        {rows.map((row) => (
+          <div class="bill-bank-row" data-row>
+            <label>
+              Bank
+              <input
+                type="text"
+                data-field="bank"
+                value={row.bank}
+                maxlength="60"
+                placeholder="BCA"
+              />
+            </label>
+            <label>
+              Atas nama
+              <input
+                type="text"
+                data-field="holder"
+                value={row.holder}
+                maxlength="80"
+              />
+            </label>
+            <label>
+              Nomor rekening
+              <input
+                type="text"
+                data-field="number"
+                value={row.number}
+                maxlength="40"
+                inputmode="numeric"
+              />
+            </label>
+            <div class="tools">
+              <button
+                type="button"
+                class="admin-button secondary"
+                data-move="-1"
+                aria-label="Naikkan"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                class="admin-button secondary"
+                data-move="1"
+                aria-label="Turunkan"
+              >
+                ↓
+              </button>
+              <button
+                type="button"
+                class="admin-button danger"
+                data-remove
+                aria-label="Hapus rekening"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        class="admin-button secondary"
+        id="add-bank"
+        style="margin-top:14px"
+      >
+        Tambah rekening
+      </button>
+    </section>
+
+    <section class="admin-card" style="margin-top:20px">
+      <h2 style="font:22px var(--serif);margin:0 0 4px">Pembayaran</h2>
+      <label>
+        Catatan di halaman pembayaran
+        <textarea
+          name="paymentNote"
+          maxlength="500"
+          placeholder="Mis. Pembayaran diverifikasi pukul 08.00–20.00 WITA."
+        >{settings.paymentNote}</textarea>
+      </label>
+      <label style="max-width:260px">
+        Tagihan berlaku (jam)
+        <input
+          type="number"
+          name="orderExpiryHours"
+          min="1"
+          max="720"
+          value={settings.orderExpiryHours}
+          required
+        />
+      </label>
+    </section>
+
+    <button class="admin-button" type="submit" style="margin-top:20px">
+      Simpan pengaturan
+    </button>
+  </form>
+</AdminLayout>
+<script>
+  import { sendJson, toast } from "../../components/billing/client";
+
+  const form = document.querySelector<HTMLFormElement>("#settings-form")!;
+  const list = document.querySelector<HTMLElement>("#bank-rows")!;
+  const rows = () => [...list.querySelectorAll<HTMLElement>("[data-row]")];
+
+  list.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement;
+    const row = target.closest<HTMLElement>("[data-row]");
+    if (!row) return;
+    if (target.closest("[data-remove]")) {
+      if (rows().length > 1) row.remove();
+      else
+        row
+          .querySelectorAll("input")
+          .forEach((input) => ((input as HTMLInputElement).value = ""));
+    }
+    const move = target.closest<HTMLElement>("[data-move]");
+    if (move) {
+      const step = Number(move.dataset.move);
+      const sibling =
+        step < 0 ? row.previousElementSibling : row.nextElementSibling;
+      if (sibling) step < 0 ? sibling.before(row) : sibling.after(row);
+    }
+  });
+
+  document.querySelector("#add-bank")?.addEventListener("click", () => {
+    const copy = rows()[0].cloneNode(true) as HTMLElement;
+    copy
+      .querySelectorAll("input")
+      .forEach((input) => ((input as HTMLInputElement).value = ""));
+    list.append(copy);
+    copy.querySelector("input")?.focus();
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const field = (row: HTMLElement, name: string) =>
+      row.querySelector<HTMLInputElement>(`[data-field=${name}]`)!.value;
+    const bankAccounts = rows()
+      .map((row) => ({
+        bank: field(row, "bank"),
+        holder: field(row, "holder"),
+        number: field(row, "number"),
+      }))
+      // Baris yang sama sekali kosong dilewati.
+      .filter((row) => row.bank || row.holder || row.number);
+    const button = form.querySelector<HTMLButtonElement>(
+      "button[type=submit]",
+    )!;
+    button.disabled = true;
+    try {
+      await sendJson("/api/admin/settings", {
+        bankAccounts,
+        paymentNote:
+          form.querySelector<HTMLTextAreaElement>("[name=paymentNote]")!.value,
+        orderExpiryHours: form.querySelector<HTMLInputElement>(
+          "[name=orderExpiryHours]",
+        )!.value,
+      });
+      toast("Pengaturan tersimpan.");
+    } catch (error) {
+      toast((error as Error).message, true);
+    }
+    button.disabled = false;
+  });
+</script>

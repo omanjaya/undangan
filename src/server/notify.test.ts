@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
-import { formatNotification, notifyOwner } from "./notify";
+import {
+  formatNotification,
+  formatPaymentNotification,
+  notifyOwner,
+  notifyPaymentProof,
+} from "./notify";
 
 const activity = {
   invitationTitle: "Raka & Amara",
@@ -86,5 +91,38 @@ describe("formatNotification", () => {
     });
     expect(text).toContain("Tidak hadir");
     expect(text).not.toContain("Ucapan");
+  });
+});
+
+describe("notifyPaymentProof", () => {
+  const payment = {
+    number: "TMU-20261005-0001",
+    customerName: "Sari",
+    customerEmail: "sari@example.test",
+    packageName: "Premium",
+    total: 199_417,
+    note: "BCA a.n. Sari",
+    url: "https://temu.test/admin/pesanan/TMU-20261005-0001",
+  };
+
+  it("menyusun pesan berisi nomor, nominal persis, dan tautan admin", () => {
+    const text = formatPaymentNotification(payment);
+    expect(text).toContain("menunggu verifikasi: TMU-20261005-0001");
+    expect(text).toContain("Nominal: Rp199.417");
+    expect(text).toContain("Catatan: BCA a.n. Sari");
+    expect(text).toContain(payment.url);
+  });
+
+  it("mengirim lewat Telegram bila terkonfigurasi", async () => {
+    process.env.TELEGRAM_BOT_TOKEN = "123:abc";
+    process.env.TELEGRAM_CHAT_ID = "999";
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", fetchMock);
+    notifyPaymentProof(payment);
+    await flush();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).text).toContain(
+      "Rp199.417",
+    );
   });
 });

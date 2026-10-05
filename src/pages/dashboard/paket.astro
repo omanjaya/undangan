@@ -1,0 +1,178 @@
+---
+import BillingShell from "../../components/billing/BillingShell.astro";
+import PlanBanner from "../../components/billing/PlanBanner.astro";
+import { customerPage } from "../../server/customer-page";
+import { getBillingOverview, getPlanSummary } from "../../server/billing";
+import { describePlan, formatDate } from "../../modules/billing/plan-status";
+import { formatDuration, formatRupiah } from "../../modules/billing/catalog";
+
+export const prerender = false;
+
+const guard = await customerPage(Astro);
+if (guard instanceof Response) return guard;
+const actor = guard;
+
+const overview = await getBillingOverview(actor);
+const summary = await getPlanSummary(actor);
+const status = describePlan(overview.plan);
+// Paket yang dipilih dari halaman harga (`?paket=`) disorot dan digulir ke layar.
+const requested = Astro.url.searchParams.get("paket") ?? "";
+const chosen = overview.packages.find((p) => p.id === requested)?.id;
+const open = overview.openOrder;
+const renewing = status.kind === "active" || status.kind === "expiring";
+---
+
+<BillingShell title="Paket & tagihan">
+  <span class="bill-kicker">PAKET &amp; TAGIHAN</span>
+  <h1>Pilih paket untuk menerbitkan undangan.</h1>
+  <p class="bill-lead">
+    Bayar sekali lewat transfer bank, tanpa langganan otomatis. Setelah memilih
+    paket Anda mendapat nomor rekening dan nominal transfer; unggah bukti, lalu
+    admin memverifikasi biasanya dalam 1 hari kerja.
+  </p>
+
+  <div style="margin-top:22px">
+    <PlanBanner
+      plan={overview.plan}
+      packageName={summary.packageName}
+      openOrder={summary.openOrder}
+      hideLink
+    />
+  </div>
+
+  {open && (
+    <div class="bill-alert warn" role="status">
+      <strong>
+        Anda punya tagihan {open.number} ({open.statusLabel.toLowerCase()})
+      </strong>
+      {open.status === "awaiting_verification"
+        ? "Bukti transfer sudah diterima. Tunggu hasil verifikasi sebelum memesan paket lain."
+        : "Selesaikan pembayarannya, atau pilih paket lain di bawah untuk mengganti tagihan ini."}
+      <div>
+        <a class="bill-btn" href={`/dashboard/tagihan/${open.number}`}>
+          {open.status === "awaiting_verification"
+            ? "Lihat tagihan"
+            : "Lanjutkan pembayaran"}
+        </a>
+      </div>
+    </div>
+  )}
+
+  <ul class="bill-packages" aria-label="Daftar paket">
+    {overview.packages.map((pkg) => {
+      const current = renewing && overview.plan.id === pkg.id;
+      const blocked = open?.status === "awaiting_verification";
+      return (
+        <li>
+          <article
+            id={`paket-${pkg.id}`}
+            class:list={[
+              "bill-package",
+              { "is-highlighted": pkg.highlighted },
+              { "is-chosen": pkg.id === chosen },
+            ]}
+            data-package-card={pkg.id}
+          >
+            {pkg.id === chosen ? (
+              <span class="bill-tag">Pilihan Anda</span>
+            ) : (
+              pkg.highlighted && <span class="bill-tag">Paling dipilih</span>
+            )}
+            <h3>{pkg.name}</h3>
+            <p class="bill-muted">{pkg.tagline}</p>
+            <p class="bill-price">
+              {pkg.originalPrice && pkg.originalPrice > pkg.price && (
+                <del>{formatRupiah(pkg.originalPrice)}</del>
+              )}
+              <strong>{formatRupiah(pkg.price)}</strong>
+              <span class="bill-muted">
+                {" "}
+                / aktif {formatDuration(pkg.durationDays)}
+              </span>
+            </p>
+            <ul class="bill-features">
+              {pkg.features.map((feature) => (
+                <li>{feature}</li>
+              ))}
+            </ul>
+            <form data-choose={pkg.id}>
+              <button
+                class:list={[
+                  "bill-btn",
+                  { secondary: !(pkg.highlighted || pkg.id === chosen) },
+                ]}
+                type="submit"
+                disabled={blocked}
+              >
+                {current ? "Perpanjang paket ini" : "Pilih paket"}
+              </button>
+            </form>
+          </article>
+        </li>
+      );
+    })}
+  </ul>
+
+  <section class="bill-card" aria-labelledby="riwayat">
+    <h2 id="riwayat">Riwayat tagihan</h2>
+    {overview.orders.length === 0 ? (
+      <p class="bill-muted">Belum ada tagihan.</p>
+    ) : (
+      <div class="bill-table-wrap">
+        <table class="bill-table">
+          <thead>
+            <tr>
+              <th>Nomor</th>
+              <th>Paket</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Tanggal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {overview.orders.map((order) => (
+              <tr>
+                <td>
+                  <a href={`/dashboard/tagihan/${order.number}`}>
+                    {order.number}
+                  </a>
+                </td>
+                <td>{order.packageSnapshot.name}</td>
+                <td>{formatRupiah(order.total)}</td>
+                <td>
+                  <span class="bill-badge" data-status={order.status}>
+                    {order.statusLabel}
+                  </span>
+                </td>
+                <td>{formatDate(order.createdAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </section>
+</BillingShell>
+<script>
+  import { sendJson, toast } from "../../components/billing/client";
+
+  document.querySelector(".is-chosen")?.scrollIntoView({ block: "center" });
+  for (const form of document.querySelectorAll<HTMLFormElement>(
+    "form[data-choose]",
+  ))
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = form.querySelector("button")!;
+      button.disabled = true;
+      try {
+        const result = await sendJson<{ number: string }>(
+          "/api/billing/orders",
+          { packageId: form.dataset.choose },
+        );
+        location.href = `/dashboard/tagihan/${result.number}`;
+      } catch (error) {
+        toast((error as Error).message, true);
+        button.disabled = false;
+      }
+    });
+</script>

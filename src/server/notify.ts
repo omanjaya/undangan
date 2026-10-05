@@ -59,3 +59,33 @@ export function notifyOwner(activity: GuestActivity) {
   const text = formatNotification(activity);
   for (const send of senders) void send(text).catch(() => {});
 }
+
+/** Bukti transfer baru yang perlu diperiksa penjual. */
+export type PaymentActivity = {
+  number: string;
+  customerName: string;
+  customerEmail: string;
+  packageName: string;
+  total: number;
+  note?: string;
+  /** Tautan ke halaman pesanan di panel admin (bila alamat situs diketahui). */
+  url?: string;
+};
+
+export function formatPaymentNotification(a: PaymentActivity) {
+  const lines = [
+    `Pembayaran baru menunggu verifikasi: ${a.number}`,
+    `Pelanggan: ${a.customerName} (${a.customerEmail})`,
+    `Paket: ${a.packageName}`,
+    `Nominal: Rp${String(Math.round(a.total)).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`,
+  ];
+  if (a.note) lines.push(`Catatan: ${a.note}`);
+  if (a.url) lines.push("", a.url);
+  return lines.join("\n");
+}
+
+/** Fire-and-forget, sama seperti `notifyOwner`. */
+export function notifyPaymentProof(activity: PaymentActivity) {
+  const text = formatPaymentNotification(activity);
+  for (const send of senders) void send(text).catch(() => {});
+}

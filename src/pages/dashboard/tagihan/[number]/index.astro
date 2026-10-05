@@ -1,0 +1,411 @@
+---
+import BillingShell from "../../../../components/billing/BillingShell.astro";
+import { customerPage } from "../../../../server/customer-page";
+import { getInvoice, PROOF_MAX_MB } from "../../../../server/billing";
+import { DomainError } from "../../../../modules/invitations/domain/invitation";
+import {
+  formatRupiah,
+  formatDuration,
+} from "../../../../modules/billing/catalog";
+import {
+  formatDate,
+  formatDateTime,
+} from "../../../../modules/billing/plan-status";
+
+export const prerender = false;
+
+const guard = await customerPage(Astro);
+if (guard instanceof Response) return guard;
+
+let invoice;
+try {
+  invoice = await getInvoice(guard, Astro.params.number ?? "");
+} catch (error) {
+  if (error instanceof DomainError && error.status === 404) {
+    Astro.response.status = 404;
+    return new Response("Tagihan tidak ditemukan.", {
+      status: 404,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+  throw error;
+}
+const { order, bankAccounts, paymentNote, customer, isOwner } = invoice;
+const payable = order.status === "pending" || order.status === "rejected";
+const canUpload = isOwner && payable;
+
+type Step = {
+  label: string;
+  note?: string;
+  state: "done" | "now" | "todo" | "bad";
+};
+const hasProof = !!order.proofAssetId;
+const steps: Step[] = [
+  {
+    label: "Tagihan dibuat",
+    note: formatDateTime(order.createdAt),
+    state: "done",
+  },
+  {
+    label: "Bukti transfer dikirim",
+    state: hasProof ? "done" : order.status === "pending" ? "now" : "todo",
+  },
+  {
+    label: "Diverifikasi admin",
+    state:
+      order.status === "paid"
+        ? "done"
+        : order.status === "awaiting_verification"
+          ? "now"
+          : "todo",
+  },
+  {
+    label: "Paket aktif",
+    note: order.paidAt ? formatDateTime(order.paidAt) : undefined,
+    state: order.status === "paid" ? "done" : "todo",
+  },
+];
+if (order.status === "rejected") {
+  steps[1] = { label: "Bukti transfer dikirim", state: "done" };
+  steps[2] = {
+    label: "Bukti ditolak",
+    note: order.rejectReason,
+    state: "bad",
+  };
+}
+if (order.status === "cancelled" || order.status === "expired") {
+  steps.splice(1, 3, {
+    label: order.status === "expired" ? "Kedaluwarsa" : "Dibatalkan",
+    note: formatDateTime(order.updatedAt),
+    state: "bad",
+  });
+}
+---
+
+<BillingShell title={`Tagihan ${order.number}`}>
+  <span class="bill-kicker">TAGIHAN</span>
+  <h1>{order.number}</h1>
+  <p>
+    <span class="bill-badge" data-status={order.status}>
+      {order.statusLabel}
+    </span>
+    <span class="bill-muted">
+      · Paket {order.packageSnapshot.name} (
+      {formatDuration(order.packageSnapshot.durationDays)})
+    </span>
+  </p>
+
+  {!isOwner && (
+    <div class="bill-alert" role="note">
+      <strong>Dilihat sebagai admin</strong>
+      Pelanggan: {customer.name} ({customer.email}).{" "}
+      <a href={`/admin/pesanan/${order.number}`}>Buka di panel admin</a>
+    </div>
+  )}
+
+  {order.status === "rejected" && (
+    <div class="bill-alert bad" role="alert">
+      <strong>Bukti transfer ditolak</strong>
+      {order.rejectReason}
+      {isOwner && " Periksa lalu unggah bukti yang benar di bawah."}
+    </div>
+  )}
+  {order.status === "expired" && (
+    <div class="bill-alert bad">
+      <strong>Tagihan sudah kedaluwarsa</strong>
+      Batas waktu pembayaran terlewati. Jika Anda sudah terlanjur transfer,
+      hubungi admin; jika belum, buat pesanan baru.
+      <div>
+        <a class="bill-btn" href="/dashboard/paket">
+          Pilih paket
+        </a>
+      </div>
+    </div>
+  )}
+  {order.status === "cancelled" && (
+    <div class="bill-alert">
+      <strong>Tagihan dibatalkan</strong>
+      Tagihan ini tidak berlaku lagi.
+      <div>
+        <a class="bill-btn" href="/dashboard/paket">
+          Pilih paket
+        </a>
+      </div>
+    </div>
+  )}
+  {order.status === "awaiting_verification" && (
+    <div class="bill-alert warn" role="status">
+      <strong>Menunggu verifikasi admin</strong>
+      Bukti transfer sudah diterima. Biasanya diverifikasi dalam 1 hari kerja.
+      Paket aktif otomatis setelah diverifikasi.
+    </div>
+  )}
+  {order.status === "paid" && (
+    <div class="bill-alert" role="status">
+      <strong>Pembayaran diterima. Paket sudah aktif.</strong>
+      Undangan Anda kini dapat diterbitkan.
+      <div class="bill-actions">
+        {isOwner && (
+          <a class="bill-btn" href="/dashboard">
+            Ke dashboard
+          </a>
+        )}
+        <a
+          class="bill-btn secondary"
+          href={`/dashboard/tagihan/${order.number}/cetak`}
+        >
+          Cetak invoice
+        </a>
+      </div>
+    </div>
+  )}
+
+  <div class="bill-grid">
+    <div>
+      {payable && (
+        <section
+          class="bill-card"
+          style="margin-top:20px"
+          aria-labelledby="transfer"
+        >
+          <h2 id="transfer">Transfer tepat sejumlah ini</h2>
+          <div class="bill-total">
+            <small>Total transfer</small>
+            <output data-total={order.total}>
+              {formatRupiah(order.total)}
+            </output>
+            <p>
+              Termasuk kode unik{" "}
+              <b class="bill-code">
+                {String(order.uniqueCode).padStart(3, "0")}
+              </b>
+              . Transfer <strong>persis</strong> sampai digit terakhir agar
+              pembayaran Anda dikenali otomatis.
+            </p>
+            <button
+              class="bill-btn small"
+              type="button"
+              data-copy={String(order.total)}
+            >
+              Salin nominal
+            </button>
+          </div>
+          <dl class="bill-breakdown">
+            <dt>Harga paket {order.packageSnapshot.name}</dt>
+            <dd>{formatRupiah(order.amount)}</dd>
+            <dt>Kode unik</dt>
+            <dd>{formatRupiah(order.uniqueCode)}</dd>
+          </dl>
+          {order.status === "pending" && (
+            <p class="bill-muted" style="margin-bottom:0">
+              Batas pembayaran: {formatDateTime(order.expiresAt)} (
+              <time data-countdown={order.expiresAt}>sampai batas waktu</time>
+              ).
+            </p>
+          )}
+        </section>
+      )}
+      {(order.status === "paid" ||
+        order.status === "awaiting_verification") && (
+        <section class="bill-card" aria-labelledby="rincian">
+          <h2 id="rincian">Rincian pembayaran</h2>
+          <dl class="bill-breakdown">
+            <dt>Nomor tagihan</dt>
+            <dd>{order.number}</dd>
+            <dt>Paket</dt>
+            <dd>{order.packageSnapshot.name}</dd>
+            <dt>Harga paket</dt>
+            <dd>{formatRupiah(order.amount)}</dd>
+            {order.uniqueCode > 0 && (
+              <>
+                <dt>Kode unik</dt>
+                <dd>{formatRupiah(order.uniqueCode)}</dd>
+              </>
+            )}
+            <dt>Total</dt>
+            <dd>
+              <strong>{formatRupiah(order.total)}</strong>
+            </dd>
+            {order.paidAt && (
+              <>
+                <dt>Dibayar</dt>
+                <dd>{formatDate(order.paidAt)}</dd>
+              </>
+            )}
+          </dl>
+        </section>
+      )}
+
+      {payable && (
+        <section class="bill-card" aria-labelledby="rekening">
+          <h2 id="rekening">Rekening tujuan</h2>
+          {bankAccounts.length === 0 ? (
+            <p class="bill-muted">
+              Nomor rekening belum diatur. Hubungi admin untuk mendapatkan
+              rekening tujuan transfer.
+            </p>
+          ) : (
+            <ul class="bill-banks">
+              {bankAccounts.map((account) => (
+                <li>
+                  <div>
+                    <strong>{account.bank}</strong>
+                    <span>{account.number}</span>
+                    <small>a.n. {account.holder}</small>
+                  </div>
+                  <button
+                    class="bill-btn secondary small"
+                    type="button"
+                    data-copy={account.number.replace(/\s/g, "")}
+                    aria-label={`Salin nomor rekening ${account.bank}`}
+                  >
+                    Salin
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {paymentNote && <p class="bill-muted">{paymentNote}</p>}
+        </section>
+      )}
+
+      {order.proofUrl && (
+        <section class="bill-card" aria-labelledby="bukti">
+          <h2 id="bukti">Bukti transfer</h2>
+          <a href={order.proofUrl} target="_blank" rel="noopener">
+            <img
+              class="bill-proof"
+              src={order.proofUrl}
+              alt="Bukti transfer yang diunggah"
+              loading="lazy"
+            />
+          </a>
+          {order.proofNote && (
+            <p class="bill-muted">Catatan: {order.proofNote}</p>
+          )}
+        </section>
+      )}
+
+      {canUpload && (
+        <section class="bill-card" aria-labelledby="unggah">
+          <h2 id="unggah">
+            {order.status === "rejected"
+              ? "Unggah ulang bukti transfer"
+              : "Unggah bukti transfer"}
+          </h2>
+          <form class="bill-form" id="proof-form" data-number={order.number}>
+            <label>
+              Foto atau tangkapan layar bukti transfer
+              <input
+                type="file"
+                name="proof"
+                accept="image/jpeg,image/png,image/webp"
+                required
+              />
+              <small class="bill-muted">
+                JPG, PNG, atau WebP, maksimal {PROOF_MAX_MB} MB. Hanya Anda dan
+                admin yang dapat melihatnya.
+              </small>
+            </label>
+            <label>
+              Catatan (opsional)
+              <textarea
+                name="note"
+                maxlength="300"
+                placeholder="Mis. transfer dari rekening atas nama lain"
+              ></textarea>
+            </label>
+            <button class="bill-btn" type="submit">
+              Kirim bukti transfer
+            </button>
+          </form>
+        </section>
+      )}
+    </div>
+
+    <aside>
+      <section
+        class="bill-card"
+        style="margin-top:20px"
+        aria-labelledby="status-title"
+      >
+        <h2 id="status-title">Status</h2>
+        <ol class="bill-steps">
+          {steps.map((step) => (
+            <li
+              class:list={[
+                step.state === "done" && "is-done",
+                step.state === "now" && "is-now",
+                step.state === "bad" && "is-bad",
+              ]}
+            >
+              {step.label}
+              {step.note && <small>{step.note}</small>}
+            </li>
+          ))}
+        </ol>
+      </section>
+      {isOwner &&
+        (order.status === "pending" || order.status === "rejected") && (
+          <div class="bill-actions">
+            <form
+              data-ajax={`/api/billing/orders/${order.number}/cancel`}
+              data-redirect="/dashboard/paket"
+              data-confirm="Batalkan tagihan ini?"
+            >
+              <button class="bill-btn danger small" type="submit">
+                Batalkan tagihan
+              </button>
+            </form>
+            <a class="bill-btn secondary small" href="/dashboard/paket">
+              Ganti paket
+            </a>
+          </div>
+        )}
+    </aside>
+  </div>
+</BillingShell>
+<script>
+  import {
+    bindAjaxForms,
+    bindCopyButtons,
+    bindCountdowns,
+    send,
+    toast,
+  } from "../../../../components/billing/client";
+
+  bindCopyButtons();
+  bindCountdowns();
+  bindAjaxForms();
+
+  const form = document.querySelector<HTMLFormElement>("#proof-form");
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const file =
+      form.querySelector<HTMLInputElement>("input[type=file]")!.files?.[0];
+    const note = form.querySelector<HTMLTextAreaElement>("textarea")!.value;
+    if (!file) return toast("Pilih berkas gambar terlebih dahulu.", true);
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type))
+      return toast("Gunakan gambar JPG, PNG, atau WebP.", true);
+    if (file.size > 5 * 1024 * 1024)
+      return toast("Ukuran berkas maksimal 5 MB.", true);
+    const button = form.querySelector("button")!;
+    button.disabled = true;
+    button.textContent = "Mengunggah…";
+    try {
+      await send(`/api/billing/orders/${form.dataset.number}/proof`, {
+        headers: {
+          "Content-Type": file.type,
+          "X-File-Name": encodeURIComponent(file.name),
+          "X-Proof-Note": encodeURIComponent(note.trim()),
+        },
+        body: file,
+      });
+      location.reload();
+    } catch (error) {
+      toast((error as Error).message, true);
+      button.disabled = false;
+      button.textContent = "Kirim bukti transfer";
+    }
+  });
+</script>

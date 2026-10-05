@@ -1,0 +1,91 @@
+---
+/** Kartu status paket ringkas untuk dashboard dan halaman paket. */
+import { describePlan, formatDate } from "../../modules/billing/plan-status";
+import type { WorkspacePlan } from "../../modules/invitations/infrastructure/global-state";
+import "../../styles/billing.css";
+
+interface Props {
+  plan: WorkspacePlan;
+  packageName: string;
+  openOrder?: { number: string; status: string } | null;
+  /** Sembunyikan tombol ke /dashboard/paket (dipakai di halaman itu sendiri). */
+  hideLink?: boolean;
+}
+const { plan, packageName, openOrder, hideLink = false } = Astro.props;
+const status = describePlan(plan);
+const cta = hideLink ? null : "/dashboard/paket";
+---
+
+{status.kind !== "admin" && (
+  <section
+    class:list={[
+      "bill-alert",
+      status.kind === "expiring" && "warn",
+      status.kind === "expired" && "bad",
+    ]}
+    aria-label="Status paket"
+    data-plan-kind={status.kind}
+    style="margin-top:0;margin-bottom:22px"
+  >
+    {status.kind === "trial" && (
+      <>
+        <strong>Mode uji coba: undangan belum bisa diterbitkan.</strong>
+        Susun undangan sepuasnya. Pilih paket bila sudah siap dibagikan ke tamu.
+      </>
+    )}
+    {status.kind === "active" && (
+      <>
+        <strong>Paket {packageName} aktif</strong>
+        {status.expiresAt
+          ? `Berlaku sampai ${formatDate(status.expiresAt)}.`
+          : "Tanpa batas waktu."}
+      </>
+    )}
+    {status.kind === "expiring" && (
+      <>
+        <strong>
+          Paket {packageName} berakhir {status.daysLeft} hari lagi
+        </strong>
+        Berlaku sampai {formatDate(status.expiresAt)}. Perpanjang agar undangan
+        tetap aktif. Memperpanjang paket yang sama menambah sisa masa aktif,
+        tidak hangus.
+      </>
+    )}
+    {status.kind === "expired" && (
+      <>
+        <strong>
+          Paket {packageName} sudah berakhir
+          {status.expiresAt ? ` pada ${formatDate(status.expiresAt)}` : ""}
+        </strong>
+        Undangan baru tidak dapat diterbitkan.{" "}
+        {status.graceDaysLeft > 0
+          ? `Undangan yang sudah terbit tetap tampil untuk tamu ${status.graceDaysLeft} hari lagi, setelah itu tidak aktif.`
+          : "Undangan yang sudah terbit tidak lagi tampil untuk tamu."}{" "}
+        Perpanjang paket untuk mengaktifkannya kembali.
+      </>
+    )}
+    {openOrder && (
+      <>
+        <br />
+        Tagihan{" "}
+        <a href={`/dashboard/tagihan/${openOrder.number}`}>
+          {openOrder.number}
+        </a>{" "}
+        {openOrder.status === "awaiting_verification"
+          ? "sedang diverifikasi admin."
+          : "menunggu pembayaran Anda."}
+      </>
+    )}
+    {cta && (
+      <div>
+        <a class="bill-btn" href={cta}>
+          {status.kind === "trial"
+            ? "Pilih paket"
+            : status.kind === "active"
+              ? "Kelola paket"
+              : "Perpanjang paket"}
+        </a>
+      </div>
+    )}
+  </section>
+)}

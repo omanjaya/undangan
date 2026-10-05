@@ -157,27 +157,27 @@ Development dapat diakses melalui jaringan lokal. Set `WEB_BIND_ADDRESS=127.0.0.
 
 Gunakan [.env.example](.env.example) untuk development dan [.env.production.example](.env.production.example) untuk deployment. Jangan commit environment berisi kredensial.
 
-| Variabel            | Kegunaan                                                                                               |
-| ------------------- | ------------------------------------------------------------------------------------------------------ |
-| `OWNER_EMAIL`       | Email admin pertama; hanya dipakai membuat admin saat belum ada pengguna (bootstrap/migrasi)           |
-| `OWNER_PASSWORD`    | Password admin pertama; production minimal 16 karakter dan bukan nilai demo. Tidak berpengaruh setelah admin ada; ganti lewat akun |
-| `DATABASE_URL`      | Koneksi PostgreSQL; wajib pada production, disediakan otomatis oleh Compose                            |
-| `POSTGRES_PASSWORD` | Password PostgreSQL pada Compose; gunakan nilai aman untuk URI, misalnya hex acak                      |
-| `APP_URL`           | Origin HTTPS publik untuk validasi origin dan URL metadata; tidak perlu diisi saat pengujian lokal/LAN |
-| `APP_DOMAIN`        | Domain untuk Caddy pada konfigurasi HTTPS                                                              |
-| `WEB_PORT`          | Port host aplikasi; default `4321`                                                                     |
-| `WEB_BIND_ADDRESS`  | Bind address development; default `0.0.0.0`; Compose production selalu localhost                       |
-| `UPLOAD_STORAGE_MB` | Batas atas upload **per ruang kerja**; default `1024` MB. Paket dapat membatasi lebih kecil (uji coba 200 MB) |
-| `UPLOAD_DIR`        | Direktori upload runtime; default `.data/uploads`, Compose memakai `/app/.data/uploads`                |
-| `DATA_DIR`          | Direktori state file development (`global.json`, `workspaces/`); default `.data`                       |
-| `TELEGRAM_BOT_TOKEN` | Opsional: token bot Telegram untuk notifikasi RSVP dan ucapan baru ke pemilik                         |
-| `TELEGRAM_CHAT_ID`  | Opsional: id chat Telegram penerima notifikasi; notifikasi nonaktif bila salah satu variabel kosong    |
-| `SITE_NAME`         | Nama merek di footer, judul, dan JSON-LD; default `Temu`                                               |
-| `SITE_URL`          | Origin publik untuk canonical, sitemap, dan Open Graph; jatuh ke `APP_URL`                             |
-| `CONTACT_WHATSAPP`  | Nomor WhatsApp format internasional tanpa `+` (mis. `6281234567890`)                                   |
-| `CONTACT_EMAIL`     | Email kontak di halaman kontak, legal, dan JSON-LD                                                     |
-| `BUSINESS_NAME`     | Nama badan usaha/penjual di syarat, privasi, dan footer                                                |
-| `BUSINESS_ADDRESS`  | Alamat usaha di halaman legal dan kontak                                                               |
+| Variabel             | Kegunaan                                                                                                                           |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `OWNER_EMAIL`        | Email admin pertama; hanya dipakai membuat admin saat belum ada pengguna (bootstrap/migrasi)                                       |
+| `OWNER_PASSWORD`     | Password admin pertama; production minimal 16 karakter dan bukan nilai demo. Tidak berpengaruh setelah admin ada; ganti lewat akun |
+| `DATABASE_URL`       | Koneksi PostgreSQL; wajib pada production, disediakan otomatis oleh Compose                                                        |
+| `POSTGRES_PASSWORD`  | Password PostgreSQL pada Compose; gunakan nilai aman untuk URI, misalnya hex acak                                                  |
+| `APP_URL`            | Origin HTTPS publik untuk validasi origin dan URL metadata; tidak perlu diisi saat pengujian lokal/LAN                             |
+| `APP_DOMAIN`         | Domain untuk Caddy pada konfigurasi HTTPS                                                                                          |
+| `WEB_PORT`           | Port host aplikasi; default `4321`                                                                                                 |
+| `WEB_BIND_ADDRESS`   | Bind address development; default `0.0.0.0`; Compose production selalu localhost                                                   |
+| `UPLOAD_STORAGE_MB`  | Batas atas upload **per ruang kerja**; default `1024` MB. Paket dapat membatasi lebih kecil (uji coba 200 MB)                      |
+| `UPLOAD_DIR`         | Direktori upload runtime; default `.data/uploads`, Compose memakai `/app/.data/uploads`                                            |
+| `DATA_DIR`           | Direktori state file development (`global.json`, `workspaces/`); default `.data`                                                   |
+| `TELEGRAM_BOT_TOKEN` | Opsional: token bot Telegram untuk notifikasi RSVP dan ucapan baru ke pemilik                                                      |
+| `TELEGRAM_CHAT_ID`   | Opsional: id chat Telegram penerima notifikasi; notifikasi nonaktif bila salah satu variabel kosong                                |
+| `SITE_NAME`          | Nama merek di footer, judul, dan JSON-LD; default `Temu`                                                                           |
+| `SITE_URL`           | Origin publik untuk canonical, sitemap, dan Open Graph; jatuh ke `APP_URL`                                                         |
+| `CONTACT_WHATSAPP`   | Nomor WhatsApp format internasional tanpa `+` (mis. `6281234567890`)                                                               |
+| `CONTACT_EMAIL`      | Email kontak di halaman kontak, legal, dan JSON-LD                                                                                 |
+| `BUSINESS_NAME`      | Nama badan usaha/penjual di syarat, privasi, dan footer                                                                            |
+| `BUSINESS_ADDRESS`   | Alamat usaha di halaman legal dan kontak                                                                                           |
 
 Compose memakai environment yang tercantum pada service. Mengubah lokasi data lewat variabel host saja tidak mengganti mount volume di dalam container.
 
@@ -294,7 +294,7 @@ src/
     domain/                    Skema dan aturan konten
     infrastructure/            Persistence PostgreSQL / file development
   modules/accounts/            Hash kata sandi (scrypt)
-  modules/billing/             Kontrak hak paket (entitlements)
+  modules/billing/             Paket, hak paket (entitlements), pesanan, masa aktif
   server/                      Use case, autentikasi, validasi request, media
   styles/                      Gaya bersama dan variasi tema
 assets/                        Aset sumber dan bahan desain
@@ -323,12 +323,39 @@ Detail implementasi tersedia di [db/README.md](db/README.md).
 
 ## Multi-akun dan paket
 
-- **Peran**: `admin` (penjual, memegang ruang kerja `workspace-demo`) dan `customer`. `requireAdmin(actor)` di `src/server/auth.ts` menjaga halaman/endpoint khusus admin; panel admin dijelaskan di [Panel admin](#panel-admin).
+- **Peran**: `admin` (penjual, memegang ruang kerja `workspace-demo`) dan `customer`. `requireAdmin(actor)` di `src/server/auth.ts` menjaga halaman/endpoint khusus admin; panel admin ada di `/admin` (pesanan, paket, pengaturan penagihan).
 - **Pendaftaran**: `/daftar` memanggil `POST /api/auth/register` (validasi origin, rate limit, kata sandi minimal 8 karakter). Pendaftaran membuat akun, ruang kerja berpaket uji coba, dan satu undangan awal berisi isian netral dengan alamat acak `undangan-xxxxxxxx`.
 - **Kata sandi dan sesi**: scrypt dengan salt per pengguna (`scrypt$N$r$p$salt$hash`), perbandingan `timingSafeEqual` yang selalu berjalan walau email tidak dikenal. Sesi berlaku 7 hari sejak login (tetap, tidak diperpanjang otomatis), hanya hash token yang disimpan, logout dan `setPassword` mencabut sesi. Akun yang ditangguhkan (`status: "suspended"`) tidak dapat masuk dan sesinya langsung tidak berlaku.
 - **Isolasi**: semua layanan pemilik hanya membaca dan menulis ruang kerja milik `actor`; `authorize` tetap menjadi lapisan pertahanan tambahan. Halaman tamu hanya menyajikan undangan terbit; media draf hanya untuk anggota ruang kerja pemiliknya.
-- **Hak paket**: `getEntitlements(workspace)` di `src/modules/billing/entitlements.ts` menentukan `canPublish`, `maxInvitations`, `maxGuests` (per undangan), `maxMediaBytes`, dan flag fitur. Ruang kerja admin dan paket `active` tanpa batas; `trial` tidak boleh menerbitkan, 1 undangan, 50 tamu, 200 MB, tanpa penghapusan branding. Dipaksakan pada publish, buat undangan, tambah/impor tamu, unggah media, check-in QR, dan alamat kustom.
-- **Belum ada** (dikerjakan menyusul): pembayaran, reset kata sandi, verifikasi email, pengaturan akun.
+- **Hak paket**: `getEntitlements(workspace)` di `src/modules/billing/entitlements.ts` menentukan `canPublish`, `maxInvitations`, `maxGuests` (per undangan), `maxMediaBytes`, dan flag fitur. Ruang kerja admin tanpa batas, paket `active` memakai batas paket yang dibeli (lihat "Penagihan transfer manual"); `trial` tidak boleh menerbitkan, 1 undangan, 50 tamu, 200 MB, tanpa penghapusan branding. Dipaksakan pada publish, buat undangan, tambah/impor tamu, unggah media, check-in QR, dan alamat kustom.
+- **Belum ada** (dikerjakan menyusul): reset kata sandi, verifikasi email, pengaturan akun.
+
+### Penagihan transfer manual
+
+Alur penjualan tanpa payment gateway. Aturan inti ada di `src/modules/billing/orders.ts` (murni terhadap `GlobalState`), layanan di `src/server/billing.ts`.
+
+**Pelanggan**
+
+1. Tombol harga di landing membawa `/daftar?paket=<id>`; setelah mendaftar pengguna diarahkan ke `/dashboard/paket?paket=<id>` (paket itu disorot). Pelanggan yang sudah masuk memilih langsung di `/dashboard/paket`.
+2. "Pilih paket" memanggil `POST /api/billing/orders` dan membuat tagihan `TMU-YYYYMMDD-NNNN` (tanggal WITA, urutan harian). Total transfer = harga + **kode unik 1-999** yang dipilih agar tidak ada tagihan terbuka lain (`pending` / `awaiting_verification`) dengan total sama. Tagihan berlaku `orderExpiryHours` (bawaan 48 jam), lalu `expired` otomatis saat dibaca.
+3. **Satu tagihan terbuka per ruang kerja**: memilih paket yang sama membuka tagihan yang ada; memilih paket lain mengganti tagihan yang belum dibayar; selama bukti sedang diverifikasi tidak bisa memesan lagi.
+4. `/dashboard/tagihan/<nomor>` menampilkan total persis (kode unik disorot, tombol salin), rekening tujuan, hitung mundur batas bayar, linimasa status, dan unggah bukti (gambar, maks 5 MB, catatan opsional). Bukti disimpan sebagai aset privat di ruang kerja pelanggan (`purpose: "payment-proof"`): tidak muncul di pustaka media, tidak memakai kuota, tidak bisa dipasang di undangan, dan hanya dapat dibuka pemilik dan admin. Pelanggan bisa membatalkan tagihan yang belum berbukti atau yang ditolak.
+5. Setelah diverifikasi, `/dashboard/tagihan/<nomor>/cetak` menampilkan invoice/bukti pembayaran siap cetak (nama dan alamat usaha dari `BUSINESS_NAME` / `BUSINESS_ADDRESS`).
+6. Dashboard menampilkan kartu status paket (uji coba, aktif, tinggal 14 hari, berakhir). Penerbitan yang ditolak menyertakan tautan ke `/dashboard/paket`.
+
+**Admin** (semua perubahan: `requireAdmin` + cek origin + catatan di log aktivitas)
+
+- `/admin/pesanan`: tab status dengan jumlah, cari nomor/nama/email, dan "Buat pesanan untuk pelanggan" (opsi langsung lunas untuk jasa atau penjualan di luar sistem; tanpa kode unik, `createdByAdmin`).
+- `/admin/pesanan/<nomor>`: bukti transfer, nominal, pelanggan. **Verifikasi** menandai lunas dan mengaktifkan paket (`activatePlan`; paket sama yang masih aktif diperpanjang dari tanggal berakhirnya), **Tolak** wajib beralasan (pelanggan melihatnya dan boleh mengunggah ulang, kembali ke menunggu verifikasi), **Batalkan**. Pembayaran terlambat pada tagihan `expired` masih bisa diverifikasi.
+- `/admin/paket`: tambah/ubah/hapus paket (harga, harga coret, masa aktif, keunggulan, batas, fitur, aktif, disorot, urutan). Paket terakhir tidak bisa dihapus; nonaktifkan untuk menyembunyikan. Pesanan menyimpan salinan paket (`packageSnapshot`), jadi harga dan masa aktif pesanan lama tidak berubah.
+- `/admin/pengaturan`: rekening tujuan (tambah, hapus, urutkan), catatan pembayaran, dan batas waktu tagihan.
+- Setiap bukti baru dikirim ke penjual lewat Telegram (`TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`, lihat `src/server/notify.ts`); tautan ke pesanan memakai `SITE_URL`/`APP_URL`.
+
+**Paket di penyimpanan.** `global.packages` disemai dari `DEFAULT_PACKAGES` saat kosong (di `normalizeGlobal`, jadi data produksi lama otomatis terisi pada tulis berikutnya). Landing memakai `listSellablePackages()` dan kembali ke katalog bawaan bila penyimpanan tidak terbaca.
+
+**Hak dari paket.** `getEntitlements(workspace, now, { packages, orders })` memakai batas dan fitur paket yang dibeli (`maxMediaMB` dikonversi ke byte). Paket dicari lewat `plan.id`; jika sudah dihapus, dipakai salinan pada pesanan lunas terbaru ruang kerja itu. Paket aktif yang id-nya tak dikenal (ditetapkan manual) tetap tanpa batas; admin tanpa batas; uji coba dan kedaluwarsa memakai batas uji coba.
+
+**Masa tenggang setelah paket berakhir.** Undangan terbit tetap tampil dan menerima RSVP/ucapan selama **30 hari** setelah paket berakhir. Lewat itu, tamu melihat halaman "Undangan ini sudah tidak aktif" (HTTP 410), RSVP/ucapan/OG image tertutup, namun data dan dashboard pemilik tidak disentuh; memperpanjang paket langsung mengaktifkannya lagi. Aturannya ada di `publicAccess` (`src/modules/billing/plan.ts`) dan dipasang di `resolvePublic` (`src/server/services.ts`). Pemilik selalu bisa memratinjau draf.
 
 ## Panel admin
 
