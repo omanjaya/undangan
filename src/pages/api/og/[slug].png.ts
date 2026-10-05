@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { resolve } from "node:path";
 import { getPublished } from "../../../server/services";
 import { uploadDirectory } from "../../../server/media";
+import { clientIp, rateLimited } from "../../../server/http";
 
 const escapeXml = (value: string) =>
   value.replace(/[&<>"']/g, (character) => {
@@ -30,8 +31,14 @@ const responseHeaders = (slug: string) => ({
   "Cache-Control": "private, no-store",
 });
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, request, clientAddress }) => {
   const slug = params.slug ?? "";
+  // Menggambar kartu memakai sharp dan tidak di-cache; batasi per IP.
+  if (rateLimited("og:" + clientIp(request, clientAddress), 60))
+    return new Response("Terlalu banyak permintaan.", {
+      status: 429,
+      headers: { "Retry-After": "60" },
+    });
   const savedContent = await getPublished(slug);
   if (!savedContent) return new Response("Not found", { status: 404 });
 

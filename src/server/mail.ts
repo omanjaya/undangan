@@ -29,7 +29,11 @@ export function smtpConfigured(env: Env = process.env) {
 
 /** Mode pengembangan lokal: bukan production dan tidak memakai PostgreSQL. */
 export function isLocalDevelopment(env: Env = process.env) {
-  return env.NODE_ENV !== "production" && !env.DATABASE_URL;
+  // `import.meta.env.PROD` bernilai tetap true pada hasil build, jadi kotak
+  // keluar dan /api/dev/last-mail mustahil aktif di produksi.
+  return (
+    env.NODE_ENV !== "production" && !env.DATABASE_URL && !import.meta.env?.PROD
+  );
 }
 
 /**

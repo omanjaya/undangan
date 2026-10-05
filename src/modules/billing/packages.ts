@@ -74,6 +74,8 @@ const flag = z
   .union([z.boolean(), z.string()])
   .transform((v) => v === true || v === "true" || v === "on" || v === "1");
 
+const RESERVED_PACKAGE_IDS = ["admin", "trial"];
+
 /** Masukan admin untuk membuat atau mengubah paket. */
 export const packageInputSchema = z.object({
   id: z
@@ -84,7 +86,12 @@ export const packageInputSchema = z.object({
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       "Kode paket hanya huruf kecil, angka, dan tanda hubung.",
     )
-    .max(40),
+    .max(40)
+    // "admin" dan "trial" bermakna khusus pada paket ruang kerja (tanpa batas / uji coba).
+    .refine(
+      (id) => !RESERVED_PACKAGE_IDS.includes(id),
+      "Kode paket dicadangkan.",
+    ),
   name: z.string().trim().min(1, "Nama paket wajib diisi.").max(60),
   tagline: z.string().trim().max(160).default(""),
   price: int(0, 100_000_000, "Harga"),

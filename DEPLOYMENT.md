@@ -105,3 +105,10 @@ Jika build gagal dengan `Cannot find module '../lightningcss.linux-…-musl.node
 - Pembayaran hanya transfer manual dengan verifikasi admin; tidak ada payment gateway atau penagihan berulang otomatis. Paket yang berakhir masih tampil 30 hari (masa tenggang), lalu undangan menjadi tidak aktif bagi tamu tanpa menghapus data.
 - RSVP publik tidak membuktikan identitas tamu (kecuali lewat tautan pribadi dengan kode tamu).
 - Benchmark Core Web Vitals produksi dan uji beban belum dilakukan.
+
+## Asumsi keamanan di belakang reverse proxy
+
+- Rate limit memakai entri **terakhir** `X-Forwarded-For` (IPv6 dikelompokkan per /64). Ini benar hanya bila satu-satunya hop di depan aplikasi adalah Caddy kita (Caddy menimpa header dari klien yang tidak tepercaya) dan port aplikasi hanya terbuka di `127.0.0.1`. Jangan membuka port 4321 ke internet, dan bila memasang CDN (mis. Cloudflare) di depan Caddy, semua pengunjung akan berbagi satu ember limit sampai IP asli diteruskan secara tepercaya.
+- Limiter berada dalam memori satu proses: dijalankan lebih dari satu instance berarti batas dikalikan jumlah instance.
+- Pendaftaran tidak memverifikasi email; tiap akun uji coba mendapat kuota media sendiri. Pantau disk volume `app_data`.
+- Penguncian login per email (10 kegagalan/15 menit) dapat dipakai pihak lain untuk menahan akun tertentu sementara waktu.

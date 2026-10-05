@@ -205,6 +205,27 @@ describe("siklus pembayaran lewat layanan", () => {
     });
   });
 
+  it("menolak kode paket yang dicadangkan (admin memberi hak tanpa batas dan tanpa kedaluwarsa)", async () => {
+    for (const id of ["admin", "trial"])
+      await expect(
+        billing.adminSavePackage(
+          admin,
+          {
+            id,
+            name: "Palsu",
+            price: 1000,
+            durationDays: 30,
+            features: "Satu",
+            maxInvitations: 1,
+            maxGuests: 1,
+            maxMediaMB: 1,
+            active: true,
+          },
+          "create",
+        ),
+      ).rejects.toThrow("dicadangkan");
+  });
+
   it("mengubah paket tidak mengubah pesanan lama tetapi hak mengikuti paket terkini", async () => {
     await billing.adminSavePackage(
       admin,

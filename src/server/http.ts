@@ -43,12 +43,40 @@ export function guardMutation(request: Request) {
  */
 export function clientIp(request: Request, fallback: string) {
   const forwarded = request.headers.get("x-forwarded-for");
-  if (!forwarded) return fallback;
+  if (!forwarded) return ipBucket(fallback);
   const hops = forwarded
     .split(",")
     .map((hop) => hop.trim())
     .filter(Boolean);
-  return hops.at(-1) || fallback;
+  return ipBucket(hops.at(-1) || fallback);
+}
+
+/**
+ * IPv6 dikelompokkan per /64: satu pengguna biasanya memegang seluruh /64,
+ * sehingga tanpa ini penyerang dapat memakai jutaan alamat untuk menghindari
+ * batas dan memenuhi tabel limiter.
+ */
+export function ipBucket(ip: string) {
+  if (!ip.includes(":")) return ip;
+  // IPv4-mapped (::ffff:1.2.3.4) tetap diperlakukan sebagai IPv4.
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
+  if (mapped) return mapped[1];
+  const [head, tail = ""] = ip.toLowerCase().split("::");
+  const groups = head ? head.split(":") : [];
+  if (ip.includes("::")) {
+    const rest = tail ? tail.split(":") : [];
+    groups.push(
+      ...Array(Math.max(0, 8 - groups.length - rest.length)).fill("0"),
+    );
+    groups.push(...rest);
+  }
+  if (groups.length !== 8) return ip;
+  return (
+    groups
+      .slice(0, 4)
+      .map((g) => g.replace(/^0+(?=.)/, ""))
+      .join(":") + "::/64"
+  );
 }
 /**
  * Menghitung satu permintaan pada ember `key`; true bila batas `max` dalam
