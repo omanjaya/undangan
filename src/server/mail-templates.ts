@@ -62,3 +62,64 @@ export function passwordResetEmail(input: {
   );
   return { to: input.to, subject, text, html };
 }
+
+const rupiah = (n: number) => "Rp" + n.toLocaleString("id-ID");
+
+/** Email ke pelanggan setelah admin memverifikasi atau menolak pembayaran. */
+export function paymentResultEmail(input: {
+  to: string;
+  name: string;
+  number: string;
+  packageName: string;
+  total: number;
+  result: "paid" | "rejected";
+  reason?: string;
+  expiresAt?: string;
+  link: string;
+}): MailMessage {
+  const { name: brand } = getSiteConfig();
+  const paid = input.result === "paid";
+  const title = paid
+    ? "Pembayaran diterima"
+    : "Bukti transfer perlu diperbaiki";
+  const subject = `${title} — ${input.number}`;
+  const greeting = `Halo ${input.name},`;
+  const until = input.expiresAt
+    ? new Date(input.expiresAt).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Asia/Makassar",
+      })
+    : "";
+  const lines = paid
+    ? [
+        `Pembayaran tagihan ${input.number} sebesar ${rupiah(input.total)} sudah kami verifikasi.`,
+        `Paket ${input.packageName} kini aktif${until ? ` hingga ${until}` : ""}. Undangan Anda sudah dapat diterbitkan.`,
+      ]
+    : [
+        `Bukti transfer untuk tagihan ${input.number} belum dapat kami verifikasi.`,
+        input.reason ? `Alasan: ${input.reason}` : "",
+        "Silakan unggah ulang bukti transfer dari halaman tagihan.",
+      ].filter(Boolean);
+  const cta = paid ? "Buka dashboard" : "Buka tagihan";
+  const text = [
+    greeting,
+    "",
+    ...lines,
+    "",
+    `${cta}: ${input.link}`,
+    "",
+    `— ${brand}`,
+  ].join("\n");
+  const href = escapeHtml(input.link);
+  const html = layout(
+    brand,
+    title,
+    `<p style="margin:0 0 12px;font-size:15px;line-height:1.7">${escapeHtml(greeting)}</p>
+${lines.map((l) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.7">${escapeHtml(l)}</p>`).join("\n")}
+<p style="margin:20px 0 0"><a href="${href}" style="display:inline-block;background:#4c593f;color:#fff;text-decoration:none;padding:13px 22px;border-radius:3px;font-family:Arial,sans-serif;font-size:14px">${cta}</a></p>`,
+    escapeHtml(`Email ini dikirim otomatis oleh ${brand}.`),
+  );
+  return { to: input.to, subject, text, html };
+}

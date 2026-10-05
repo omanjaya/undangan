@@ -118,6 +118,8 @@ describe("penyamaran", () => {
       (s) => s.userId === c.actor.userId,
     );
     expect(session?.impersonatorUserId).toBe(adminActor.userId);
+    // Sesi penyamaran singkat (2 jam), bukan 7 hari seperti sesi biasa.
+    expect(session!.expiresAt - session!.createdAt).toBe(2 * 3_600_000);
 
     const ended = await admin.endImpersonation(cookieRequest(token));
     expect(ended.redirect).toBe(`/admin/pelanggan/${c.actor.userId}`);

@@ -28,6 +28,8 @@ const hash = (value: string) =>
  * `getActor` tetap hanya membaca dan tidak menulis pada tiap permintaan.
  */
 export const SESSION_TTL_MS = 7 * 86_400_000;
+/** Sesi penyamaran admin sengaja singkat: cukup untuk membantu pelanggan. */
+export const IMPERSONATION_TTL_MS = 2 * 3_600_000;
 const MAX_SESSIONS_PER_USER = 10;
 export const PASSWORD_MIN_LENGTH = 8;
 // Batas atas mencegah kata sandi raksasa dipakai untuk membebani scrypt.
@@ -122,7 +124,9 @@ export async function createSession(
       tokenHash: hash(token),
       userId,
       createdAt: now,
-      expiresAt: now + SESSION_TTL_MS,
+      expiresAt:
+        now +
+        (options.impersonatorUserId ? IMPERSONATION_TTL_MS : SESSION_TTL_MS),
       ...(options.impersonatorUserId
         ? { impersonatorUserId: options.impersonatorUserId }
         : {}),

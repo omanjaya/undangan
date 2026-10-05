@@ -430,6 +430,13 @@ export function createOrderForCustomer(
   const pkg = findPackage(global, input.packageId);
   if (!pkg) throw new DomainError("Paket tidak tersedia.", 404);
   const iso = new Date(now).toISOString();
+  // Pelanggan sudah dibayarkan di luar sistem: tagihan terbukanya tidak
+  // relevan lagi dan jangan sampai ditransfer dua kali.
+  for (const open of global.orders)
+    if (open.workspaceId === workspace.id && isOpen(open)) {
+      open.status = "cancelled";
+      open.updatedAt = iso;
+    }
   const order: Order = {
     id: randomUUID(),
     number: nextOrderNumber(global, now),

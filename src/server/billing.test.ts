@@ -147,6 +147,8 @@ describe("siklus pembayaran lewat layanan", () => {
   });
 
   it("admin menolak dengan alasan, pelanggan melihatnya dan mengunggah ulang", async () => {
+    const oldProof = (await billing.getInvoice(a.actor, number)).order
+      .proofUrl!;
     const rejected = await billing.adminRejectOrder(
       admin,
       number,
@@ -162,6 +164,19 @@ describe("siklus pembayaran lewat layanan", () => {
     );
     expect(again.status).toBe("awaiting_verification");
     expect(again.rejectReason).toBeUndefined();
+    // Bukti lama yang ditolak dihapus; yang baru tetap dapat dibuka.
+    expect(again.proofUrl).not.toBe(oldProof);
+    await expect(
+      status(media.serveMedia(oldProof.slice(7), getRequest, admin)),
+    ).resolves.toBe(404);
+    await expect(
+      status(media.serveMedia(again.proofUrl!.slice(7), getRequest, admin)),
+    ).resolves.toBe(200);
+    // Pelanggan dikabari alasan penolakan lewat email.
+    await new Promise((r) => setTimeout(r, 20));
+    const mail = (await import("./mail")).lastMailTo(a.email);
+    expect(mail?.subject).toContain("perlu diperbaiki");
+    expect(mail?.text).toContain("Nominal tidak sesuai");
   });
 
   it("verifikasi mengaktifkan paket dan hak mengikuti paket yang dibeli", async () => {
@@ -179,6 +194,10 @@ describe("siklus pembayaran lewat layanan", () => {
     expect(ent.features.music).toBe(false);
     await service.publishInvitation(a.actor, a.slug);
     expect((await service.getInvitation(a.slug))?.status).toBe("published");
+    await new Promise((r) => setTimeout(r, 20));
+    const mail = (await import("./mail")).lastMailTo(a.email);
+    expect(mail?.subject).toContain("Pembayaran diterima");
+    expect(mail?.text).toContain(number);
     const summary = await billing.getPlanSummary(a.actor);
     expect(summary).toMatchObject({
       packageName: "Esensial",
@@ -267,12 +286,18 @@ describe("siklus pembayaran lewat layanan", () => {
     expect(searched.rows.length).toBeGreaterThan(0);
     expect(searched.rows.every((r) => r.customerEmail === b.email)).toBe(true);
 
+    const open = await billing.startOrder(b.actor, "premium");
     const direct = await billing.adminCreateOrder(admin, {
       workspaceId: b.actor.workspaceId,
       packageId: "eksklusif",
       markPaid: "on",
     });
     expect(direct).toMatchObject({ status: "paid", createdByAdmin: true });
+    // Tagihan terbuka pelanggan ditutup agar tidak ditransfer dua kali.
+    expect((await billing.getInvoice(b.actor, open.number)).order.status).toBe(
+      "cancelled",
+    );
+    expect((await billing.getBillingOverview(b.actor)).openOrder).toBeNull();
     expect(
       (await tenant.loadEntitlements(b.actor.workspaceId)).features.qrCheckin,
     ).toBe(true);

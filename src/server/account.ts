@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { recordAudit } from "../modules/billing/plan";
 import { readdir, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
 import { z } from "zod";
@@ -259,6 +260,13 @@ export async function deleteAccount(
     const wsIds = new Set(
       g.workspaces.filter((w) => w.ownerUserId === own.userId).map((w) => w.id),
     );
+    recordAudit(g, {
+      actorUserId: own.userId,
+      action: "user.delete.self",
+      targetType: "user",
+      targetId: own.userId,
+      detail: target.email,
+    });
     g.users = g.users.filter((u) => u.id !== own.userId);
     g.sessions = g.sessions.filter((s) => s.userId !== own.userId);
     g.passwordResets = g.passwordResets.filter((t) => t.userId !== own.userId);

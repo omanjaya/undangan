@@ -1,4 +1,6 @@
 import { unlink } from "node:fs/promises";
+import { sendMail } from "./mail";
+import { paymentResultEmail } from "./mail-templates";
 import { resolve } from "node:path";
 import { z } from "zod";
 import { getSiteConfig } from "../config/site";
@@ -218,6 +220,10 @@ export async function uploadProof(
     await discardAsset(current.workspaceId, asset.url);
     throw error;
   }
+  // Bukti lama yang ditolak sudah digantikan; berkasnya tidak perlu disimpan.
+  const previous = proofUrl(before);
+  if (previous && before.proofAssetId !== asset.id)
+    await discardAsset(current.workspaceId, previous);
   const global = await readGlobal();
   const owner = global.users.find((u) => u.id === order.userId);
   notifyPaymentProof({
@@ -324,14 +330,48 @@ export async function adminCustomerChoices(actor: Actor | null) {
 
 const numberSchema = z.string().trim().min(1).max(40);
 
+/** Kabari pelanggan lewat email; tidak pernah menggagalkan tindakan admin. */
+async function emailPaymentResult(order: Order, result: "paid" | "rejected") {
+  try {
+    const global = await readGlobal();
+    const user = global.users.find((u) => u.id === order.userId);
+    if (!user) return;
+    const workspace = global.workspaces.find((w) => w.id === order.workspaceId);
+    const site = getSiteConfig();
+    await sendMail(
+      paymentResultEmail({
+        to: user.email,
+        name: user.name,
+        number: order.number,
+        packageName: order.packageSnapshot.name,
+        total: order.total,
+        result,
+        ...(order.rejectReason ? { reason: order.rejectReason } : {}),
+        ...(workspace?.plan.expiresAt
+          ? { expiresAt: workspace.plan.expiresAt }
+          : {}),
+        link:
+          result === "paid"
+            ? `${site.url}/dashboard`
+            : `${site.url}/dashboard/tagihan/${order.number}`,
+      }),
+    );
+  } catch (error) {
+    console.error(
+      "[billing] Email hasil pembayaran gagal:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
+  }
+}
+
 export async function adminVerifyOrder(actor: Actor | null, number: unknown) {
   const admin = requireAdmin(actor);
   const n = numberSchema.parse(number);
-  return view(
-    await mutateGlobal((global) =>
-      verifyOrder(global, { number: n, adminUserId: admin.userId }),
-    ),
+  const order = await mutateGlobal((global) =>
+    verifyOrder(global, { number: n, adminUserId: admin.userId }),
   );
+  void emailPaymentResult(order, "paid");
+  return view(order);
 }
 
 export async function adminRejectOrder(
@@ -346,15 +386,15 @@ export async function adminRejectOrder(
     .trim()
     .max(300)
     .parse(reason ?? "");
-  return view(
-    await mutateGlobal((global) =>
-      rejectOrder(global, {
-        number: n,
-        adminUserId: admin.userId,
-        reason: text,
-      }),
-    ),
+  const order = await mutateGlobal((global) =>
+    rejectOrder(global, {
+      number: n,
+      adminUserId: admin.userId,
+      reason: text,
+    }),
   );
+  void emailPaymentResult(order, "rejected");
+  return view(order);
 }
 
 export async function adminCancelOrderByNumber(
