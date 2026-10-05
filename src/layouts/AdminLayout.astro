@@ -1,0 +1,222 @@
+---
+/**
+ * Kerangka panel super-admin. Halaman wajib memanggil `adminPage(Astro)`
+ * (src/server/admin-page.ts) sebelum merender layout ini.
+ */
+import BaseLayout from "./BaseLayout.astro";
+
+interface Props {
+  title: string;
+  /** Kunci menu yang aktif, lihat `items`. */
+  active:
+    "overview" | "orders" | "customers" | "packages" | "settings" | "audit";
+  adminName?: string;
+}
+const { title, active, adminName } = Astro.props;
+const items = [
+  { key: "overview", href: "/admin", label: "Ringkasan" },
+  { key: "orders", href: "/admin/pesanan", label: "Pesanan" },
+  { key: "customers", href: "/admin/pelanggan", label: "Pelanggan" },
+  { key: "packages", href: "/admin/paket", label: "Paket & harga" },
+  { key: "settings", href: "/admin/pengaturan", label: "Pengaturan" },
+  { key: "audit", href: "/admin/log", label: "Log aktivitas" },
+] as const;
+---
+
+<BaseLayout title={`${title} — Admin Temu`} noindex>
+  <div class="admin-frame">
+    <aside class="admin-side">
+      <a class="admin-logo" href="/admin">
+        temu.<small>admin</small>
+      </a>
+      <nav aria-label="Menu admin">
+        {items.map((item) => (
+          <a
+            href={item.href}
+            aria-current={item.key === active ? "page" : undefined}
+          >
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      <div class="admin-side-foot">
+        {adminName && <p>{adminName}</p>}
+        <a href="/dashboard">Ke dashboard saya</a>
+      </div>
+    </aside>
+    <main class="admin-main" id="konten">
+      <header class="admin-head">
+        <h1>{title}</h1>
+        <slot name="actions" />
+      </header>
+      <slot />
+    </main>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  .admin-frame {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    min-height: 100dvh;
+    background: var(--paper);
+  }
+  .admin-side {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    padding: 28px 18px;
+    background: #efefe6;
+    border-right: 1px solid var(--line);
+  }
+  .admin-logo {
+    font: 40px var(--serif);
+    letter-spacing: -2px;
+    margin-left: 8px;
+  }
+  .admin-logo small {
+    font: 600 9px var(--sans);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-left: 6px;
+    color: var(--muted);
+  }
+  .admin-side nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .admin-side nav a {
+    padding: 11px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #59614f;
+  }
+  .admin-side nav a:hover {
+    background: #e6e9dc;
+  }
+  .admin-side nav a[aria-current="page"] {
+    background: #dfe5d4;
+    color: #33422b;
+    font-weight: 600;
+  }
+  .admin-side-foot {
+    margin-top: auto;
+    font-size: 12px;
+    color: var(--muted);
+    display: grid;
+    gap: 6px;
+    padding: 0 8px;
+  }
+  .admin-side-foot a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .admin-main {
+    padding: 36px clamp(16px, 4vw, 48px) 64px;
+    min-width: 0;
+  }
+  .admin-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .admin-head h1 {
+    font: 38px/1.1 var(--serif);
+    margin: 0;
+  }
+  /* Komponen bersama untuk halaman admin. */
+  .admin-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .admin-table th,
+  .admin-table td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  .admin-table th {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .admin-table-wrap {
+    overflow-x: auto;
+  }
+  .admin-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--olive);
+    background: var(--olive);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .admin-button.secondary {
+    background: #fff;
+    color: var(--olive);
+  }
+  .admin-button.danger {
+    background: #fff;
+    color: #9b3523;
+    border-color: #d9a99d;
+  }
+  .admin-badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    background: #eee9dd;
+    color: #5b5446;
+    white-space: nowrap;
+  }
+  @media (max-width: 860px) {
+    .admin-frame {
+      grid-template-columns: 1fr;
+    }
+    .admin-side {
+      position: static;
+      height: auto;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+    }
+    .admin-side nav {
+      flex-direction: row;
+      overflow-x: auto;
+      width: 100%;
+      order: 3;
+    }
+    .admin-side nav a {
+      white-space: nowrap;
+    }
+    .admin-side-foot {
+      margin: 0 0 0 auto;
+    }
+  }
+</style>

@@ -1,0 +1,14 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { adminPage } from "../../server/admin-page";
+
+const guard = await adminPage(Astro);
+if (guard instanceof Response) return guard;
+const actor = guard;
+---
+
+<AdminLayout title="Ringkasan" active="overview" adminName={actor.name}>
+  <section class="admin-card">
+    <p>Ringkasan pendapatan, pesanan, dan pelanggan akan tampil di sini.</p>
+  </section>
+</AdminLayout>

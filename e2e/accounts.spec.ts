@@ -67,9 +67,7 @@ test("admin dapat membuka /admin dan tamu anonim diarahkan masuk", async ({
   await loginAsOwner(page);
   const res = await page.goto("/admin");
   expect(res?.status()).toBe(200);
-  await expect(
-    page.getByRole("heading", { name: "Panel admin" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ringkasan" })).toBeVisible();
 });
 
 test("login menolak kata sandi salah dengan pesan yang sama untuk email tak dikenal", async ({
