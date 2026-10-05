@@ -12,3 +12,7 @@ playwright-report
 test-results
 *.log
 .DS_Store
+.claude
+.data-e2e
+playwright-report
+e2e
