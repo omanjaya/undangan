@@ -50,23 +50,51 @@ export function clientIp(request: Request, fallback: string) {
     .filter(Boolean);
   return hops.at(-1) || fallback;
 }
-export function rateLimit(key: string, max = 15) {
+/**
+ * Menghitung satu permintaan pada ember `key`; true bila batas `max` dalam
+ * jendela `windowMs` sudah terlampaui (permintaan itu tidak dihitung).
+ */
+export function rateLimited(key: string, max = 15, windowMs = 60000) {
   const now = Date.now();
   if (limits.size >= 10000)
     for (const [k, v] of limits) if (v.reset < now) limits.delete(k);
   const limit = limits.get(key);
   if (limit && limit.reset > now) {
-    if (limit.count >= max)
-      throw new DomainError(
-        "Terlalu banyak permintaan. Coba lagi dalam satu menit.",
-        429,
-      );
+    if (limit.count >= max) return true;
     limit.count++;
-  } else {
-    if (!limit && limits.size >= 10000)
-      throw new DomainError("Layanan sedang sibuk. Silakan coba kembali.", 429);
-    limits.set(key, { count: 1, reset: now + 60000 });
+    return false;
   }
+  if (!limit && limits.size >= 10000)
+    throw new DomainError("Layanan sedang sibuk. Silakan coba kembali.", 429);
+  limits.set(key, { count: 1, reset: now + windowMs });
+  return false;
+}
+export function rateLimit(key: string, max = 15, windowMs = 60000) {
+  if (rateLimited(key, max, windowMs))
+    throw new DomainError(
+      windowMs > 60000
+        ? "Terlalu banyak permintaan. Coba lagi beberapa menit lagi."
+        : "Terlalu banyak permintaan. Coba lagi dalam satu menit.",
+      429,
+    );
+}
+// Percobaan gagal (mis. kata sandi salah) per kunci; hanya kegagalan yang dihitung.
+const failures = new Map<string, { count: number; reset: number }>();
+export function assertNotLockedOut(key: string, max: number, message: string) {
+  const entry = failures.get(key);
+  if (entry && entry.reset > Date.now() && entry.count >= max)
+    throw new DomainError(message, 429);
+}
+export function recordFailure(key: string, windowMs: number) {
+  const now = Date.now();
+  if (failures.size >= 10000)
+    for (const [k, v] of failures) if (v.reset < now) failures.delete(k);
+  const entry = failures.get(key);
+  if (entry && entry.reset > now) entry.count++;
+  else failures.set(key, { count: 1, reset: now + windowMs });
+}
+export function clearFailures(key: string) {
+  failures.delete(key);
 }
 export async function readInput(request: Request, maximumBytes = 16_384) {
   const declaredLength = Number(request.headers.get("content-length") || 0);

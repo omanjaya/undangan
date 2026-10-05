@@ -1,0 +1,101 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Icon from "../components/Icon.astro";
+import { getSiteConfig, whatsappLink } from "../config/site";
+import { getActor } from "../server/auth";
+import { mailAvailable } from "../server/mail";
+import "../styles/auth.css";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+if (await getActor(Astro.request)) return Astro.redirect("/dashboard");
+const canEmail = mailAvailable();
+const site = getSiteConfig();
+const help = whatsappLink(
+  site.whatsapp,
+  `Halo ${site.name}, saya lupa kata sandi akun saya dan membutuhkan bantuan.`,
+);
+---
+
+<BaseLayout title="Lupa kata sandi — Temu" noindex>
+  <main class="login-shell">
+    <a href="/" class="login-brand">
+      temu.
+    </a>
+    <section class="login-card">
+      <span class="kicker">PEMULIHAN AKUN</span>
+      <h1>
+        Lupa kata
+        <br />
+        <em>sandi?</em>
+      </h1>
+      {canEmail ? (
+        <>
+          <p>
+            Masukkan email akun Anda. Kami akan mengirim tautan untuk memilih
+            kata sandi baru.
+          </p>
+          <form id="forgot-form">
+            <div class="field">
+              <label>
+                Email
+                <input
+                  required
+                  type="email"
+                  name="email"
+                  autocomplete="email"
+                  maxlength="254"
+                />
+              </label>
+            </div>
+            <p id="forgot-error" class="form-msg" role="alert" />
+            <p id="forgot-done" class="notice" role="status" hidden />
+            <button type="submit">
+              Kirim tautan <Icon name="arrow" size={18} />
+            </button>
+          </form>
+        </>
+      ) : (
+        <p class="notice" role="status">
+          Pengiriman email otomatis belum tersedia. Hubungi admin lewat{" "}
+          <a href={help} target="_blank" rel="noopener noreferrer">
+            WhatsApp
+          </a>{" "}
+          untuk mengatur ulang kata sandi Anda.
+        </p>
+      )}
+      <p class="switch">
+        Ingat kata sandi Anda? <a href="/login">Masuk</a>
+      </p>
+      <a class="back" href="/">
+        Kembali ke beranda
+      </a>
+    </section>
+    <span class="login-bottom">CERITA INDAH DIMULAI DARI SINI.</span>
+  </main>
+</BaseLayout>
+<script>
+  const form = document.querySelector<HTMLFormElement>("#forgot-form");
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const button = form.querySelector<HTMLButtonElement>("[type=submit]")!;
+    const error = document.querySelector<HTMLElement>("#forgot-error")!;
+    const done = document.querySelector<HTMLElement>("#forgot-done")!;
+    button.disabled = true;
+    error.textContent = "";
+    done.hidden = true;
+    try {
+      const res = await fetch("/api/auth/forgot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      done.textContent = data.message;
+      done.hidden = false;
+    } catch (e) {
+      error.textContent =
+        e instanceof Error ? e.message : "Tidak dapat mengirim. Coba lagi.";
+    }
+    button.disabled = false;
+  });
+</script>

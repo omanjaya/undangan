@@ -244,6 +244,7 @@ describe("ketahanan penyimpanan global", () => {
       packages: seedPackages(),
       siteSettings: {},
       auditLog: [],
+      passwordResets: [],
     });
   });
 });

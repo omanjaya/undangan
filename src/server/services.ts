@@ -227,6 +227,9 @@ export async function submitRsvp(
   const entry = await resolveSlug(slug);
   if (!entry || (await isWorkspaceLapsed(entry.workspaceId)))
     throw new DomainError("Undangan tidak tersedia.", 404);
+  // Paket tanpa daftar tamu mengabaikan kode tamu: RSVP tetap diterima biasa.
+  const trackGuests = (await loadEntitlements(entry.workspaceId)).features
+    .guestList;
   const result = await mutateWorkspace(entry.workspaceId, (state) => {
     const i = state.invitations.find(
       (inv) => inv.id === entry.invitationId && matchesSlug(inv, slug),
@@ -235,7 +238,9 @@ export async function submitRsvp(
       throw new DomainError("Undangan tidak tersedia.", 404);
     // Kode tamu yang tidak dikenal diabaikan: RSVP tetap diterima seperti
     // biasa, hanya tidak tertaut ke daftar tamu.
-    const guest = findGuestByCode(state.guests, i.id, guestCode);
+    const guest = trackGuests
+      ? findGuestByCode(state.guests, i.id, guestCode)
+      : undefined;
     if (
       guest?.maxPax &&
       data.attendance === "attending" &&

@@ -2,18 +2,16 @@
 /**
  * Tanda merek untuk undangan pada paket gratis/percobaan.
  *
- * Pemakaian (dipasang oleh halaman undangan sesuai entitlement, mis. hanya bila
- * paket tidak punya `flags.removeBranding`):
+ * Pemakaian (dipasang sesuai entitlement, hanya bila paket tidak punya
+ * `features.removeBranding`):
  *
- *   {!entitlements.removeBranding && <BrandingBadge />}
+ *   {!entitlements.features.removeBranding && <BrandingBadge />}
  *
  * Warna mengikuti variabel tema undangan (`--iv-*`), sehingga menyatu dengan
  * tema apa pun. Prop `href` opsional untuk mengarahkan ke halaman lain.
  *
- * Catatan: `EditorialBotanical.astro` masih punya kredit tetap
- * `.invite-brand-credit` ("Dibuat dengan sepenuh hati · Temu"). Kredit itu
- * belum diganti agar entitlement tetap dikendalikan agen lain; saat badge
- * dipasang, kredit lama sebaiknya dihapus supaya tidak dobel.
+ * Dipasang oleh `EditorialBotanical.astro` (prop `branding`) di footer undangan;
+ * kredit lama `.invite-brand-credit` sudah dihapus.
  */
 interface Props {
   href?: string;
@@ -22,8 +20,9 @@ const { href = "/" } = Astro.props;
 ---
 
 <a class="branding-badge" {href} rel="noopener">
-  Dibuat dengan Temu <span aria-hidden="true">·</span>
-  <u>Buat undanganmu</u>
+  <span data-i18n="branding.made">Dibuat dengan Temu</span>{" "}
+  <span aria-hidden="true">·</span>{" "}
+  <u data-i18n="branding.cta">Buat undanganmu</u>
 </a>
 
 <style>

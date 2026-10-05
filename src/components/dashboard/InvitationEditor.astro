@@ -2,10 +2,28 @@
 import type { Invitation } from "../../modules/invitations/domain/invitation";
 import Icon from "../Icon.astro";
 import { themes } from "../../modules/invitations/domain/themes";
+import type { Entitlements } from "../../modules/billing/entitlements";
+import UpgradeHint from "./UpgradeHint.astro";
 interface Props {
   invitation: Invitation;
+  /** Fitur paket; bagian di luar paket dikunci dan diberi petunjuk. Isi tersimpan tidak diubah. */
+  features?: Entitlements["features"];
 }
-const { invitation } = Astro.props;
+const {
+  invitation,
+  features = {
+    music: true,
+    video: true,
+    gift: true,
+    guestList: true,
+    qrCheckin: true,
+    customSlug: true,
+    removeBranding: true,
+  },
+} = Astro.props;
+const slotLocked = (name: string) =>
+  (name === "videoUrl" && !features.video) ||
+  (name === "musicUrl" && !features.music);
 const c = invitation.draft;
 const dateLocal = (date: string) =>
   new Date(new Date(date).getTime() + 8 * 3600000).toISOString().slice(0, 16);
@@ -317,8 +335,13 @@ const slots = [
     </div>
     <div class="media-slots">
       {slots.map(([name, label, kind]) => (
-        <div class="media-slot" data-slot={name} data-kind={kind}>
+        <div
+          class:list={["media-slot", slotLocked(name) && "is-plan-locked"]}
+          data-slot={name}
+          data-kind={kind}
+        >
           <h4>{label}</h4>
+          {slotLocked(name) && <UpgradeHint />}
           <input type="hidden" name={name} value={c[name] || ""} />
           <div class="slot-preview"></div>
           <div class="slot-actions">
@@ -326,6 +349,7 @@ const slots = [
               type="button"
               class="dash-button secondary"
               data-select-media={name}
+              disabled={slotLocked(name)}
             >
               Unggah / pilih{" "}
               {kind === "image" ? "foto" : kind === "video" ? "video" : "musik"}
@@ -345,7 +369,9 @@ const slots = [
         maxlength="2048"
         value={c.youtubeUrl || ""}
         placeholder="https://youtu.be/…"
+        readonly={!features.video}
       />
+      {!features.video && <UpgradeHint />}
       <small>
         Tempel tautan YouTube, Shorts, atau video live yang sudah tersedia.
         Video harus mengizinkan embed. Jika diisi, YouTube menggantikan video
@@ -354,7 +380,12 @@ const slots = [
     </label>
     <label class="font-picker">
       Judul musik (opsional)
-      <input name="musicTitle" maxlength="150" value={c.musicTitle || ""} />
+      <input
+        name="musicTitle"
+        maxlength="150"
+        value={c.musicTitle || ""}
+        readonly={!features.music}
+      />
     </label>
     <div class="gallery-editor">
       <h4>
@@ -454,6 +485,7 @@ const slots = [
           type="checkbox"
           id="gift-enabled"
           checked={c.gift?.enabled === true}
+          disabled={!features.gift}
         />
         <span>
           Tampilkan amplop digital di undangan
@@ -463,7 +495,12 @@ const slots = [
           </small>
         </span>
       </label>
-      <div id="gift-options" hidden={c.gift?.enabled !== true}>
+      {!features.gift && <UpgradeHint />}
+      <div
+        id="gift-options"
+        hidden={c.gift?.enabled !== true}
+        inert={!features.gift}
+      >
         <h4>Rekening & dompet digital</h4>
         <p class="editor-hint">
           Maksimal 3. Nomor rekening dapat disalin tamu dengan satu ketukan.

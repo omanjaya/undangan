@@ -1,0 +1,174 @@
+/* Halaman pengaturan akun (/dashboard/akun). Dibatasi pada .account-page. */
+.account-page {
+  min-height: 100dvh;
+  padding: 40px 20px 80px;
+  background: var(--paper);
+}
+.account-page .account-inner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+.account-page .account-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.account-page h1 {
+  font: 38px/1.15 var(--serif);
+  margin: 10px 0 8px;
+}
+.account-page .account-head p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.account-page .account-card {
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 26px;
+  margin-top: 20px;
+}
+.account-page .account-card h2 {
+  font: 24px var(--serif);
+  margin: 0 0 12px;
+}
+.account-page .account-hint {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted);
+  margin: 0 0 6px;
+  max-width: 560px;
+}
+.account-page .account-note {
+  font-size: 12px;
+  line-height: 1.7;
+  background: #f4ecdc;
+  border: 1px solid #e4d5b2;
+  border-radius: 4px;
+  padding: 12px 14px;
+}
+.account-page .field {
+  margin-top: 16px;
+}
+.account-page label {
+  display: block;
+  font-size: 11px;
+}
+.account-page input {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #fff;
+  font-size: 13px;
+}
+.account-page input:disabled {
+  background: #f3f2ec;
+  color: var(--muted);
+}
+.account-page small {
+  display: block;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.account-page .pw-wrap {
+  position: relative;
+}
+.account-page .pw-wrap input {
+  padding-right: 78px;
+}
+.account-page .pw-toggle {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  bottom: 0;
+  padding: 0 14px;
+  background: none;
+  border: 0;
+  color: var(--olive);
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.account-page .form-msg {
+  font-size: 12px;
+  color: #a14737;
+  line-height: 1.6;
+  margin: 12px 0 0;
+}
+.account-page .form-msg:empty {
+  margin: 0;
+}
+.account-page .form-msg.is-ok {
+  color: #4c593f;
+}
+.account-page form > button[type="submit"],
+.account-page .account-card > .dash-button {
+  margin-top: 16px;
+  cursor: pointer;
+}
+.account-page button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.account-page .dash-button.danger {
+  background: #94523f;
+  border-color: #94523f;
+}
+.account-page .account-card.danger {
+  border-color: #e3c3b9;
+}
+.account-page .session-list {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+}
+.account-page .session-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.account-page .session-list li:last-child {
+  border-bottom: 0;
+}
+.account-page .session-list small {
+  margin: 0;
+}
+.account-page .session-current {
+  margin-left: 8px;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--olive);
+  background: #eff1e7;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+.account-page a:focus-visible,
+.account-page button:focus-visible,
+.account-page input:focus-visible {
+  outline: 2px solid var(--olive);
+  outline-offset: 2px;
+}
+@media (max-width: 480px) {
+  .account-page {
+    padding: 28px 16px 60px;
+  }
+  .account-page .account-card {
+    padding: 20px 16px;
+  }
+  .account-page h1 {
+    font-size: 32px;
+  }
+}

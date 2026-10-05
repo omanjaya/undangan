@@ -157,27 +157,29 @@ Development dapat diakses melalui jaringan lokal. Set `WEB_BIND_ADDRESS=127.0.0.
 
 Gunakan [.env.example](.env.example) untuk development dan [.env.production.example](.env.production.example) untuk deployment. Jangan commit environment berisi kredensial.
 
-| Variabel             | Kegunaan                                                                                                                           |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `OWNER_EMAIL`        | Email admin pertama; hanya dipakai membuat admin saat belum ada pengguna (bootstrap/migrasi)                                       |
-| `OWNER_PASSWORD`     | Password admin pertama; production minimal 16 karakter dan bukan nilai demo. Tidak berpengaruh setelah admin ada; ganti lewat akun |
-| `DATABASE_URL`       | Koneksi PostgreSQL; wajib pada production, disediakan otomatis oleh Compose                                                        |
-| `POSTGRES_PASSWORD`  | Password PostgreSQL pada Compose; gunakan nilai aman untuk URI, misalnya hex acak                                                  |
-| `APP_URL`            | Origin HTTPS publik untuk validasi origin dan URL metadata; tidak perlu diisi saat pengujian lokal/LAN                             |
-| `APP_DOMAIN`         | Domain untuk Caddy pada konfigurasi HTTPS                                                                                          |
-| `WEB_PORT`           | Port host aplikasi; default `4321`                                                                                                 |
-| `WEB_BIND_ADDRESS`   | Bind address development; default `0.0.0.0`; Compose production selalu localhost                                                   |
-| `UPLOAD_STORAGE_MB`  | Batas atas upload **per ruang kerja**; default `1024` MB. Paket dapat membatasi lebih kecil (uji coba 200 MB)                      |
-| `UPLOAD_DIR`         | Direktori upload runtime; default `.data/uploads`, Compose memakai `/app/.data/uploads`                                            |
-| `DATA_DIR`           | Direktori state file development (`global.json`, `workspaces/`); default `.data`                                                   |
-| `TELEGRAM_BOT_TOKEN` | Opsional: token bot Telegram untuk notifikasi RSVP dan ucapan baru ke pemilik                                                      |
-| `TELEGRAM_CHAT_ID`   | Opsional: id chat Telegram penerima notifikasi; notifikasi nonaktif bila salah satu variabel kosong                                |
-| `SITE_NAME`          | Nama merek di footer, judul, dan JSON-LD; default `Temu`                                                                           |
-| `SITE_URL`           | Origin publik untuk canonical, sitemap, dan Open Graph; jatuh ke `APP_URL`                                                         |
-| `CONTACT_WHATSAPP`   | Nomor WhatsApp format internasional tanpa `+` (mis. `6281234567890`)                                                               |
-| `CONTACT_EMAIL`      | Email kontak di halaman kontak, legal, dan JSON-LD                                                                                 |
-| `BUSINESS_NAME`      | Nama badan usaha/penjual di syarat, privasi, dan footer                                                                            |
-| `BUSINESS_ADDRESS`   | Alamat usaha di halaman legal dan kontak                                                                                           |
+| Variabel                                                          | Kegunaan                                                                                                                           |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `OWNER_EMAIL`                                                     | Email admin pertama; hanya dipakai membuat admin saat belum ada pengguna (bootstrap/migrasi)                                       |
+| `OWNER_PASSWORD`                                                  | Password admin pertama; production minimal 16 karakter dan bukan nilai demo. Tidak berpengaruh setelah admin ada; ganti lewat akun |
+| `DATABASE_URL`                                                    | Koneksi PostgreSQL; wajib pada production, disediakan otomatis oleh Compose                                                        |
+| `POSTGRES_PASSWORD`                                               | Password PostgreSQL pada Compose; gunakan nilai aman untuk URI, misalnya hex acak                                                  |
+| `APP_URL`                                                         | Origin HTTPS publik untuk validasi origin dan URL metadata; tidak perlu diisi saat pengujian lokal/LAN                             |
+| `APP_DOMAIN`                                                      | Domain untuk Caddy pada konfigurasi HTTPS                                                                                          |
+| `WEB_PORT`                                                        | Port host aplikasi; default `4321`                                                                                                 |
+| `WEB_BIND_ADDRESS`                                                | Bind address development; default `0.0.0.0`; Compose production selalu localhost                                                   |
+| `UPLOAD_STORAGE_MB`                                               | Batas atas upload **per ruang kerja**; default `1024` MB. Paket dapat membatasi lebih kecil (uji coba 200 MB)                      |
+| `UPLOAD_DIR`                                                      | Direktori upload runtime; default `.data/uploads`, Compose memakai `/app/.data/uploads`                                            |
+| `DATA_DIR`                                                        | Direktori state file development (`global.json`, `workspaces/`); default `.data`                                                   |
+| `TELEGRAM_BOT_TOKEN`                                              | Opsional: token bot Telegram untuk notifikasi RSVP dan ucapan baru ke pemilik                                                      |
+| `TELEGRAM_CHAT_ID`                                                | Opsional: id chat Telegram penerima notifikasi; notifikasi nonaktif bila salah satu variabel kosong                                |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | Opsional: server SMTP untuk email atur ulang kata sandi (port bawaan 587; `SMTP_SECURE=true` atau port 465 memakai TLS langsung)   |
+| `MAIL_FROM`                                                       | Pengirim email, mis. `Temu <halo@domain.com>`; SMTP dianggap siap bila `SMTP_HOST` dan `MAIL_FROM` terisi                          |
+| `SITE_NAME`                                                       | Nama merek di footer, judul, dan JSON-LD; default `Temu`                                                                           |
+| `SITE_URL`                                                        | Origin publik untuk canonical, sitemap, dan Open Graph; jatuh ke `APP_URL`                                                         |
+| `CONTACT_WHATSAPP`                                                | Nomor WhatsApp format internasional tanpa `+` (mis. `6281234567890`)                                                               |
+| `CONTACT_EMAIL`                                                   | Email kontak di halaman kontak, legal, dan JSON-LD                                                                                 |
+| `BUSINESS_NAME`                                                   | Nama badan usaha/penjual di syarat, privasi, dan footer                                                                            |
+| `BUSINESS_ADDRESS`                                                | Alamat usaha di halaman legal dan kontak                                                                                           |
 
 Compose memakai environment yang tercantum pada service. Mengubah lokasi data lewat variabel host saja tidak mengganti mount volume di dalam container.
 
@@ -293,8 +295,8 @@ src/
   modules/invitations/
     domain/                    Skema dan aturan konten
     infrastructure/            Persistence PostgreSQL / file development
-  modules/accounts/            Hash kata sandi (scrypt)
-  modules/billing/             Paket, hak paket (entitlements), pesanan, masa aktif
+  modules/accounts/            Hash kata sandi (scrypt), sanitasi `next`
+  modules/billing/             Paket, hak paket (entitlements), pesanan, masa aktif, penyaringan fitur
   server/                      Use case, autentikasi, validasi request, media
   styles/                      Gaya bersama dan variasi tema
 assets/                        Aset sumber dan bahan desain
@@ -327,8 +329,14 @@ Detail implementasi tersedia di [db/README.md](db/README.md).
 - **Pendaftaran**: `/daftar` memanggil `POST /api/auth/register` (validasi origin, rate limit, kata sandi minimal 8 karakter). Pendaftaran membuat akun, ruang kerja berpaket uji coba, dan satu undangan awal berisi isian netral dengan alamat acak `undangan-xxxxxxxx`.
 - **Kata sandi dan sesi**: scrypt dengan salt per pengguna (`scrypt$N$r$p$salt$hash`), perbandingan `timingSafeEqual` yang selalu berjalan walau email tidak dikenal. Sesi berlaku 7 hari sejak login (tetap, tidak diperpanjang otomatis), hanya hash token yang disimpan, logout dan `setPassword` mencabut sesi. Akun yang ditangguhkan (`status: "suspended"`) tidak dapat masuk dan sesinya langsung tidak berlaku.
 - **Isolasi**: semua layanan pemilik hanya membaca dan menulis ruang kerja milik `actor`; `authorize` tetap menjadi lapisan pertahanan tambahan. Halaman tamu hanya menyajikan undangan terbit; media draf hanya untuk anggota ruang kerja pemiliknya.
-- **Hak paket**: `getEntitlements(workspace)` di `src/modules/billing/entitlements.ts` menentukan `canPublish`, `maxInvitations`, `maxGuests` (per undangan), `maxMediaBytes`, dan flag fitur. Ruang kerja admin tanpa batas, paket `active` memakai batas paket yang dibeli (lihat "Penagihan transfer manual"); `trial` tidak boleh menerbitkan, 1 undangan, 50 tamu, 200 MB, tanpa penghapusan branding. Dipaksakan pada publish, buat undangan, tambah/impor tamu, unggah media, check-in QR, dan alamat kustom.
-- **Belum ada** (dikerjakan menyusul): reset kata sandi, verifikasi email, pengaturan akun.
+- **Hak paket**: `getEntitlements(workspace)` di `src/modules/billing/entitlements.ts` menentukan `canPublish`, `maxInvitations`, `maxGuests` (per undangan), `maxMediaBytes`, dan flag fitur. Ruang kerja admin dan paket `active` tanpa batas; `trial` tidak boleh menerbitkan, 1 undangan, 50 tamu, 200 MB, tanpa penghapusan branding. Dipaksakan pada publish, buat undangan, tambah/impor tamu, unggah media, check-in QR, dan alamat kustom.
+- **Lupa kata sandi**: `/lupa-sandi` mengirim tautan `/reset-sandi?token=…` lewat email (`src/server/mail.ts`, nodemailer). Token acak 32 byte, hanya hash SHA-256 yang disimpan di `global.passwordResets`, berlaku 1 jam, sekali pakai, dan token lama dicabut saat yang baru dibuat. Jawaban selalu sama untuk email terdaftar atau tidak; dibatasi per IP (5 per 15 menit) dan per email (3 per 15 menit, kelebihan diam-diam tidak dikirim). Setelah reset, semua sesi dicabut. Tanpa SMTP: development mencatat email (judul dan tautan) di konsol server dan menyimpannya di memori; production tidak mengirim dan halaman menyuruh pengguna menghubungi admin lewat WhatsApp.
+- **Hook uji email**: `GET /api/dev/last-mail?to=<email>` mengembalikan email terakhir yang "dikirim" dan **hanya ada** bila `NODE_ENV !== "production"` dan `DATABASE_URL` kosong (selain itu 404). Dipakai `e2e/account.spec.ts`.
+- **Pengaturan akun** `/dashboard/akun`: ubah nama/telepon, ganti email dan kata sandi (wajib kata sandi saat ini; ganti kata sandi mencabut sesi lain), daftar sesi aktif dan "Keluar dari semua perangkat lain", **Unduh data saya** (JSON profil dan isi ruang kerja tanpa hash kata sandi/sesi atau data pengguna lain), dan **Hapus akun** (ketik `HAPUS AKUN` + kata sandi; menghapus akun, sesi, ruang kerja, indeks slug/media, dan berkas media; ditolak untuk admin). Pesanan dan berkas bukti transfernya dibiarkan untuk pembukuan, sehingga baris pesanan dapat merujuk pengguna/ruang kerja yang sudah tidak ada. Semua tindakan ini ditolak saat admin sedang menyamar.
+- **`/login?next=`**: hanya jalur relatif satu origin yang dipakai (`src/modules/accounts/next-path.ts`; menolak `//`, URL absolut, backslash, karakter kontrol). Pengguna yang sudah masuk diarahkan dari `/login`, `/daftar`, dan `/lupa-sandi` ke `/dashboard`.
+- **Pembatasan login**: per IP (8/menit) dan per email (10 kegagalan per 15 menit, pesan sama untuk email tak dikenal). Halaman autentikasi `no-store`, kolom kata sandi memakai `autocomplete` yang tepat dan tombol lihat/sembunyi.
+- **Hak paket di UI dan halaman tamu**: `gateContent` (`src/modules/billing/gating.ts`) menyaring tampilan tamu menurut `getEntitlements` tanpa menghapus data tersimpan: tanpa `music` musik tidak dirender, tanpa `video` video unggahan dan YouTube disembunyikan, tanpa `gift` bagian hadiah disembunyikan, tanpa `guestList` kode `g` diabaikan (tanpa nama sapaan, QR, pelacakan, dan tautan ke daftar tamu), tanpa `qrCheckin` tombol QR disembunyikan, tanpa `removeBranding` tampil `BrandingBadge` (menggantikan kredit lama). Pratinjau editor memakai aturan yang sama; halaman contoh `/themes/...` tidak disaring. Editor mengunci kolom di luar paket dengan petunjuk "Tersedia di paket berbayar" menuju `/dashboard/paket`; menyimpan draf tetap berhasil. API daftar tamu dan check-in membalas 403 dengan pesan jelas.
+- **Belum ada** (dikerjakan menyusul): verifikasi email, MFA, penanda perangkat pada daftar sesi.
 
 ### Penagihan transfer manual
 
@@ -399,7 +407,7 @@ Ikuti [DEPLOYMENT.md](DEPLOYMENT.md) untuk konfigurasi lengkap, backup, dan rest
 - Ucapan publik hanya yang sudah disetujui pemilik. URL embed divalidasi dan halaman memakai security headers.
 - Rate limit masih berada dalam memori satu instance.
 - RSVP mengenali browser melalui cookie; tidak memverifikasi identitas dan tidak menyinkronkan respons lintas perangkat.
-- Belum tersedia pembayaran, panel admin, reset kata sandi, verifikasi email, custom domain per undangan, S3, undangan privat bertoken, MFA, atau pengiriman pesan otomatis. Notifikasi Telegram masih satu tujuan global.
+- Belum tersedia pembayaran, panel admin, verifikasi email, custom domain per undangan, S3, undangan privat bertoken, MFA, atau pengiriman pesan otomatis. Notifikasi Telegram masih satu tujuan global.
 
 ## Pemecahan masalah
 
