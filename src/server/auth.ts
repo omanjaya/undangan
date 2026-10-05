@@ -78,6 +78,11 @@ export async function getActor(request: Request): Promise<Actor | null> {
   );
   const user = session && global.users.find((u) => u.id === session.userId);
   if (!session || !user || user.status !== "active") return null;
+  // Sesi penyamaran gugur bila adminnya dicabut atau ditangguhkan.
+  if (session.impersonatorUserId) {
+    const admin = global.users.find((u) => u.id === session.impersonatorUserId);
+    if (admin?.role !== "admin" || admin.status !== "active") return null;
+  }
   const workspace = global.workspaces.find((w) => w.ownerUserId === user.id);
   if (!workspace) return null;
   return {

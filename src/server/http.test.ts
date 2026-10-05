@@ -45,4 +45,16 @@ describe("clientIp", () => {
   it("kembali ke clientAddress saat header kosong", () => {
     expect(clientIp(proxied("   "), "127.0.0.1")).toBe("127.0.0.1");
   });
+  it("mengelompokkan IPv6 per /64 agar tidak bisa menghindari batas", () => {
+    const a = clientIp(proxied("2001:db8:1:2:aaaa::1"), "127.0.0.1");
+    const b = clientIp(
+      proxied("2001:db8:1:2:bbbb:cccc:dddd:eeee"),
+      "127.0.0.1",
+    );
+    expect(a).toBe(b);
+    expect(clientIp(proxied("2001:db8:1:3::1"), "127.0.0.1")).not.toBe(a);
+    expect(clientIp(proxied("::ffff:203.0.113.9"), "127.0.0.1")).toBe(
+      "203.0.113.9",
+    );
+  });
 });

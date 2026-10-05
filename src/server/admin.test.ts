@@ -154,6 +154,30 @@ describe("penyamaran", () => {
     ).rejects.toMatchObject({ status: 403 });
   });
 
+  it("sesi penyamaran tidak berlaku bila penyamarnya bukan admin aktif", async () => {
+    const c = await support.registerCustomer("Korban");
+    const notAdmin = await support.registerCustomer("Bukan admin");
+    const forged = await auth.createSession(c.actor.userId, {
+      impersonatorUserId: notAdmin.actor.userId,
+    });
+    expect(await auth.getActor(cookieRequest(forged))).toBeNull();
+    // Admin yang kemudian ditangguhkan juga memutus sesi penyamarannya.
+    const token = await auth.createSession(c.actor.userId, {
+      impersonatorUserId: adminActor.userId,
+    });
+    expect(await auth.getActor(cookieRequest(token))).not.toBeNull();
+    await globalStore.mutateGlobal((g) => {
+      g.users.find((u) => u.id === adminActor.userId)!.status = "suspended";
+    });
+    try {
+      expect(await auth.getActor(cookieRequest(token))).toBeNull();
+    } finally {
+      await globalStore.mutateGlobal((g) => {
+        g.users.find((u) => u.id === adminActor.userId)!.status = "active";
+      });
+    }
+  });
+
   it("endImpersonation menolak sesi biasa", async () => {
     const c = await support.registerCustomer("Biasa 2");
     const token = await auth.createSession(c.actor.userId);
