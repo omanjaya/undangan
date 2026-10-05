@@ -1,0 +1,163 @@
+---
+import InfoLayout from "../layouts/InfoLayout.astro";
+import { getSiteConfig } from "../config/site";
+const site = getSiteConfig();
+---
+
+<InfoLayout
+  title="Kebijakan Privasi"
+  eyebrow="LEGAL"
+  updated="1 Oktober 2026"
+  description={`Kebijakan privasi ${site.name}: data pribadi yang dikumpulkan, tujuan, masa simpan, dan hak Anda berdasarkan UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi.`}
+>
+  <!-- Templat — tinjau dengan penasihat hukum sebelum dipakai -->
+  <p>
+    {site.businessName} ("Kami") menghargai data pribadi Anda. Kebijakan ini
+    menjelaskan data apa yang Kami kumpulkan lewat layanan {site.name}, untuk
+    apa dipakai, berapa lama disimpan, dan hak Anda, sesuai Undang-Undang Nomor
+    27 Tahun 2022 tentang Pelindungan Data Pribadi (UU PDP).
+  </p>
+
+  <h2>1. Pihak yang terlibat</h2>
+  <ul>
+    <li>
+      <strong>Pemilik undangan</strong> (pelanggan Kami): pengendali data atas
+      daftar tamu dan tanggapan tamu yang ia kelola.
+    </li>
+    <li>
+      <strong>Kami</strong>: pengendali data atas data akun dan pembayaran
+      pelanggan, serta pemroses data tamu atas nama pemilik undangan.
+    </li>
+    <li>
+      <strong>Tamu</strong>: orang yang membuka undangan atau mengisi RSVP dan
+      ucapan.
+    </li>
+  </ul>
+
+  <h2>2. Data yang Kami kumpulkan</h2>
+  <h3>Dari pemilik undangan</h3>
+  <ul>
+    <li>Nama, alamat email, dan kata sandi (disimpan dalam bentuk hash).</li>
+    <li>
+      Paket yang dipilih serta bukti transfer pembayaran (nama pengirim,
+      nominal, tanggal).
+    </li>
+    <li>
+      Isi undangan: nama mempelai dan keluarga, cerita, jadwal, lokasi, foto,
+      video, dan musik yang Anda unggah.
+    </li>
+    <li>
+      Daftar tamu yang Anda masukkan: nama, nomor telepon/WhatsApp (bila diisi),
+      dan sapaan.
+    </li>
+  </ul>
+  <h3>Dari tamu</h3>
+  <ul>
+    <li>Nama, status kehadiran (RSVP), jumlah tamu, dan isi ucapan.</li>
+    <li>
+      Data teknis dasar seperti alamat IP dan jenis peramban untuk keamanan dan
+      pencegahan penyalahgunaan.
+    </li>
+  </ul>
+  <p>
+    Kami tidak meminta data pribadi yang bersifat spesifik (misalnya kesehatan
+    atau biometrik). Mohon tidak memasukkannya ke kolom bebas.
+  </p>
+
+  <h2>3. Tujuan pemrosesan</h2>
+  <ul>
+    <li>Menyediakan akun, editor, penerbitan, dan tampilan undangan.</li>
+    <li>Menampilkan RSVP dan ucapan tamu kepada pemilik undangan.</li>
+    <li>Memverifikasi pembayaran dan mengelola masa aktif paket.</li>
+    <li>
+      Menjaga keamanan, mencegah spam dan penyalahgunaan, serta memenuhi
+      kewajiban hukum.
+    </li>
+    <li>Menghubungi Anda terkait layanan, pembayaran, atau dukungan.</li>
+  </ul>
+  <p>
+    Dasar pemrosesan adalah pelaksanaan perjanjian layanan dengan Anda,
+    persetujuan Anda, kepentingan yang sah (keamanan), dan kewajiban hukum. Kami
+    tidak menjual data pribadi dan tidak memakainya untuk iklan pihak ketiga.
+  </p>
+
+  <h2>4. Pembagian data</h2>
+  <p>
+    Data dibagikan seperlunya kepada penyedia infrastruktur (hosting, basis
+    data, penyimpanan berkas) yang terikat kewajiban kerahasiaan, serta kepada
+    pihak berwenang bila diwajibkan hukum. Peta dan video yang disematkan
+    (Google Maps, YouTube) dapat memproses data teknis tamu sesuai kebijakan
+    penyedianya.
+  </p>
+
+  <h2>5. Masa penyimpanan</h2>
+  <ul>
+    <li>
+      Data undangan dan tamu disimpan selama masa aktif paket ditambah hingga 90
+      hari setelahnya, agar Anda dapat memperpanjang atau mengekspor data.
+    </li>
+    <li>
+      Setelah itu data dihapus atau dianonimkan, kecuali yang wajib Kami simpan
+      menurut hukum (misalnya catatan transaksi).
+    </li>
+    <li>Data akun yang dihapus atas permintaan dihapus sesuai butir 6.</li>
+  </ul>
+
+  <h2>6. Hak Anda</h2>
+  <p>Berdasarkan UU PDP, Anda berhak untuk:</p>
+  <ul>
+    <li>mendapat informasi tentang pemrosesan data Anda;</li>
+    <li>mengakses dan memperoleh salinan data Anda;</li>
+    <li>memperbarui atau memperbaiki data yang tidak akurat;</li>
+    <li>
+      menghapus data dan mengakhiri pemrosesan, termasuk menarik persetujuan;
+    </li>
+    <li>mengajukan keberatan atas pemrosesan tertentu;</li>
+    <li>
+      mengajukan pembatasan pemrosesan serta menggugat bila terjadi pelanggaran.
+    </li>
+  </ul>
+  <p>
+    Pemilik undangan dapat menghapus tamu, RSVP, dan ucapan langsung dari
+    dashboard. Tamu yang ingin datanya dihapus dapat meminta kepada pemilik
+    undangan atau menghubungi Kami. Permintaan ditanggapi paling lambat 3 x 24
+    jam kerja untuk konfirmasi, dan diselesaikan dalam waktu wajar sesuai
+    ketentuan perundang-undangan.
+  </p>
+
+  <h2>7. Keamanan</h2>
+  <p>
+    Kami memakai koneksi terenkripsi (HTTPS), kata sandi ter-hash, pembatasan
+    akses, serta pemisahan data antar pelanggan. Halaman undangan untuk tamu
+    tidak diindeks mesin pencari. Meski begitu tidak ada sistem yang sepenuhnya
+    kebal; bila terjadi kegagalan pelindungan data yang berdampak pada Anda,
+    Kami akan memberitahukan sesuai ketentuan yang berlaku.
+  </p>
+
+  <h2>8. Cookie</h2>
+  <p>
+    Kami memakai cookie sesi yang diperlukan agar Anda tetap masuk. Kami tidak
+    memakai cookie pelacak iklan.
+  </p>
+
+  <h2>9. Anak</h2>
+  <p>
+    Layanan ditujukan bagi orang dewasa. Foto atau nama anak dalam undangan
+    adalah tanggung jawab pemilik undangan, yang menjamin telah memperoleh
+    persetujuan orang tua/wali.
+  </p>
+
+  <h2>10. Perubahan kebijakan</h2>
+  <p>
+    Kebijakan ini dapat diperbarui. Tanggal pembaruan terakhir tertera di bagian
+    atas halaman.
+  </p>
+
+  <h2>11. Kontak</h2>
+  <p>
+    Untuk permintaan akses, perbaikan, penghapusan data, atau pertanyaan lain,
+    hubungi {site.businessName}, {site.businessAddress}, email{" "}
+    <a href={`mailto:${site.email}`}>{site.email}</a>, atau lewat halaman{" "}
+    <a href="/kontak">Kontak</a>.
+  </p>
+</InfoLayout>

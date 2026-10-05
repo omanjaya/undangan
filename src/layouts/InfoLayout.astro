@@ -1,0 +1,44 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import SiteFooter from "../components/landing/SiteFooter.astro";
+import WhatsAppButton from "../components/landing/WhatsAppButton.astro";
+import Icon from "../components/Icon.astro";
+import { getSiteConfig } from "../config/site";
+import "../styles/landing.css";
+import "../styles/site.css";
+
+interface Props {
+  title: string;
+  description: string;
+  /** Label kecil di atas judul, mis. "LEGAL". */
+  eyebrow?: string;
+  /** Tanggal pembaruan terakhir untuk dokumen legal. */
+  updated?: string;
+}
+const { title, description, eyebrow = "INFORMASI", updated } = Astro.props;
+const site = getSiteConfig();
+---
+
+<BaseLayout title={`${title} — ${site.name}`} description={description}>
+  <a class="landing-skip" href="#main">
+    Lewati ke konten
+  </a>
+  <header class="landing-header shell info-header">
+    <a class="landing-brand" href="/" aria-label={`${site.name} beranda`}>
+      temu<span>.</span>
+    </a>
+    <a class="header-entry" href="/">
+      Kembali ke beranda <Icon name="arrow" size={17} />
+    </a>
+  </header>
+  <main id="main" class="shell info-page">
+    <p class="eyebrow">{eyebrow}</p>
+    <h1>{title}</h1>
+    {updated && <p class="info-updated">Terakhir diperbarui: {updated}</p>}
+    <div class="info-body">
+      <slot />
+    </div>
+  </main>
+  <SiteFooter />
+  <WhatsAppButton />
+</BaseLayout>

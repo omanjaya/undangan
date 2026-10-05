@@ -166,6 +166,12 @@ Gunakan [.env.example](.env.example) untuk development dan [.env.production.exam
 | `UPLOAD_STORAGE_MB` | Kuota total upload; default `1024` MB, contoh production memakai `2048` MB                             |
 | `UPLOAD_DIR`        | Direktori upload runtime; default `.data/uploads`, Compose memakai `/app/.data/uploads`                |
 | `DATA_DIR`          | Direktori state file development; default `.data`                                                      |
+| `SITE_NAME`         | Nama merek di footer, judul, dan JSON-LD; default `Temu`                                               |
+| `SITE_URL`          | Origin publik untuk canonical, sitemap, dan Open Graph; jatuh ke `APP_URL`                             |
+| `CONTACT_WHATSAPP`  | Nomor WhatsApp format internasional tanpa `+` (mis. `6281234567890`)                                   |
+| `CONTACT_EMAIL`     | Email kontak di halaman kontak, legal, dan JSON-LD                                                     |
+| `BUSINESS_NAME`     | Nama badan usaha/penjual di syarat, privasi, dan footer                                                |
+| `BUSINESS_ADDRESS`  | Alamat usaha di halaman legal dan kontak                                                               |
 
 Compose memakai environment yang tercantum pada service. Mengubah lokasi data lewat variabel host saja tidak mengganti mount volume di dalam container.
 

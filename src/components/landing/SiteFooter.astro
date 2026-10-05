@@ -1,0 +1,65 @@
+---
+import { getSiteConfig } from "../../config/site";
+const site = getSiteConfig();
+const columns = [
+  {
+    title: "Produk",
+    links: [
+      ["/#harga", "Harga"],
+      ["/#koleksi", "Koleksi desain"],
+      ["/#pertanyaan", "Pertanyaan umum"],
+      ["/themes/jepun-ivory", "Contoh undangan"],
+    ],
+  },
+  {
+    title: "Bantuan",
+    links: [
+      ["/kontak", "Hubungi kami"],
+      ["/syarat-ketentuan", "Syarat & ketentuan"],
+      ["/kebijakan-privasi", "Kebijakan privasi"],
+      ["/kebijakan-refund", "Kebijakan refund"],
+    ],
+  },
+  {
+    title: "Akun",
+    links: [
+      ["/login", "Masuk"],
+      ["/daftar", "Daftar"],
+    ],
+  },
+];
+---
+
+<footer class="site-footer">
+  <div class="shell site-footer-inner">
+    <div class="site-footer-brand">
+      <a class="landing-brand" href="/" aria-label={`${site.name} beranda`}>
+        temu<span>.</span>
+      </a>
+      <p>
+        Dirangkai dengan rasa.
+        <br />
+        Dibagikan dengan cinta.
+      </p>
+    </div>
+    {columns.map((column) => (
+      <nav aria-label={column.title}>
+        <h2>{column.title}</h2>
+        <ul>
+          {column.links.map(([href, label]) => (
+            <li>
+              <a href={href}>{label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    ))}
+  </div>
+  <div class="shell site-footer-legal">
+    <small>
+      © {new Date().getFullYear()}
+      {site.businessName}. Hak cipta dilindungi.
+    </small>
+    <small>{site.businessAddress}</small>
+  </div>
+</footer>

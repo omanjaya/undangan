@@ -1,0 +1,427 @@
+/* Bagian situs publik: harga, footer, tombol WhatsApp, halaman informasi. */
+
+/* ---------- Harga ---------- */
+.pricing-section {
+  border-top: 1px solid var(--line);
+}
+.pricing-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+.pricing-grid > li {
+  display: flex;
+}
+.pricing-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 34px 28px 28px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.pricing-card h3 {
+  font: 34px var(--serif);
+  margin: 0 0 8px;
+}
+.pricing-tagline {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted);
+  min-height: 44px;
+  margin: 0 0 22px;
+}
+.pricing-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0 0 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.pricing-original {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--muted);
+}
+.pricing-price strong {
+  font: 42px/1 var(--serif);
+  letter-spacing: -1px;
+}
+.pricing-price small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.pricing-features {
+  list-style: none;
+  margin: 0 0 30px;
+  padding: 0;
+  display: grid;
+  gap: 13px;
+  flex: 1;
+}
+.pricing-features li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.pricing-features svg {
+  color: var(--olive);
+  margin-top: 2px;
+}
+.pricing-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid var(--olive);
+  color: var(--olive);
+  font-size: 13px;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.pricing-cta:hover {
+  background: var(--olive);
+  color: #fff;
+}
+.pricing-card.is-highlighted {
+  background: #354333;
+  color: #f5f1e4;
+  border-color: #354333;
+}
+.pricing-card.is-highlighted .pricing-tagline,
+.pricing-card.is-highlighted .pricing-original,
+.pricing-card.is-highlighted .pricing-price small {
+  color: #cfd8c2;
+}
+.pricing-card.is-highlighted .pricing-price {
+  border-color: #566650;
+}
+.pricing-card.is-highlighted .pricing-features svg {
+  color: #c4ceb1;
+}
+.pricing-card.is-highlighted .pricing-cta {
+  background: #e8e9d6;
+  border-color: #e8e9d6;
+  color: #354333;
+}
+.pricing-card.is-highlighted .pricing-cta:hover {
+  background: #fff;
+}
+.pricing-badge {
+  position: absolute;
+  top: -13px;
+  left: 28px;
+  padding: 5px 12px;
+  background: #e8e9d6;
+  color: #354333;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+.pricing-flow {
+  margin-top: 64px;
+}
+.pricing-flow > h3 {
+  font: 28px var(--serif);
+  margin: 0 0 26px;
+}
+.pricing-flow ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.pricing-flow li {
+  display: flex;
+  gap: 18px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.pricing-flow li > span {
+  font: 26px var(--serif);
+  color: var(--olive);
+}
+.pricing-flow h4 {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 6px;
+}
+.pricing-flow p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* ---------- Header landing: navigasi + akun ---------- */
+.header-account {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: 12px;
+}
+.header-account a:first-child:hover {
+  color: var(--olive);
+}
+.header-signup {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 20px;
+  background: var(--olive);
+  color: #fff;
+}
+.header-signup:hover {
+  background: #354333;
+}
+
+/* ---------- Footer ---------- */
+.site-footer {
+  border-top: 1px solid var(--line);
+  margin-top: 0;
+}
+.site-footer-inner {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(3, 1fr);
+  gap: 40px;
+  padding-block: 56px 40px;
+}
+.site-footer-brand p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted);
+  margin: 14px 0 0;
+}
+.site-footer h2 {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 0 0 16px;
+}
+.site-footer ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.site-footer li a {
+  display: inline-block;
+  padding: 5px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.site-footer li a:hover {
+  color: var(--olive);
+}
+.site-footer-legal {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding-block: 20px 32px;
+  border-top: 1px solid var(--line);
+}
+.site-footer-legal small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---------- Tombol WhatsApp melayang ---------- */
+.wa-float {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 18px;
+  background: #1f6b46;
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgb(31 107 70 / 0.3);
+  font-size: 12px;
+  font-weight: 500;
+}
+.wa-float:hover {
+  background: #185538;
+}
+
+/* ---------- Halaman informasi & legal ---------- */
+.info-header .header-entry {
+  white-space: nowrap;
+}
+.info-page {
+  max-width: 880px;
+  padding-block: 64px 96px;
+}
+.info-page > h1 {
+  font: clamp(40px, 6vw, 64px)/1.08 var(--serif);
+  letter-spacing: -1.5px;
+  margin: 0 0 12px;
+}
+.info-updated {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.info-body {
+  margin-top: 36px;
+  font-size: 14px;
+  line-height: 1.9;
+}
+.info-body h2 {
+  font: 26px var(--serif);
+  margin: 44px 0 12px;
+}
+.info-body h3 {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 24px 0 6px;
+}
+.info-body p,
+.info-body ul,
+.info-body ol {
+  margin: 0 0 14px;
+}
+.info-body ul,
+.info-body ol {
+  padding-left: 22px;
+}
+.info-body li {
+  margin-bottom: 6px;
+}
+.info-body a {
+  color: var(--olive);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.info-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 0 0 18px;
+}
+.info-body th,
+.info-body td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.contact-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin: 8px 0 36px;
+}
+.contact-card {
+  display: block;
+  padding: 26px;
+  background: #fff;
+  border: 1px solid var(--line);
+  text-decoration: none !important;
+  color: var(--ink) !important;
+}
+.contact-card:hover {
+  border-color: var(--olive);
+}
+.contact-card small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.contact-card strong {
+  display: block;
+  font: 24px var(--serif);
+  overflow-wrap: anywhere;
+}
+.contact-card span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+@media (max-width: 1000px) {
+  .pricing-grid,
+  .pricing-flow ol {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+  }
+  .pricing-card.is-highlighted {
+    order: -1;
+  }
+  .site-footer-inner {
+    grid-template-columns: 1fr 1fr;
+  }
+  .site-footer-brand {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 760px) {
+  .pricing-card {
+    padding: 30px 22px 24px;
+  }
+  .pricing-tagline {
+    min-height: 0;
+  }
+  .pricing-flow {
+    margin-top: 48px;
+  }
+  .header-account {
+    gap: 14px;
+    font-size: 11px;
+  }
+  .header-signup {
+    min-height: 40px;
+    padding: 0 14px;
+  }
+  .site-footer-inner {
+    padding-block: 40px 28px;
+    gap: 28px;
+  }
+  .site-footer-legal {
+    flex-direction: column;
+  }
+  .info-page {
+    padding-block: 40px 72px;
+  }
+  .info-body {
+    font-size: 13px;
+  }
+  .contact-cards {
+    grid-template-columns: 1fr;
+  }
+  .wa-float {
+    right: 14px;
+    bottom: 14px;
+    width: 48px;
+    padding: 0;
+    justify-content: center;
+  }
+  .wa-float span {
+    display: none;
+  }
+}
