@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const actor = await getActor(request);
     // Pemindaian beruntun di pintu masuk butuh batas yang longgar.
     rateLimit(
-      `guest-checkin:${actor?.id || clientIp(request, clientAddress)}`,
+      `guest-checkin:${actor?.userId || clientIp(request, clientAddress)}`,
       120,
     );
     const data = await readInput(request);

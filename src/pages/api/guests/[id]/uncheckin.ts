@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request, params, clientAddress }) => {
     guardMutation(request);
     const actor = await getActor(request);
     rateLimit(
-      `guest-uncheckin:${actor?.id || clientIp(request, clientAddress)}`,
+      `guest-uncheckin:${actor?.userId || clientIp(request, clientAddress)}`,
       60,
     );
     return json(await undoCheckIn(actor, params.id || ""));

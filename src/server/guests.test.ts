@@ -9,12 +9,8 @@ let store: typeof import("../modules/invitations/infrastructure/store");
 let qr: typeof import("./qr");
 let directory: string;
 const SLUG = "amara-raka";
-const actor = {
-  id: "owner",
-  workspaceId: "workspace-demo",
-  email: "owner@example.test",
-};
-const asing = { ...actor, workspaceId: "lain" };
+let actor: import("./services").Actor;
+let asing: import("./services").Actor;
 
 beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "guests-test-"));
@@ -24,6 +20,9 @@ beforeAll(async () => {
   guests = await import("./guests");
   store = await import("../modules/invitations/infrastructure/store");
   qr = await import("./qr");
+  const support = await import("./test-support");
+  actor = support.adminActor();
+  asing = (await support.registerCustomer("Asing")).actor;
 });
 afterAll(async () => {
   await rm(directory, { recursive: true, force: true });
@@ -32,9 +31,11 @@ afterAll(async () => {
 describe("daftar tamu: akses", () => {
   it("menolak tanpa sesi dan dari ruang kerja lain", async () => {
     await expect(guests.getGuests(null, SLUG)).rejects.toThrow("masuk");
-    await expect(guests.getGuests(asing, SLUG)).rejects.toThrow("Akses");
+    await expect(guests.getGuests(asing, SLUG)).rejects.toThrow(
+      "tidak ditemukan",
+    );
     await expect(guests.addGuest(asing, SLUG, { name: "X" })).rejects.toThrow(
-      "Akses",
+      "tidak ditemukan",
     );
     await expect(guests.importGuests(null, SLUG, "A")).rejects.toThrow();
     await expect(
@@ -54,10 +55,14 @@ describe("daftar tamu: akses", () => {
     const tamu = await guests.addGuest(actor, SLUG, { name: "Akses" });
     await expect(
       guests.updateGuest(asing, tamu.id, { name: "Y" }),
-    ).rejects.toThrow("Akses");
+    ).rejects.toThrow("tidak ditemukan");
     await expect(guests.removeGuest(null, tamu.id)).rejects.toThrow("masuk");
-    await expect(guests.markGuestSent(asing, tamu.id)).rejects.toThrow("Akses");
-    await expect(guests.undoCheckIn(asing, tamu.id)).rejects.toThrow("Akses");
+    await expect(guests.markGuestSent(asing, tamu.id)).rejects.toThrow(
+      "tidak ditemukan",
+    );
+    await expect(guests.undoCheckIn(asing, tamu.id)).rejects.toThrow(
+      "tidak ditemukan",
+    );
     await guests.removeGuest(actor, tamu.id);
   });
 });
@@ -291,7 +296,7 @@ describe("daftar tamu: terkirim, buka, RSVP, check-in", () => {
     ).rejects.toThrow("tidak dikenal");
     await expect(guests.checkInGuest(actor, SLUG, "  ")).rejects.toThrow();
     await expect(guests.checkInGuest(asing, SLUG, tamu.code)).rejects.toThrow(
-      "Akses",
+      "tidak ditemukan",
     );
     const undone = await guests.undoCheckIn(actor, tamu.id);
     expect(undone.checkedInAt).toBeNull();
@@ -329,7 +334,7 @@ describe("daftar tamu: terkirim, buka, RSVP, check-in", () => {
       1,
     );
     await service.deleteInvitation(actor, "resepsi-dua");
-    const state = await store.readState();
+    const state = await store.readWorkspace(actor.workspaceId);
     expect(state.guests!.some((g) => g.name === "Tamu Dua")).toBe(false);
   });
 });

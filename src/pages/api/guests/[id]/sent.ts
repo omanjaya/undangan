@@ -15,7 +15,7 @@ export const POST: APIRoute = async ({ request, params, clientAddress }) => {
     guardMutation(request);
     const actor = await getActor(request);
     rateLimit(
-      `guest-sent:${actor?.id || clientIp(request, clientAddress)}`,
+      `guest-sent:${actor?.userId || clientIp(request, clientAddress)}`,
       240,
     );
     const data = await readInput(request);

@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     // Sesi diperiksa dan kuota dipakai sebelum body besar dibaca.
     const actor = await getActor(request);
     rateLimit(
-      `guest-import:${actor?.id || clientIp(request, clientAddress)}`,
+      `guest-import:${actor?.userId || clientIp(request, clientAddress)}`,
       10,
     );
     const data = await readInput(request, 500_000);

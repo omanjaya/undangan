@@ -4,16 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 let service: typeof import("./services");
 let directory: string;
-const actor = {
-  id: "owner",
-  workspaceId: "workspace-demo",
-  email: "owner@example.test",
-};
+let support: typeof import("./test-support");
+let actor: import("./services").Actor;
 beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "undangan-test-"));
   process.env.DATA_DIR = directory;
   delete process.env.DATABASE_URL;
   service = await import("./services");
+  support = await import("./test-support");
+  actor = support.adminActor();
 });
 afterAll(async () => {
   await rm(directory, { recursive: true, force: true });
@@ -91,13 +90,10 @@ describe("custom invitation addresses", () => {
     await expect(
       service.renameInvitation(null, "amara-raka", "made-putu"),
     ).rejects.toThrow("masuk");
+    const asing = await support.registerCustomer("Asing");
     await expect(
-      service.renameInvitation(
-        { ...actor, workspaceId: "other" },
-        "amara-raka",
-        "made-putu",
-      ),
-    ).rejects.toThrow("Akses");
+      service.renameInvitation(asing.actor, "amara-raka", "made-putu"),
+    ).rejects.toThrow("tidak ditemukan");
     for (const invalid of [
       "x",
       "Uppercase",
@@ -138,26 +134,8 @@ describe("custom invitation addresses", () => {
     await service.renameInvitation(actor, "made-putu", "amara-raka");
     expect((await service.getInvitation("made-putu"))?.slug).toBe("amara-raka");
   });
-  it("invalidates active sessions when owner credentials rotate", async () => {
-    const auth = await import("./auth");
-    const token = await auth.login(
-      "owner@undangan.local",
-      "demo-undangan-2026",
-    );
-    const request = new Request("http://localhost", {
-      headers: { cookie: "invitation_session=" + token },
-    });
-    expect(await auth.getActor(request)).not.toBeNull();
-    const previous = process.env.OWNER_PASSWORD;
-    try {
-      process.env.OWNER_PASSWORD = "rotated-unique-secret";
-      expect(await auth.getActor(request)).toBeNull();
-    } finally {
-      if (previous === undefined) delete process.env.OWNER_PASSWORD;
-      else process.env.OWNER_PASSWORD = previous;
-    }
-  });
 });
+
 describe("beberapa undangan dalam satu ruang kerja", () => {
   it("membuat salinan, memisahkan RSVP, dan menolak slug ganda", async () => {
     const dibuat = await service.createInvitation(actor, {

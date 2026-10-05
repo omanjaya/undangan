@@ -27,11 +27,31 @@ import {
   type GuestImportIssue,
 } from "../modules/invitations/domain/guests-import";
 import {
-  readState,
-  mutateState,
+  readWorkspace,
+  mutateWorkspace,
   type State,
 } from "../modules/invitations/infrastructure/store";
-import { findBySlug, type Actor } from "./services";
+import { findBySlug, matchesSlug, resolvePublic, type Actor } from "./services";
+import { loadEntitlements, requireActor, requireFeature } from "./tenant";
+
+const readOwn = (actor: Actor | null) =>
+  readWorkspace(requireActor(actor).workspaceId);
+const mutateOwn = <T>(actor: Actor | null, fn: (state: State) => T) =>
+  mutateWorkspace(requireActor(actor).workspaceId, fn);
+
+/** Batas tamu per undangan: yang lebih kecil antara batas sistem dan paket. */
+async function guestLimit(actor: Actor | null) {
+  const entitlements = await loadEntitlements(requireActor(actor).workspaceId);
+  requireFeature(entitlements, "guestList", "daftar tamu");
+  return {
+    limit: Math.min(MAX_GUESTS_PER_INVITATION, entitlements.maxGuests),
+    byPlan: entitlements.maxGuests < MAX_GUESTS_PER_INVITATION,
+  };
+}
+const limitMessage = (limit: number, byPlan: boolean) =>
+  byPlan
+    ? `Paket Anda dibatasi ${limit} tamu per undangan. Pilih paket yang lebih besar untuk menambah tamu.`
+    : `Batas ${limit} tamu per undangan tercapai.`;
 
 function requireInvitation(state: State, actor: Actor | null, slug: string) {
   const invitation = findBySlug(state, slug);
@@ -96,7 +116,7 @@ function parsePhone(raw: string) {
 }
 
 export async function getGuests(actor: Actor | null, slug: string) {
-  const state = await readState();
+  const state = await readOwn(actor);
   const invitation = requireInvitation(state, actor, slug);
   const guests = viewsFor(state, invitation);
   return {
@@ -114,16 +134,15 @@ export async function addGuest(
 ) {
   const data = guestInputSchema.parse(input);
   const phone = parsePhone(data.phone);
-  return mutateState((state) => {
+  const { limit, byPlan } = await guestLimit(actor);
+  return mutateOwn(actor, (state) => {
     const invitation = requireInvitation(state, actor, slug);
     state.guests ??= [];
     if (
       state.guests.filter((g) => g.invitationId === invitation.id).length >=
-      MAX_GUESTS_PER_INVITATION
+      limit
     )
-      throw new DomainError(
-        `Batas ${MAX_GUESTS_PER_INVITATION} tamu per undangan tercapai.`,
-      );
+      throw new DomainError(limitMessage(limit, byPlan), 403);
     const now = new Date().toISOString();
     const guest: Guest = {
       ...data,
@@ -150,7 +169,7 @@ export async function updateGuest(
 ) {
   const data = guestInputSchema.parse(input);
   const phone = parsePhone(data.phone);
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const { guest } = requireGuest(state, actor, id);
     Object.assign(guest, data, { phone, updatedAt: new Date().toISOString() });
     return toView(state, guest);
@@ -158,7 +177,7 @@ export async function updateGuest(
 }
 
 export async function removeGuest(actor: Actor | null, id: string) {
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const { guest } = requireGuest(state, actor, id);
     state.guests = (state.guests ?? []).filter((g) => g !== guest);
     // RSVP tetap tersimpan sebagai tanggapan biasa; hanya tautannya dilepas.
@@ -174,7 +193,7 @@ export async function markGuestSent(
   id: string,
   sent = true,
 ) {
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const { guest } = requireGuest(state, actor, id);
     const now = new Date().toISOString();
     guest.sentAt = sent ? (guest.sentAt ?? now) : null;
@@ -189,7 +208,7 @@ export async function saveWaTemplate(
   template: unknown,
 ) {
   const text = waTemplateSchema.parse(template);
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const invitation = requireInvitation(state, actor, slug);
     state.guestTemplates ??= {};
     state.guestTemplates[invitation.id] = text;
@@ -209,7 +228,8 @@ export async function importGuests(
   if (typeof text !== "string" || !text.trim())
     throw new DomainError("Daftar tamu kosong.");
   const parsed = parseGuestList(text);
-  return mutateState((state) => {
+  const { limit, byPlan } = await guestLimit(actor);
+  return mutateOwn(actor, (state) => {
     const invitation = requireInvitation(state, actor, slug);
     state.guests ??= [];
     const own = state.guests.filter((g) => g.invitationId === invitation.id);
@@ -228,10 +248,12 @@ export async function importGuests(
         skipped++;
         continue;
       }
-      if (count >= MAX_GUESTS_PER_INVITATION) {
+      if (count >= limit) {
         errors.push({
           line: 0,
-          message: `Batas ${MAX_GUESTS_PER_INVITATION} tamu tercapai; sisa baris diabaikan.`,
+          message: byPlan
+            ? `Batas ${limit} tamu pada paket Anda tercapai; sisa baris diabaikan.`
+            : `Batas ${limit} tamu tercapai; sisa baris diabaikan.`,
         });
         break;
       }
@@ -262,7 +284,7 @@ export async function exportGuestsCsv(
   slug: string,
   origin: string,
 ) {
-  const state = await readState();
+  const state = await readOwn(actor);
   const invitation = requireInvitation(state, actor, slug);
   return guestsToCsv(viewsFor(state, invitation), (g) =>
     guestLink(origin, invitation.slug, g),
@@ -275,11 +297,13 @@ export async function exportGuestsCsv(
  */
 export async function recordGuestOpen(slug: string, code: unknown) {
   // Kode asal-asalan tidak boleh memicu penulisan state.
-  const snapshot = await readState();
-  const known = findBySlug(snapshot, slug);
-  if (!known || !findGuestByCode(snapshot.guests, known.id, code)) return false;
-  return mutateState((state) => {
-    const invitation = findBySlug(state, slug);
+  const known = await resolvePublic(slug);
+  if (!known || !findGuestByCode(known.state.guests, known.invitation.id, code))
+    return false;
+  return mutateWorkspace(known.workspaceId, (state) => {
+    const invitation = state.invitations.find(
+      (i) => i.id === known.invitation.id && matchesSlug(i, slug),
+    );
     if (!invitation || invitation.status !== "published") return false;
     const guest = findGuestByCode(state.guests, invitation.id, code);
     if (!guest) return false;
@@ -293,9 +317,9 @@ export async function recordGuestOpen(slug: string, code: unknown) {
 /** Data minimum untuk halaman tamu: nama sapaan dan apakah QR boleh tampil. */
 export async function getGuestForPage(slug: string, code: unknown) {
   if (typeof code !== "string") return null;
-  const state = await readState();
-  const invitation = findBySlug(state, slug);
-  if (!invitation) return null;
+  const found = await resolvePublic(slug);
+  if (!found) return null;
+  const { state, invitation } = found;
   const guest = findGuestByCode(state.guests, invitation.id, code);
   if (!guest) return null;
   const rsvp = rsvpOf(state, guest);
@@ -320,7 +344,12 @@ export async function checkInGuest(
 ) {
   const code = parseScannedCode(typeof rawCode === "string" ? rawCode : "");
   if (!code) throw new DomainError("Kode tamu kosong.");
-  return mutateState((state) => {
+  requireFeature(
+    await loadEntitlements(requireActor(actor).workspaceId),
+    "qrCheckin",
+    "check-in QR",
+  );
+  return mutateOwn(actor, (state) => {
     const invitation = requireInvitation(state, actor, slug);
     const guest = findGuestByCode(state.guests, invitation.id, code);
     if (!guest) {
@@ -346,7 +375,7 @@ export async function checkInGuest(
 }
 
 export async function undoCheckIn(actor: Actor | null, id: string) {
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const { guest } = requireGuest(state, actor, id);
     guest.checkedInAt = null;
     guest.updatedAt = new Date().toISOString();

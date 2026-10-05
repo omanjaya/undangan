@@ -4,33 +4,43 @@ import Icon from "../components/Icon.astro";
 import { getActor } from "../server/auth";
 if (await getActor(Astro.request)) return Astro.redirect("/dashboard");
 Astro.response.headers.set("Cache-Control", "private, no-store");
-const demo =
-  process.env.NODE_ENV !== "production" && !process.env.OWNER_PASSWORD;
 ---
 
-<BaseLayout title="Masuk — Temu" noindex>
+<BaseLayout title="Daftar — Temu" noindex>
   <main class="login-shell">
     <a href="/" class="login-brand">
       temu.
     </a>
     <section class="login-card">
-      <span class="kicker">RUANG UNTUK CERITA KALIAN</span>
+      <span class="kicker">MULAI DARI SINI</span>
       <h1>
-        Selamat datang
+        Buat undangan
         <br />
-        <em>kembali.</em>
+        <em>kalian.</em>
       </h1>
-      <p>Masuk untuk merangkai dan membagikan hari istimewa kalian.</p>
-      <form id="login-form">
+      <p>
+        Daftar untuk mulai menyusun undangan, daftar tamu, dan anggaran
+        pernikahan di ruang kerja milik sendiri.
+      </p>
+      <form id="register-form">
         <label>
-          Email
+          Nama
           <input
             required
-            type="email"
-            name="email"
-            autocomplete="username"
-            value={demo ? "owner@undangan.local" : ""}
+            type="text"
+            name="name"
+            autocomplete="name"
+            minlength="2"
+            maxlength="100"
           />
+        </label>
+        <label>
+          Email
+          <input required type="email" name="email" autocomplete="email" />
+        </label>
+        <label>
+          Nomor WhatsApp (opsional)
+          <input type="tel" name="phone" autocomplete="tel" maxlength="30" />
         </label>
         <label>
           Kata sandi
@@ -38,23 +48,19 @@ const demo =
             required
             type="password"
             name="password"
-            autocomplete="current-password"
-            value={demo ? "demo-undangan-2026" : ""}
+            autocomplete="new-password"
+            minlength="8"
+            maxlength="200"
           />
+          <small>Minimal 8 karakter.</small>
         </label>
-        <p id="login-error" role="alert"></p>
+        <p id="register-error" role="alert"></p>
         <button type="submit">
-          Masuk ke ruang undangan <Icon name="arrow" size={18} />
+          Buat akun <Icon name="arrow" size={18} />
         </button>
       </form>
-      {demo && (
-        <aside>
-          Mode demo lokal. Akun contoh sudah diisi agar Anda bisa menjelajahi
-          editor.
-        </aside>
-      )}
       <p class="switch">
-        Belum punya akun? <a href="/daftar">Daftar gratis</a>
+        Sudah punya akun? <a href="/login">Masuk</a>
       </p>
       <a class="back" href="/">
         Kembali ke beranda
@@ -133,13 +139,11 @@ const demo =
     border-radius: 3px;
     font-size: 12px;
   }
-  aside {
+  small {
+    display: block;
+    margin-top: 6px;
     font-size: 10px;
-    line-height: 1.8;
-    background: #eff1e7;
-    padding: 12px;
-    margin-top: 20px;
-    color: #6c785d;
+    color: var(--muted);
   }
   .back {
     display: block;
@@ -158,7 +162,7 @@ const demo =
     color: var(--olive);
     text-decoration: underline;
   }
-  #login-error {
+  #register-error {
     font-size: 11px;
     color: #a14737;
     line-height: 1.6;
@@ -172,15 +176,15 @@ const demo =
   }
 </style>
 <script>
-  const form = document.querySelector<HTMLFormElement>("#login-form");
+  const form = document.querySelector<HTMLFormElement>("#register-form");
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const button = form.querySelector("button")!;
-    const error = document.querySelector<HTMLElement>("#login-error")!;
+    const error = document.querySelector<HTMLElement>("#register-error")!;
     button.disabled = true;
     error.textContent = "";
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(Object.fromEntries(new FormData(form))),
@@ -190,7 +194,7 @@ const demo =
       window.location.href = "/dashboard";
     } catch (e) {
       error.textContent =
-        e instanceof Error ? e.message : "Tidak dapat masuk. Coba lagi.";
+        e instanceof Error ? e.message : "Tidak dapat mendaftar. Coba lagi.";
       button.disabled = false;
     }
   });

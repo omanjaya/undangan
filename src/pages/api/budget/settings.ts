@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     guardMutation(request);
     const actor = await getActor(request);
     rateLimit(
-      `budget-settings:${actor?.id || clientIp(request, clientAddress)}`,
+      `budget-settings:${actor?.userId || clientIp(request, clientAddress)}`,
       30,
     );
     return json(await saveBudgetSettings(actor, await readInput(request)));

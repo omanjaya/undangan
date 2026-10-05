@@ -10,11 +10,7 @@ import {
 let media: typeof import("./media");
 let service: typeof import("./services");
 let directory: string;
-const actor = {
-  id: "owner",
-  workspaceId: "workspace-demo",
-  email: "test@example.com",
-};
+let actor: import("./services").Actor;
 beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "temu-media-"));
   process.env.DATA_DIR = directory;
@@ -22,6 +18,7 @@ beforeAll(async () => {
   delete process.env.DATABASE_URL;
   media = await import("./media");
   service = await import("./services");
+  actor = (await import("./test-support")).adminActor("test@example.com");
 });
 afterAll(async () => {
   await rm(directory, { recursive: true, force: true });
@@ -170,14 +167,12 @@ describe("operational safeguards", () => {
       service.publishInvitation(actor, current.slug),
     ).rejects.toThrow("hilang");
   });
-  it("fails production readiness for insecure origin and demo credentials", async () => {
+  it("fails production readiness for insecure origin or missing database", async () => {
     const auth = await import("./auth");
     const saved = {
       NODE_ENV: process.env.NODE_ENV,
       APP_URL: process.env.APP_URL,
       DATABASE_URL: process.env.DATABASE_URL,
-      OWNER_EMAIL: process.env.OWNER_EMAIL,
-      OWNER_PASSWORD: process.env.OWNER_PASSWORD,
     };
     try {
       process.env.NODE_ENV = "production";
@@ -185,12 +180,9 @@ describe("operational safeguards", () => {
       process.env.APP_URL = "http://example.test";
       expect(() => auth.validateOwnerConfiguration()).toThrow("HTTPS");
       process.env.APP_URL = "https://example.test";
-      process.env.OWNER_EMAIL = "owner@undangan.local";
-      process.env.OWNER_PASSWORD = "demo-undangan-2026";
-      expect(() => auth.validateOwnerConfiguration()).toThrow("pemilik");
-      process.env.OWNER_EMAIL = "owner@example.test";
-      process.env.OWNER_PASSWORD = "unique-test-secret-2026";
       expect(() => auth.validateOwnerConfiguration()).not.toThrow();
+      delete process.env.DATABASE_URL;
+      expect(() => auth.validateOwnerConfiguration()).toThrow("DATABASE_URL");
     } finally {
       for (const [key, value] of Object.entries(saved)) {
         if (value === undefined) delete process.env[key];

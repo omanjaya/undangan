@@ -4,17 +4,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 let budget: typeof import("./budget");
 let directory: string;
-const actor = {
-  id: "owner",
-  workspaceId: "workspace-demo",
-  email: "owner@example.test",
-};
-const asing = { ...actor, workspaceId: "lain" };
+let actor: import("./services").Actor;
+let asing: import("./services").Actor;
 beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "budget-test-"));
   process.env.DATA_DIR = directory;
   delete process.env.DATABASE_URL;
   budget = await import("./budget");
+  const support = await import("./test-support");
+  actor = support.adminActor();
+  asing = (await support.registerCustomer("Asing")).actor;
 });
 afterAll(async () => {
   await rm(directory, { recursive: true, force: true });
@@ -22,10 +21,23 @@ afterAll(async () => {
 describe("anggaran ruang kerja", () => {
   it("menolak akses tanpa sesi dan dari ruang kerja lain", async () => {
     await expect(budget.getBudget(null)).rejects.toThrow();
-    await expect(budget.getBudget(asing)).rejects.toThrow();
+    // Pelanggan lain punya anggarannya sendiri dan tidak melihat milik admin.
+    await budget.addBudgetItem(actor, { name: "Milik admin", estimate: 1 });
+    expect((await budget.getBudget(asing)).items).toHaveLength(0);
+    const miliknya = await budget.addBudgetItem(asing, { name: "Banten" });
+    expect(
+      (await budget.getBudget(actor)).items.some((i) => i.id === miliknya.id),
+    ).toBe(false);
     await expect(
-      budget.addBudgetItem(asing, { name: "Banten" }),
-    ).rejects.toThrow();
+      budget.removeBudgetItem(
+        asing,
+        (await budget.getBudget(actor)).items[0].id,
+      ),
+    ).rejects.toThrow("tidak ditemukan");
+    await budget.removeBudgetItem(
+      actor,
+      (await budget.getBudget(actor)).items[0].id,
+    );
   });
   it("menambah pos lalu menghitung ringkasan", async () => {
     const dibuat = await budget.addBudgetItem(actor, {

@@ -1,8 +1,5 @@
 import { randomUUID } from "node:crypto";
-import {
-  authorize,
-  DomainError,
-} from "../modules/invitations/domain/invitation";
+import { DomainError } from "../modules/invitations/domain/invitation";
 import {
   budgetItemInputSchema,
   budgetSettingsSchema,
@@ -16,32 +13,31 @@ import {
   type BudgetImportIssue,
 } from "../modules/invitations/domain/budget-import";
 import {
-  readState,
-  mutateState,
+  readWorkspace,
+  mutateWorkspace,
   type State,
 } from "../modules/invitations/infrastructure/store";
 import type { Actor } from "./services";
+import { requireActor } from "./tenant";
 
 const MAX_ITEMS = 200;
 
 /**
  * Anggaran milik ruang kerja, bukan undangan tertentu: satu pernikahan bisa
  * punya beberapa undangan (upacara dan tiap sesi resepsi) dengan satu anggaran.
+ * Semua fungsi hanya menyentuh ruang kerja milik pemanggil.
  */
-function requireWorkspace(state: State, actor: Actor | null) {
-  const reference = state.invitations[0];
-  if (!reference) throw new DomainError("Belum ada undangan.", 404);
-  authorize(actor, reference);
-  return reference;
-}
+const readOwn = (actor: Actor | null) =>
+  readWorkspace(requireActor(actor).workspaceId);
+const mutateOwn = <T>(actor: Actor | null, fn: (state: State) => T) =>
+  mutateWorkspace(requireActor(actor).workspaceId, fn);
 
 function sorted(items: BudgetItem[]) {
   return [...items].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
 export async function getBudget(actor: Actor | null) {
-  const state = await readState();
-  requireWorkspace(state, actor);
+  const state = await readOwn(actor);
   const items = sorted(state.budget ?? []);
   return {
     items,
@@ -52,8 +48,7 @@ export async function getBudget(actor: Actor | null) {
 
 export async function addBudgetItem(actor: Actor | null, input: unknown) {
   const data = budgetItemInputSchema.parse(input);
-  return mutateState((state) => {
-    requireWorkspace(state, actor);
+  return mutateOwn(actor, (state) => {
     state.budget ??= [];
     if (state.budget.length >= MAX_ITEMS)
       throw new DomainError(`Batas ${MAX_ITEMS} pos anggaran tercapai.`);
@@ -91,8 +86,7 @@ export async function updateBudgetItem(
   const data = Object.fromEntries(
     Object.entries(tervalidasi).filter(([kunci]) => dikirim.includes(kunci)),
   );
-  return mutateState((state) => {
-    requireWorkspace(state, actor);
+  return mutateOwn(actor, (state) => {
     const item = (state.budget ?? []).find((i) => i.id === id);
     if (!item) throw new DomainError("Pos anggaran tidak ditemukan.", 404);
     // Dua orang menyunting anggaran dari perangkat berbeda tidak boleh saling
@@ -111,8 +105,7 @@ export async function updateBudgetItem(
 }
 
 export async function removeBudgetItem(actor: Actor | null, id: string) {
-  return mutateState((state) => {
-    requireWorkspace(state, actor);
+  return mutateOwn(actor, (state) => {
     const before = (state.budget ?? []).length;
     state.budget = (state.budget ?? []).filter((i) => i.id !== id);
     if (state.budget.length === before)
@@ -123,8 +116,7 @@ export async function removeBudgetItem(actor: Actor | null, id: string) {
 
 export async function saveBudgetSettings(actor: Actor | null, input: unknown) {
   const settings = budgetSettingsSchema.parse(input);
-  return mutateState((state) => {
-    requireWorkspace(state, actor);
+  return mutateOwn(actor, (state) => {
     state.budgetSettings = settings;
     return settings;
   });
@@ -135,8 +127,7 @@ export async function saveBudgetSettings(actor: Actor | null, input: unknown) {
  * aman dijalankan ulang tanpa menggandakan daftar.
  */
 export async function applyBudgetTemplate(actor: Actor | null) {
-  return mutateState((state) => {
-    requireWorkspace(state, actor);
+  return mutateOwn(actor, (state) => {
     state.budget ??= [];
     const existing = new Set(
       state.budget.map((i) => i.name.trim().toLowerCase()),
@@ -159,8 +150,7 @@ export async function applyBudgetTemplate(actor: Actor | null) {
 }
 
 export async function exportBudgetCsv(actor: Actor | null) {
-  const state = await readState();
-  requireWorkspace(state, actor);
+  const state = await readOwn(actor);
   return budgetToCsv(sorted(state.budget ?? []));
 }
 
@@ -177,8 +167,7 @@ export async function importBudgetCsv(
   if (typeof text !== "string" || !text.trim())
     throw new DomainError("Berkas CSV kosong.");
   const parsed = parseBudgetCsv(text);
-  return mutateState((state) => {
-    requireWorkspace(state, actor);
+  return mutateOwn(actor, (state) => {
     state.budget ??= [];
     const errors: BudgetImportIssue[] = [...parsed.errors];
     const now = new Date().toISOString();

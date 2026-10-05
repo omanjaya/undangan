@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     // permintaan anonim tidak memaksa server menampung satu megabyte.
     const actor = await getActor(request);
     rateLimit(
-      `budget-import:${actor?.id || clientIp(request, clientAddress)}`,
+      `budget-import:${actor?.userId || clientIp(request, clientAddress)}`,
       5,
     );
     const data = await readInput(request, 1_000_000);

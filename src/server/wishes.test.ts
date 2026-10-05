@@ -5,8 +5,8 @@ import { join } from "node:path";
 
 let service: typeof import("./services");
 let directory: string;
-const actor = { id: "owner", workspaceId: "workspace-demo", email: "o@x.test" };
-const stranger = { id: "x", workspaceId: "workspace-lain", email: "x@x.test" };
+let actor: import("./services").Actor;
+let stranger: import("./services").Actor;
 const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
 
 async function ownerWishes() {
@@ -21,6 +21,9 @@ beforeAll(async () => {
   process.env.TELEGRAM_CHAT_ID = "42";
   vi.stubGlobal("fetch", fetchMock);
   service = await import("./services");
+  const support = await import("./test-support");
+  actor = support.adminActor("o@x.test");
+  stranger = (await support.registerCustomer("Asing")).actor;
   await service.publishInvitation(actor, "amara-raka");
   await service.submitRsvp(
     "amara-raka",
@@ -110,12 +113,12 @@ describe("balas dan hapus ucapan", () => {
     );
     await expect(
       service.replyToWish(stranger, wish.id, "x"),
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ status: 404 });
     await expect(service.deleteWish(null, wish.id)).rejects.toMatchObject({
       status: 401,
     });
     await expect(service.deleteWish(stranger, wish.id)).rejects.toMatchObject({
-      status: 403,
+      status: 404,
     });
     await expect(service.deleteWish(actor, "tidak-ada")).rejects.toMatchObject({
       status: 404,
@@ -137,7 +140,7 @@ describe("ekspor CSV pemilik", () => {
     ).rejects.toMatchObject({ status: 401 });
     await expect(
       service.exportWishesCsv(stranger, "amara-raka"),
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ status: 404 });
     await expect(
       service.exportRsvpCsv(actor, "tidak-ada"),
     ).rejects.toMatchObject({ status: 404 });

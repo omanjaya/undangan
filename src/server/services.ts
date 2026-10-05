@@ -21,11 +21,25 @@ import {
 } from "../modules/invitations/domain/invitation";
 import { findGuestByCode } from "../modules/invitations/domain/guests";
 import {
-  readState,
-  mutateState,
+  readWorkspace,
+  mutateWorkspace,
+  tryReadWorkspace,
   type State,
 } from "../modules/invitations/infrastructure/store";
-export type Actor = { id: string; workspaceId: string; email: string };
+import type { UserRole } from "../modules/invitations/infrastructure/global-state";
+import { assertSlug, releaseSlugs, reserveSlug, resolveSlug } from "./slugs";
+import { loadEntitlements, requireActor, requireFeature } from "./tenant";
+
+/** Pengguna yang sedang masuk beserta ruang kerjanya. */
+export type Actor = {
+  userId: string;
+  workspaceId: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  /** Terisi bila admin sedang menyamar sebagai pengguna ini. */
+  impersonatorUserId?: string;
+};
 export function matchesSlug(invitation: Invitation, slug: string) {
   return invitation.slug === slug || !!invitation.aliases?.includes(slug);
 }
@@ -38,8 +52,33 @@ function requireBySlug(state: State, slug: string) {
   if (!invitation) throw new DomainError("Undangan tidak ditemukan.", 404);
   return invitation;
 }
+/** Ruang kerja milik pemanggil; satu-satunya data yang boleh disentuh layanan pemilik. */
+async function readOwn(actor: Actor | null) {
+  return readWorkspace(requireActor(actor).workspaceId);
+}
+function mutateOwn<T>(actor: Actor | null, fn: (state: State) => T) {
+  return mutateWorkspace(requireActor(actor).workspaceId, fn);
+}
+
+/**
+ * Jalur publik: slug diselesaikan lewat indeks global ke ruang kerja
+ * pemiliknya, lalu undangan dicari di sana. Entri indeks yang usang (undangan
+ * sudah tidak ada) diperlakukan sebagai tidak ditemukan.
+ */
+export async function resolvePublic(slug: string) {
+  const entry = await resolveSlug(slug);
+  if (!entry) return null;
+  const state = await tryReadWorkspace(entry.workspaceId);
+  const invitation = state?.invitations.find(
+    (i) => i.id === entry.invitationId && matchesSlug(i, slug),
+  );
+  return state && invitation
+    ? { workspaceId: entry.workspaceId, state, invitation }
+    : null;
+}
+
 export async function getInvitation(slug = "amara-raka", _preview = false) {
-  return findBySlug(await readState(), slug);
+  return (await resolvePublic(slug))?.invitation ?? null;
 }
 export async function getPublished(slug: string) {
   const invitation = await getInvitation(slug);
@@ -50,7 +89,7 @@ export async function getPublished(slug: string) {
   return content.success ? content.data : null;
 }
 export async function getDashboardData(actor: Actor | null, slug?: string) {
-  const state = await readState();
+  const state = await readOwn(actor);
   if (!state.invitations.length)
     throw new DomainError("Belum ada undangan.", 404);
   const invitation = slug ? requireBySlug(state, slug) : state.invitations[0];
@@ -83,7 +122,7 @@ export async function saveDraft(
   input: { slug: string; lockVersion: number; content: unknown },
 ) {
   const content = contentSchema.parse(input.content);
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const invitation = requireBySlug(state, input.slug);
     authorize(actor, invitation);
     if (invitation.lockVersion !== input.lockVersion)
@@ -98,10 +137,16 @@ export async function saveDraft(
   });
 }
 export async function publishInvitation(actor: Actor | null, slug: string) {
-  const snapshot = await readState();
+  const { workspaceId } = requireActor(actor);
+  const snapshot = await readOwn(actor);
   const current = requireBySlug(snapshot, slug);
   authorize(actor, current);
-  validateMediaReferences(snapshot, current.draft);
+  if (!(await loadEntitlements(workspaceId)).canPublish)
+    throw new DomainError(
+      "Paket Anda belum mengizinkan penerbitan undangan. Pilih paket terlebih dahulu untuk menerbitkan undangan ini.",
+      403,
+    );
+  validateMediaReferences(snapshot, current.draft, workspaceId);
   for (const reference of referencedMedia(current.draft)) {
     const asset = snapshot.assets!.find((a) => a.url === reference.url)!;
     try {
@@ -112,7 +157,7 @@ export async function publishInvitation(actor: Actor | null, slug: string) {
       );
     }
   }
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const invitation = requireBySlug(state, slug);
     authorize(actor, invitation);
     if (current.lockVersion !== invitation.lockVersion)
@@ -121,7 +166,7 @@ export async function publishInvitation(actor: Actor | null, slug: string) {
         409,
       );
     const content = contentSchema.parse(invitation.draft);
-    validateMediaReferences(state, content);
+    validateMediaReferences(state, content, workspaceId);
     invitation.published = structuredClone(content);
     invitation.status = "published";
     invitation.revision++;
@@ -136,7 +181,7 @@ export async function publishInvitation(actor: Actor | null, slug: string) {
   });
 }
 export async function unpublishInvitation(actor: Actor | null, slug: string) {
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const invitation = requireBySlug(state, slug);
     authorize(actor, invitation);
     invitation.status = "draft";
@@ -152,8 +197,12 @@ export async function submitRsvp(
 ) {
   const data = rsvpSchema.parse(input);
   let activity: GuestActivity | null = null;
-  const result = await mutateState((state) => {
-    const i = findBySlug(state, slug);
+  const entry = await resolveSlug(slug);
+  if (!entry) throw new DomainError("Undangan tidak tersedia.", 404);
+  const result = await mutateWorkspace(entry.workspaceId, (state) => {
+    const i = state.invitations.find(
+      (inv) => inv.id === entry.invitationId && matchesSlug(inv, slug),
+    );
     if (!i || i.status !== "published")
       throw new DomainError("Undangan tidak tersedia.", 404);
     // Kode tamu yang tidak dikenal diabaikan: RSVP tetap diterima seperti
@@ -230,9 +279,9 @@ export async function submitRsvp(
   return result;
 }
 export async function getWishes(slug: string) {
-  const state = await readState();
-  const invitation = findBySlug(state, slug);
-  if (!invitation || invitation.status !== "published") return [];
+  const found = await resolvePublic(slug);
+  if (!found || found.invitation.status !== "published") return [];
+  const { state, invitation } = found;
   return state.wishes
     .filter((w) => w.invitationId === invitation.id && w.status === "approved")
     .map((w) => ({
@@ -248,7 +297,7 @@ export async function moderateWish(
   id: string,
   status: "approved" | "hidden",
 ) {
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const wish = state.wishes.find((w) => w.id === id);
     const invitation = state.invitations.find(
       (i) => i.id === wish?.invitationId,
@@ -270,7 +319,7 @@ function findWish(state: State, id: string) {
 }
 
 export async function deleteWish(actor: Actor | null, id: string) {
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const { wish, invitation } = findWish(state, id);
     authorize(actor, invitation);
     state.wishes = state.wishes.filter((w) => w !== wish);
@@ -285,7 +334,7 @@ export async function replyToWish(
   reply: unknown,
 ) {
   const text = replySchema.parse(reply ?? "");
-  return mutateState((state) => {
+  return mutateOwn(actor, (state) => {
     const { wish, invitation } = findWish(state, id);
     authorize(actor, invitation);
     if (text) {
@@ -300,7 +349,7 @@ export async function replyToWish(
 }
 
 export async function exportRsvpCsv(actor: Actor | null, slug: string) {
-  const state = await readState();
+  const state = await readOwn(actor);
   const invitation = requireBySlug(state, slug);
   authorize(actor, invitation);
   const rows = state.rsvps.filter((r) => r.invitationId === invitation.id);
@@ -308,7 +357,7 @@ export async function exportRsvpCsv(actor: Actor | null, slug: string) {
 }
 
 export async function exportWishesCsv(actor: Actor | null, slug: string) {
-  const state = await readState();
+  const state = await readOwn(actor);
   const invitation = requireBySlug(state, slug);
   authorize(actor, invitation);
   const rows = state.wishes.filter((w) => w.invitationId === invitation.id);
@@ -320,76 +369,54 @@ export async function renameInvitation(
   slug: string,
   newSlug: unknown,
 ) {
-  return mutateState((state) => {
-    const invitation = requireBySlug(state, slug);
-    authorize(actor, invitation);
-    if (invitation.slug !== slug)
-      throw new DomainError(
-        "Alamat undangan telah berubah. Muat ulang halaman.",
-        409,
-      );
-    if (
-      state.invitations.some(
-        (i) => i !== invitation && matchesSlug(i, newSlug as string),
-      )
-    )
-      throw new DomainError("Alamat itu sudah dipakai undangan lain.", 409);
-    if (
-      typeof newSlug !== "string" ||
-      newSlug.length < 3 ||
-      newSlug.length > 80 ||
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(newSlug) ||
-      [
-        "api",
-        "media",
-        "dashboard",
-        "login",
-        "admin",
-        "preview",
-        "templates",
-        "themes",
-      ].includes(newSlug)
-    )
-      throw new DomainError(
-        "Gunakan 3–80 huruf kecil, angka, dan tanda hubung untuk alamat undangan.",
-      );
-    if (newSlug === invitation.slug) return invitation;
-    const aliases = (invitation.aliases || []).filter(
-      (alias) => alias !== newSlug,
-    );
-    if (aliases.length >= 20)
-      throw new DomainError(
-        "Batas perubahan alamat tercapai. Alamat sebelumnya tetap dipertahankan.",
-      );
-    invitation.aliases = [...aliases, invitation.slug];
-    invitation.slug = newSlug;
-    invitation.lockVersion++;
-    invitation.updatedAt = new Date().toISOString();
-    return invitation;
-  });
-}
-
-const SLUG_RESERVED = [
-  "api",
-  "media",
-  "dashboard",
-  "login",
-  "admin",
-  "preview",
-  "templates",
-  "themes",
-];
-function assertSlug(value: unknown): asserts value is string {
-  if (
-    typeof value !== "string" ||
-    value.length < 3 ||
-    value.length > 80 ||
-    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) ||
-    SLUG_RESERVED.includes(value)
-  )
+  const { workspaceId } = requireActor(actor);
+  requireFeature(
+    await loadEntitlements(workspaceId),
+    "customSlug",
+    "alamat kustom",
+  );
+  assertSlug(newSlug);
+  const current = requireBySlug(await readOwn(actor), slug);
+  authorize(actor, current);
+  if (current.slug !== slug)
     throw new DomainError(
-      "Gunakan 3\u201380 huruf kecil, angka, dan tanda hubung untuk alamat undangan.",
+      "Alamat undangan telah berubah. Muat ulang halaman.",
+      409,
     );
+  if (newSlug === current.slug) return current;
+  const reserved = await reserveSlug(newSlug, workspaceId, current.id);
+  try {
+    return await mutateWorkspace(workspaceId, (state) => {
+      const invitation = requireBySlug(state, slug);
+      authorize(actor, invitation);
+      if (invitation.slug !== slug)
+        throw new DomainError(
+          "Alamat undangan telah berubah. Muat ulang halaman.",
+          409,
+        );
+      if (
+        state.invitations.some(
+          (i) => i !== invitation && matchesSlug(i, newSlug),
+        )
+      )
+        throw new DomainError("Alamat itu sudah dipakai undangan lain.", 409);
+      const aliases = (invitation.aliases || []).filter(
+        (alias) => alias !== newSlug,
+      );
+      if (aliases.length >= 20)
+        throw new DomainError(
+          "Batas perubahan alamat tercapai. Alamat sebelumnya tetap dipertahankan.",
+        );
+      invitation.aliases = [...aliases, invitation.slug];
+      invitation.slug = newSlug;
+      invitation.lockVersion++;
+      invitation.updatedAt = new Date().toISOString();
+      return invitation;
+    });
+  } catch (error) {
+    if (reserved) await releaseSlugs([newSlug], current.id).catch(() => {});
+    throw error;
+  }
 }
 
 /** Undangan baru memakai isi undangan yang sedang dibuka sebagai titik awal. */
@@ -397,38 +424,54 @@ export async function createInvitation(
   actor: Actor | null,
   input: { slug: unknown; copyFromSlug?: string },
 ) {
+  const { workspaceId } = requireActor(actor);
   assertSlug(input.slug);
   const slug = input.slug;
-  return mutateState((state) => {
-    const reference = state.invitations[0];
-    if (!reference) throw new DomainError("Belum ada undangan.", 404);
-    authorize(actor, reference);
-    if (state.invitations.length >= 20)
-      throw new DomainError("Batas 20 undangan per ruang kerja tercapai.");
-    if (state.invitations.some((i) => matchesSlug(i, slug)))
-      throw new DomainError("Alamat itu sudah dipakai undangan lain.", 409);
-    const source = input.copyFromSlug
-      ? requireBySlug(state, input.copyFromSlug)
-      : reference;
-    const now = new Date().toISOString();
-    const invitation: Invitation = {
-      id: randomUUID(),
-      workspaceId: reference.workspaceId,
-      slug,
-      status: "draft",
-      lockVersion: 1,
-      revision: 0,
-      draft: structuredClone(source.draft),
-      published: null,
-      updatedAt: now,
-    };
-    state.invitations.push(invitation);
-    return invitation;
-  });
+  const entitlements = await loadEntitlements(workspaceId);
+  const id = randomUUID();
+  const reserved = await reserveSlug(slug, workspaceId, id);
+  try {
+    return await mutateWorkspace(workspaceId, (state) => {
+      const reference = state.invitations[0];
+      if (!reference) throw new DomainError("Belum ada undangan.", 404);
+      authorize(actor, reference);
+      if (state.invitations.length >= entitlements.maxInvitations)
+        throw new DomainError(
+          entitlements.maxInvitations === 1
+            ? "Paket Anda hanya mencakup satu undangan. Pilih paket yang lebih besar untuk menambah undangan."
+            : `Paket Anda dibatasi ${entitlements.maxInvitations} undangan. Pilih paket yang lebih besar untuk menambah undangan.`,
+          403,
+        );
+      if (state.invitations.length >= 20)
+        throw new DomainError("Batas 20 undangan per ruang kerja tercapai.");
+      if (state.invitations.some((i) => matchesSlug(i, slug)))
+        throw new DomainError("Alamat itu sudah dipakai undangan lain.", 409);
+      const source = input.copyFromSlug
+        ? requireBySlug(state, input.copyFromSlug)
+        : reference;
+      const invitation: Invitation = {
+        id,
+        workspaceId,
+        slug,
+        status: "draft",
+        lockVersion: 1,
+        revision: 0,
+        draft: structuredClone(source.draft),
+        published: null,
+        updatedAt: new Date().toISOString(),
+      };
+      state.invitations.push(invitation);
+      return invitation;
+    });
+  } catch (error) {
+    if (reserved) await releaseSlugs([slug], id).catch(() => {});
+    throw error;
+  }
 }
 
+/** Ruang kerja dulu, indeks slug kemudian; sisa indeks yang gagal dibersihkan tidak berbahaya. */
 export async function deleteInvitation(actor: Actor | null, slug: string) {
-  return mutateState((state) => {
+  const removed = await mutateOwn(actor, (state) => {
     const invitation = requireBySlug(state, slug);
     authorize(actor, invitation);
     if (state.invitations.length <= 1)
@@ -443,6 +486,11 @@ export async function deleteInvitation(actor: Actor | null, slug: string) {
     state.revisions = state.revisions.filter(
       (r) => r.invitationId !== invitation.id,
     );
-    return { slug: invitation.slug, deleted: true };
+    return {
+      id: invitation.id,
+      slugs: [invitation.slug, ...(invitation.aliases ?? [])],
+    };
   });
+  await releaseSlugs(removed.slugs, removed.id);
+  return { slug, deleted: true };
 }

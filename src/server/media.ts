@@ -6,17 +6,24 @@ import { resolve } from "node:path";
 import sharp from "sharp";
 import { fileTypeFromFile } from "file-type";
 import {
-  authorize,
   DomainError,
   type InvitationContent,
 } from "../modules/invitations/domain/invitation";
 import {
-  mutateState,
-  readState,
+  mutateWorkspace,
+  readWorkspace,
+  tryReadWorkspace,
   type MediaAsset,
   type State,
 } from "../modules/invitations/infrastructure/store";
+import {
+  assetKey,
+  mediaOwner,
+  mutateGlobal,
+  readGlobal,
+} from "../modules/invitations/infrastructure/global-store";
 import type { Actor } from "./services";
+import { loadEntitlements, requireActor } from "./tenant";
 export const uploadDirectory = () =>
   resolve(process.env.UPLOAD_DIR || ".data/uploads");
 const formats: Record<
@@ -53,6 +60,7 @@ export function referencedMedia(content: InvitationContent) {
 export function validateMediaReferences(
   state: State,
   content: InvitationContent,
+  workspaceId: string,
 ) {
   for (const reference of referencedMedia(content)) {
     if (
@@ -60,7 +68,7 @@ export function validateMediaReferences(
         (a) =>
           a.url === reference.url &&
           a.kind === reference.kind &&
-          a.workspaceId === state.invitations[0]?.workspaceId,
+          a.workspaceId === workspaceId,
       )
     )
       throw new DomainError(
@@ -82,44 +90,55 @@ export function canReadAsset(
       referencedMedia(invitation.published).some((r) => r.url === asset.url),
   );
 }
-function requireWorkspace(state: State, actor: Actor | null) {
-  const reference = state.invitations[0];
-  if (!reference) throw new DomainError("Belum ada undangan.", 404);
-  authorize(actor, reference);
-  return reference;
-}
 export async function listMedia(actor: Actor | null) {
-  const state = await readState();
-  requireWorkspace(state, actor);
+  const { workspaceId } = requireActor(actor);
+  const state = await readWorkspace(workspaceId);
   return (state.assets || [])
-    .filter((a) => a.workspaceId === actor!.workspaceId)
+    .filter((a) => a.workspaceId === workspaceId)
     .map(({ workspaceId: _, filename: __, ...asset }) => asset);
 }
-let uploadQueue: Promise<unknown> = Promise.resolve();
-export function uploadMedia(actor: Actor | null, request: Request) {
-  const operation = uploadQueue.then(() => performUpload(actor, request));
-  uploadQueue = operation.catch(() => {});
+// Unggahan diserialkan per ruang kerja agar pemeriksaan kuota tidak saling menyalip.
+const uploadQueues = new Map<string, Promise<unknown>>();
+export async function uploadMedia(actor: Actor | null, request: Request) {
+  const { workspaceId } = requireActor(actor);
+  const operation = (uploadQueues.get(workspaceId) ?? Promise.resolve()).then(
+    () => performUpload(actor, request),
+  );
+  const tail = operation.catch(() => {});
+  uploadQueues.set(workspaceId, tail);
+  void tail.then(() => {
+    if (uploadQueues.get(workspaceId) === tail)
+      uploadQueues.delete(workspaceId);
+  });
   return operation;
 }
 async function performUpload(actor: Actor | null, request: Request) {
-  const state = await readState();
-  requireWorkspace(state, actor);
+  const { workspaceId } = requireActor(actor);
+  const state = await readWorkspace(workspaceId);
+  const entitlements = await loadEntitlements(workspaceId);
   const mime = request.headers.get("content-type")?.split(";")[0].trim() || "";
   const format = formats[mime];
   if (!format) throw new DomainError("Format media tidak didukung.", 415);
   const maximum = format.max * 1024 * 1024;
   if (Number(request.headers.get("content-length") || 0) > maximum)
     throw new DomainError(`Ukuran maksimum ${format.max} MB.`, 413);
-  const storageLimit =
+  // UPLOAD_STORAGE_MB menjadi batas atas per ruang kerja; paket bisa lebih kecil.
+  const configured =
     Number(process.env.UPLOAD_STORAGE_MB || 1024) * 1024 * 1024;
-  if (!Number.isFinite(storageLimit) || storageLimit <= 0)
+  if (!Number.isFinite(configured) || configured <= 0)
     throw new DomainError(
       "Kapasitas media belum dikonfigurasi dengan benar.",
       503,
     );
+  const storageLimit = Math.min(configured, entitlements.maxMediaBytes);
   const used = (state.assets || []).reduce((n, a) => n + a.bytes, 0);
   if (used >= storageLimit)
-    throw new DomainError("Penyimpanan media penuh.", 413);
+    throw new DomainError(
+      storageLimit < configured
+        ? "Penyimpanan media paket Anda penuh. Hapus media yang tidak dipakai atau pilih paket yang lebih besar."
+        : "Penyimpanan media penuh.",
+      413,
+    );
   let name: string;
   try {
     name = decodeURIComponent(request.headers.get("x-file-name") || "media")
@@ -136,6 +155,7 @@ async function performUpload(actor: Actor | null, request: Request) {
   const reader = request.body?.getReader();
   if (!reader) throw new DomainError("Media kosong.");
   let bytes = 0;
+  let indexed = false;
   let dimensions: { width?: number; height?: number } = {};
   try {
     const handle = await open(temp, "wx", 0o600);
@@ -193,7 +213,7 @@ async function performUpload(actor: Actor | null, request: Request) {
     } else await rename(temp, destination);
     const asset: MediaAsset = {
       id,
-      workspaceId: actor!.workspaceId,
+      workspaceId,
       url: `/media/${filename}`,
       filename,
       kind: format.kind,
@@ -210,8 +230,13 @@ async function performUpload(actor: Actor | null, request: Request) {
       createdAt: new Date().toISOString(),
       ...dimensions,
     };
-    await mutateState((current) => {
-      requireWorkspace(current, actor);
+    // Indeks dulu, baru aset: indeks yatim tidak berbahaya, sedangkan aset
+    // tanpa indeks tidak akan pernah bisa disajikan.
+    await mutateGlobal((global) => {
+      global.mediaIndex[assetKey(filename)] = workspaceId;
+    });
+    indexed = true;
+    await mutateWorkspace(workspaceId, (current) => {
       const size = (current.assets || []).reduce((n, a) => n + a.bytes, 0);
       if (size + bytes > storageLimit)
         throw new DomainError("Penyimpanan media penuh.", 413);
@@ -223,6 +248,11 @@ async function performUpload(actor: Actor | null, request: Request) {
     await Promise.all([
       unlink(temp).catch(() => {}),
       unlink(destination).catch(() => {}),
+      indexed
+        ? mutateGlobal((global) => {
+            delete global.mediaIndex[assetKey(filename)];
+          }).catch(() => {})
+        : Promise.resolve(),
     ]);
     throw error;
   }
@@ -260,9 +290,11 @@ export async function serveMedia(
 ) {
   if (!/^[a-f0-9-]+\.(webp|mp4|webm|mp3|m4a|ogg|wav)$/.test(filename))
     throw new DomainError("Media tidak ditemukan.", 404);
-  const state = await readState(),
-    asset = state.assets?.find((a) => a.filename === filename);
-  if (!asset || !canReadAsset(state, asset, actor))
+  // Indeks global menunjuk ruang kerja pemilik berkas tanpa memindai semuanya.
+  const owner = mediaOwner(await readGlobal(), assetKey(filename));
+  const state = owner ? await tryReadWorkspace(owner) : null,
+    asset = state?.assets?.find((a) => a.filename === filename);
+  if (!state || !asset || !canReadAsset(state, asset, actor))
     throw new DomainError("Media tidak ditemukan.", 404);
   const path = resolve(uploadDirectory(), filename);
   let size: number;

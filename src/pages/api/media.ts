@@ -18,7 +18,7 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     guardMutation(request);
     const actor = await getActor(request);
-    rateLimit(`upload:${actor?.id || "anonymous"}`, 20);
+    rateLimit(`upload:${actor?.userId || "anonymous"}`, 20);
     return json({ asset: await uploadMedia(actor, request) }, 201);
   } catch (e) {
     return errorResponse(e);
