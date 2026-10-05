@@ -48,6 +48,7 @@ export function referencedMedia(content: InvitationContent) {
     content.bridePhoto,
     content.groomPhoto,
     content.storyPhoto,
+    content.gift?.qrisImage,
     ...content.galleryPhotos,
   ]
     .filter(Boolean)

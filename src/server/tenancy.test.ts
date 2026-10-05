@@ -198,6 +198,72 @@ describe("isolasi antar pelanggan", () => {
     await service.publishInvitation(a.actor, a.slug);
     expect((await get(null)).status).toBe(200);
   });
+
+  it("gambar QRIS ikut diperiksa kepemilikannya dan tampil untuk tamu setelah terbit", async () => {
+    const own = await media.uploadMedia(a.actor, upload(await png()));
+    const foreign = await media.uploadMedia(b.actor, upload(await png()));
+    const withQris = async (
+      actor: typeof a.actor,
+      slug: string,
+      url: string,
+    ) => {
+      const data = await service.getDashboardData(actor, slug);
+      await service.saveDraft(actor, {
+        slug,
+        lockVersion: data.invitation.lockVersion,
+        content: {
+          ...data.invitation.draft,
+          gift: { ...data.invitation.draft.gift, qrisImage: url },
+        },
+      });
+    };
+    // A tidak dapat menunjuk QRIS ke berkas milik B.
+    await withQris(a.actor, a.slug, foreign.url);
+    await expect(service.publishInvitation(a.actor, a.slug)).rejects.toThrow(
+      "Media",
+    );
+    // QRIS milik sendiri lolos dan dapat dibaca tamu tanpa sesi.
+    await withQris(a.actor, a.slug, own.url);
+    await service.publishInvitation(a.actor, a.slug);
+    const response = await media.serveMedia(
+      own.url.split("/").pop()!,
+      new Request("http://localhost/media/x"),
+      null,
+    );
+    expect(response.status).toBe(200);
+  });
+});
+
+describe("batas tanggapan publik", () => {
+  it("menolak RSVP baru di atas batas, tetapi tamu lama tetap boleh memperbarui", async () => {
+    const c = await support.registerCustomer("Penuh");
+    await support.setPlan(c.actor.workspaceId, { id: "pro", status: "active" });
+    await service.publishInvitation(c.actor, c.slug);
+    const first = {
+      name: "Tamu Pertama",
+      attendance: "attending" as const,
+      attendeeCount: 1,
+      message: "",
+    };
+    await service.submitRsvp(c.slug, first, "visitor-pertama");
+    await store.mutateWorkspace(c.actor.workspaceId, (state) => {
+      const template = state.rsvps[0];
+      while (state.rsvps.length < service.MAX_RSVPS_PER_INVITATION)
+        state.rsvps.push({
+          ...template,
+          id: `r-${state.rsvps.length}`,
+          visitorId: `v-${state.rsvps.length}`,
+        });
+    });
+    await expect(
+      service.submitRsvp(c.slug, first, "visitor-baru"),
+    ).rejects.toMatchObject({ status: 429 });
+    await service.submitRsvp(
+      c.slug,
+      { ...first, attendeeCount: 2 },
+      "visitor-pertama",
+    );
+  });
 });
 
 describe("slug unik secara global", () => {

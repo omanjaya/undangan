@@ -42,6 +42,9 @@ export type Actor = {
   /** Terisi bila admin sedang menyamar sebagai pengguna ini. */
   impersonatorUserId?: string;
 };
+/** Batas tanggapan tamu per undangan (RSVP dan ucapan) pada jalur publik. */
+export const MAX_RSVPS_PER_INVITATION = 5000;
+export const MAX_WISHES_PER_INVITATION = 5000;
 export function matchesSlug(invitation: Invitation, slug: string) {
   return invitation.slug === slug || !!invitation.aliases?.includes(slug);
 }
@@ -274,6 +277,17 @@ export async function submitRsvp(
       ...(guestId ? { guestId } : {}),
       updatedAt: new Date().toISOString(),
     };
+    // Endpoint ini publik: tanpa batas, satu penyerang bisa menggembungkan
+    // dokumen ruang kerja pemilik. Tamu yang sudah menjawab tetap boleh memperbarui.
+    if (
+      !previous &&
+      state.rsvps.filter((r) => r.invitationId === i.id).length >=
+        MAX_RSVPS_PER_INVITATION
+    )
+      throw new DomainError(
+        "Konfirmasi untuk undangan ini sudah mencapai batas. Hubungi mempelai.",
+        429,
+      );
     if (previous) state.rsvps[state.rsvps.indexOf(previous)] = rsvp;
     else state.rsvps.push(rsvp);
     // Tamu yang memperbarui kehadirannya biasanya mengirim ulang ucapan yang
@@ -284,7 +298,12 @@ export async function submitRsvp(
         w.name === data.name &&
         w.message === data.message,
     );
-    if (data.message && !duplicateWish)
+    if (
+      data.message &&
+      !duplicateWish &&
+      state.wishes.filter((w) => w.invitationId === i.id).length <
+        MAX_WISHES_PER_INVITATION
+    )
       state.wishes.push({
         id: randomUUID(),
         invitationId: i.id,
