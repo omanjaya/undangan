@@ -1,0 +1,118 @@
+---
+import BaseLayout from "../../../../layouts/BaseLayout.astro";
+import { customerPage } from "../../../../server/customer-page";
+import { getInvoice } from "../../../../server/billing";
+import { DomainError } from "../../../../modules/invitations/domain/invitation";
+import { getSiteConfig } from "../../../../config/site";
+import {
+  formatDuration,
+  formatRupiah,
+} from "../../../../modules/billing/catalog";
+import { formatDate } from "../../../../modules/billing/plan-status";
+import "../../../../styles/billing.css";
+
+export const prerender = false;
+
+const guard = await customerPage(Astro);
+if (guard instanceof Response) return guard;
+
+let invoice;
+try {
+  invoice = await getInvoice(guard, Astro.params.number ?? "");
+} catch (error) {
+  if (error instanceof DomainError && error.status === 404)
+    return new Response("Tagihan tidak ditemukan.", {
+      status: 404,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  throw error;
+}
+const { order, customer } = invoice;
+// Kwitansi hanya untuk pembayaran yang sudah diterima.
+if (order.status !== "paid")
+  return Astro.redirect(`/dashboard/tagihan/${order.number}`);
+const site = getSiteConfig();
+---
+
+<BaseLayout title={`Invoice ${order.number} — ${site.name}`} noindex>
+  <div class="bill-print-bar">
+    <button class="bill-btn" type="button" id="print">
+      Cetak atau simpan PDF
+    </button>
+    <a class="bill-btn secondary" href={`/dashboard/tagihan/${order.number}`}>
+      Kembali
+    </a>
+  </div>
+  <article class="bill-receipt">
+    <header>
+      <div>
+        <h1>{site.businessName}</h1>
+        <p style="margin:6px 0 0;font-size:13px;color:#444">
+          {site.businessAddress}
+          <br />
+          {site.email}
+        </p>
+      </div>
+      <div style="text-align:right">
+        <strong style="letter-spacing:0.15em">
+          INVOICE / BUKTI PEMBAYARAN
+        </strong>
+        <p style="margin:6px 0 0;font-size:14px">{order.number}</p>
+      </div>
+    </header>
+
+    <dl>
+      <dt>Tanggal pembayaran</dt>
+      <dd>{order.paidAt ? formatDate(order.paidAt) : "-"}</dd>
+      <dt>Tanggal tagihan</dt>
+      <dd>{formatDate(order.createdAt)}</dd>
+      <dt>Pelanggan</dt>
+      <dd>
+        {customer.name}
+        <br />
+        {customer.email}
+      </dd>
+    </dl>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Keterangan</th>
+          <th class="num">Jumlah</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            Paket {order.packageSnapshot.name}, masa aktif{" "}
+            {formatDuration(order.packageSnapshot.durationDays)}
+          </td>
+          <td class="num">{formatRupiah(order.amount)}</td>
+        </tr>
+        {order.uniqueCode > 0 && (
+          <tr>
+            <td>Kode unik transfer</td>
+            <td class="num">{formatRupiah(order.uniqueCode)}</td>
+          </tr>
+        )}
+        <tr>
+          <th>Total dibayar</th>
+          <th class="num">{formatRupiah(order.total)}</th>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      <span class="stamp">LUNAS</span>
+    </p>
+    <p style="font-size:12px;color:#555">
+      Pembayaran melalui transfer bank telah diverifikasi. Dokumen ini dibuat
+      otomatis dan sah tanpa tanda tangan.
+    </p>
+  </article>
+</BaseLayout>
+<script>
+  document
+    .querySelector("#print")
+    ?.addEventListener("click", () => window.print());
+</script>

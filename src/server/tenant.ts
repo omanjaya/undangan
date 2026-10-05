@@ -18,10 +18,13 @@ export async function loadEntitlements(
   const global = await readGlobal();
   const workspace = global.workspaces.find((w) => w.id === workspaceId);
   if (!workspace) throw new DomainError("Ruang kerja tidak ditemukan.", 404);
-  return getEntitlements(workspace);
+  return getEntitlements(workspace, Date.now(), {
+    packages: global.packages,
+    orders: global.orders,
+  });
 }
 
-const UPGRADE_HINT = "Pilih paket terlebih dahulu untuk menggunakannya.";
+const UPGRADE_HINT = "Pilih paket di /dashboard/paket untuk menggunakannya.";
 
 export function requireFeature(
   entitlements: Entitlements,

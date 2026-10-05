@@ -26,7 +26,9 @@ import {
   tryReadWorkspace,
   type State,
 } from "../modules/invitations/infrastructure/store";
+import { readGlobal } from "../modules/invitations/infrastructure/global-store";
 import type { UserRole } from "../modules/invitations/infrastructure/global-state";
+import { publicAccess } from "../modules/billing/plan";
 import { assertSlug, releaseSlugs, reserveSlug, resolveSlug } from "./slugs";
 import { loadEntitlements, requireActor, requireFeature } from "./tenant";
 
@@ -65,9 +67,14 @@ function mutateOwn<T>(actor: Actor | null, fn: (state: State) => T) {
  * pemiliknya, lalu undangan dicari di sana. Entri indeks yang usang (undangan
  * sudah tidak ada) diperlakukan sebagai tidak ditemukan.
  */
-export async function resolvePublic(slug: string) {
+export async function resolvePublic(
+  slug: string,
+  options: { includeInactive?: boolean } = {},
+) {
   const entry = await resolveSlug(slug);
   if (!entry) return null;
+  if (!options.includeInactive && (await isWorkspaceLapsed(entry.workspaceId)))
+    return null;
   const state = await tryReadWorkspace(entry.workspaceId);
   const invitation = state?.invitations.find(
     (i) => i.id === entry.invitationId && matchesSlug(i, slug),
@@ -75,6 +82,26 @@ export async function resolvePublic(slug: string) {
   return state && invitation
     ? { workspaceId: entry.workspaceId, state, invitation }
     : null;
+}
+
+/**
+ * Paket sudah berakhir lebih dari masa tenggang (lihat `publicAccess`), jadi
+ * undangan terbitnya tidak lagi disajikan ke tamu.
+ */
+export async function isWorkspaceLapsed(workspaceId: string) {
+  const workspace = (await readGlobal()).workspaces.find(
+    (w) => w.id === workspaceId,
+  );
+  return !!workspace && publicAccess(workspace.plan) === "lapsed";
+}
+
+/** Untuk halaman tamu: undangan beserta penanda apakah ia tidak aktif karena paket berakhir. */
+export async function getInvitationAccess(slug: string) {
+  const found = await resolvePublic(slug, { includeInactive: true });
+  return {
+    invitation: found?.invitation ?? null,
+    inactive: found ? await isWorkspaceLapsed(found.workspaceId) : false,
+  };
 }
 
 export async function getInvitation(slug = "amara-raka", _preview = false) {
@@ -143,7 +170,7 @@ export async function publishInvitation(actor: Actor | null, slug: string) {
   authorize(actor, current);
   if (!(await loadEntitlements(workspaceId)).canPublish)
     throw new DomainError(
-      "Paket Anda belum mengizinkan penerbitan undangan. Pilih paket terlebih dahulu untuk menerbitkan undangan ini.",
+      "Paket Anda belum mengizinkan penerbitan undangan. Pilih paket di /dashboard/paket untuk menerbitkan undangan ini.",
       403,
     );
   validateMediaReferences(snapshot, current.draft, workspaceId);
@@ -198,7 +225,8 @@ export async function submitRsvp(
   const data = rsvpSchema.parse(input);
   let activity: GuestActivity | null = null;
   const entry = await resolveSlug(slug);
-  if (!entry) throw new DomainError("Undangan tidak tersedia.", 404);
+  if (!entry || (await isWorkspaceLapsed(entry.workspaceId)))
+    throw new DomainError("Undangan tidak tersedia.", 404);
   const result = await mutateWorkspace(entry.workspaceId, (state) => {
     const i = state.invitations.find(
       (inv) => inv.id === entry.invitationId && matchesSlug(inv, slug),

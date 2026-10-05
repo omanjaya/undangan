@@ -1,0 +1,658 @@
+/* Halaman paket, tagihan, dan admin penagihan. Semua kelas berawalan `bill-`. */
+.bill-shell {
+  min-height: 100dvh;
+  background: var(--paper);
+}
+.bill-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 14px clamp(16px, 4vw, 48px);
+  border-bottom: 1px solid var(--line);
+  background: #efefe6;
+}
+.bill-brand {
+  font: 38px var(--serif);
+  letter-spacing: -2px;
+  line-height: 1;
+}
+.bill-top nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-right: auto;
+}
+.bill-top nav a {
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #59614f;
+}
+.bill-top nav a[aria-current="page"] {
+  background: #dfe5d4;
+  color: #33422b;
+  font-weight: 600;
+}
+.bill-top button {
+  background: none;
+  border: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 8px;
+}
+.bill-main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px clamp(16px, 4vw, 40px) 72px;
+}
+.bill-main h1 {
+  font: 40px/1.1 var(--serif);
+  margin: 6px 0 10px;
+}
+.bill-kicker {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+.bill-lead {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 62ch;
+}
+.bill-card {
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 22px;
+  margin-top: 20px;
+}
+.bill-card h2 {
+  font: 24px/1.2 var(--serif);
+  margin: 0 0 12px;
+}
+.bill-muted {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.bill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: 1px solid var(--olive);
+  background: var(--olive);
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+}
+.bill-btn.secondary {
+  background: transparent;
+  color: var(--olive);
+  border-color: #c9d0bd;
+}
+.bill-btn.danger {
+  background: #fff;
+  color: #9b3523;
+  border-color: #d9a99d;
+}
+.bill-btn.small {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.bill-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+  background: #eee9dd;
+  color: #5b5446;
+}
+.bill-badge[data-status="paid"] {
+  background: #dfe9d0;
+  color: #2f4a22;
+}
+.bill-badge[data-status="awaiting_verification"] {
+  background: #f3e6c4;
+  color: #6a4b0c;
+}
+.bill-badge[data-status="pending"] {
+  background: #e4e9f2;
+  color: #2f4263;
+}
+.bill-badge[data-status="rejected"],
+.bill-badge[data-status="expired"] {
+  background: #f4dcd5;
+  color: #8a2e1d;
+}
+.bill-alert {
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  background: #eef0e4;
+  border: 1px solid #d3d9c2;
+  margin-top: 20px;
+}
+.bill-alert.warn {
+  background: #fbf0d9;
+  border-color: #ebd49d;
+}
+.bill-alert.bad {
+  background: #f9e4de;
+  border-color: #e6b8ac;
+}
+.bill-alert strong {
+  display: block;
+}
+.bill-alert a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+.bill-alert .bill-btn {
+  text-decoration: none;
+  margin-top: 10px;
+}
+
+/* Kartu paket */
+.bill-packages {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+.bill-package {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 24px;
+  scroll-margin-top: 24px;
+}
+.bill-package.is-highlighted {
+  border-color: var(--olive);
+  box-shadow: 0 0 0 2px #dfe5d4;
+}
+.bill-package.is-chosen {
+  border-color: #8b9970;
+  box-shadow: 0 0 0 3px #c9d4b3;
+}
+.bill-package h3 {
+  font: 28px/1.1 var(--serif);
+  margin: 0 0 6px;
+}
+.bill-package .bill-tag {
+  font-size: 11px;
+  color: #fff;
+  background: var(--olive);
+  padding: 3px 10px;
+  border-radius: 999px;
+  align-self: flex-start;
+  margin-bottom: 10px;
+}
+.bill-price {
+  margin: 14px 0 4px;
+}
+.bill-price del {
+  color: var(--muted);
+  font-size: 13px;
+  margin-right: 8px;
+}
+.bill-price strong {
+  font: 32px var(--serif);
+}
+.bill-features {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 20px;
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.bill-features li::before {
+  content: "✓ ";
+  color: var(--olive);
+  font-weight: 700;
+}
+.bill-package form {
+  margin-top: auto;
+}
+.bill-package .bill-btn {
+  width: 100%;
+}
+
+/* Tabel riwayat */
+.bill-table-wrap {
+  overflow-x: auto;
+}
+.bill-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.bill-table th,
+.bill-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.bill-table th {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bill-table a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Tagihan */
+.bill-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 20px;
+  align-items: start;
+}
+.bill-total {
+  text-align: center;
+  padding: 26px 16px;
+  background: #f4f6ec;
+  border: 2px solid var(--olive);
+  border-radius: 10px;
+}
+.bill-total small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.bill-total output {
+  display: block;
+  font: clamp(34px, 8vw, 46px) var(--serif);
+  margin: 8px 0 4px;
+  overflow-wrap: anywhere;
+}
+.bill-code {
+  background: #f6dc7a;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-weight: 400;
+}
+.bill-total p {
+  font-size: 13px;
+  color: #3f4a35;
+  margin: 8px auto 14px;
+  max-width: 44ch;
+  line-height: 1.6;
+}
+.bill-breakdown {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  font-size: 14px;
+  margin: 18px 0 0;
+}
+.bill-breakdown dt {
+  color: var(--muted);
+}
+.bill-breakdown dd {
+  margin: 0;
+  text-align: right;
+}
+.bill-banks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+.bill-banks li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: #fff;
+}
+.bill-banks strong {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.bill-banks span {
+  display: block;
+  font: 22px var(--serif);
+  letter-spacing: 0.04em;
+}
+.bill-banks small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.bill-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0;
+}
+.bill-steps li {
+  position: relative;
+  padding: 0 0 18px 30px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.bill-steps li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #c3c9b4;
+  background: #fff;
+}
+.bill-steps li::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 20px;
+  bottom: 2px;
+  width: 2px;
+  background: #e1e4d6;
+}
+.bill-steps li:last-child::after {
+  display: none;
+}
+.bill-steps li.is-done {
+  color: var(--ink);
+}
+.bill-steps li.is-done::before {
+  background: var(--olive);
+  border-color: var(--olive);
+}
+.bill-steps li.is-now {
+  color: var(--ink);
+  font-weight: 600;
+}
+.bill-steps li.is-now::before {
+  border-color: var(--olive);
+  background: #dfe5d4;
+}
+.bill-steps li.is-bad::before {
+  background: #c8553d;
+  border-color: #c8553d;
+}
+.bill-steps small {
+  display: block;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 12px;
+}
+.bill-form label {
+  display: block;
+  font-size: 13px;
+  margin-top: 14px;
+}
+.bill-form input[type="text"],
+.bill-form input[type="number"],
+.bill-form input[type="file"],
+.bill-form select,
+.bill-form textarea {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+}
+.bill-form textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+.bill-form .bill-btn {
+  margin-top: 16px;
+}
+.bill-proof {
+  max-width: 280px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-top: 10px;
+}
+.bill-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.bill-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #425337;
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  z-index: 60;
+  max-width: calc(100% - 30px);
+  width: max-content;
+  box-shadow: 0 5px 25px #2223;
+}
+.bill-toast.is-error {
+  background: #94523f;
+}
+
+/* Admin */
+.bill-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.bill-tabs a {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  background: #fff;
+}
+.bill-tabs a[aria-current="page"] {
+  background: var(--olive);
+  color: #fff;
+  border-color: var(--olive);
+}
+.bill-tabs span {
+  opacity: 0.7;
+  margin-left: 4px;
+}
+.bill-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.bill-search input {
+  flex: 1 1 220px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 14px;
+}
+.bill-two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0 16px;
+}
+.bill-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 6px 14px;
+  margin-top: 8px;
+}
+.bill-checks label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.bill-form .bill-checks input {
+  width: auto;
+  margin: 0;
+}
+.bill-bank-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 8px;
+  align-items: end;
+  margin-top: 10px;
+}
+.bill-bank-row label {
+  margin-top: 0;
+}
+.bill-bank-row .tools {
+  display: flex;
+  gap: 4px;
+}
+details.bill-details > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .bill-grid {
+    grid-template-columns: 1fr;
+  }
+  .bill-bank-row {
+    grid-template-columns: 1fr;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .bill-main h1 {
+    font-size: 32px;
+  }
+}
+
+/* Cetak invoice / kwitansi */
+.bill-receipt {
+  max-width: 760px;
+  margin: 24px auto;
+  padding: 36px;
+  background: #fff;
+  border: 1px solid var(--line);
+  color: #111;
+}
+.bill-receipt header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 2px solid #111;
+  padding-bottom: 16px;
+}
+.bill-receipt h1 {
+  font: 30px var(--serif);
+  margin: 0;
+}
+.bill-receipt dl {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 8px 16px;
+  font-size: 14px;
+  margin: 20px 0;
+}
+.bill-receipt dt {
+  color: #555;
+}
+.bill-receipt dd {
+  margin: 0;
+}
+.bill-receipt table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin: 20px 0;
+}
+.bill-receipt th,
+.bill-receipt td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid #ccc;
+}
+.bill-receipt td.num,
+.bill-receipt th.num {
+  text-align: right;
+}
+.bill-receipt .stamp {
+  display: inline-block;
+  border: 3px solid #2f6b2f;
+  color: #2f6b2f;
+  padding: 4px 18px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  transform: rotate(-4deg);
+}
+.bill-print-bar {
+  max-width: 760px;
+  margin: 20px auto 0;
+  padding: 0 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 560px) {
+  .bill-receipt {
+    padding: 20px;
+    margin: 12px;
+  }
+  .bill-receipt dl {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .bill-receipt dd {
+    margin-bottom: 8px;
+  }
+}
+@media print {
+  body {
+    background: #fff !important;
+  }
+  .bill-print-bar,
+  .bill-top,
+  .bill-toast,
+  .no-print {
+    display: none !important;
+  }
+  .bill-receipt {
+    margin: 0;
+    border: 0;
+    max-width: none;
+    padding: 0;
+  }
+}

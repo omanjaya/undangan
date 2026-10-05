@@ -1,0 +1,41 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import PackageForm from "../../components/billing/PackageForm.astro";
+import { adminPage } from "../../server/admin-page";
+import { adminListPackages } from "../../server/billing";
+import { formatRupiah } from "../../modules/billing/catalog";
+import "../../styles/billing.css";
+
+export const prerender = false;
+
+const guard = await adminPage(Astro);
+if (guard instanceof Response) return guard;
+const actor = guard;
+const packages = await adminListPackages(actor);
+---
+
+<AdminLayout title="Paket & harga" active="packages" adminName={actor.name}>
+  <p class="bill-muted" style="margin-top:-10px;max-width:70ch">
+    Perubahan berlaku untuk pembelian berikutnya dan batas hak pelanggan yang
+    paketnya sama. Pesanan yang sudah dibuat tetap memakai harga dan masa aktif
+    saat dipesan.
+  </p>
+  {packages.map((pkg) => (
+    <details class="admin-card bill-details" style="margin-bottom:14px">
+      <summary>
+        {pkg.name} · {formatRupiah(pkg.price)}
+        {!pkg.active && <span class="admin-badge">nonaktif</span>}
+        {pkg.highlighted && <span class="admin-badge">disorot</span>}
+      </summary>
+      <PackageForm pkg={pkg} />
+    </details>
+  ))}
+  <details class="admin-card bill-details">
+    <summary>Tambah paket baru</summary>
+    <PackageForm />
+  </details>
+</AdminLayout>
+<script>
+  import { bindAjaxForms } from "../../components/billing/client";
+  bindAjaxForms();
+</script>

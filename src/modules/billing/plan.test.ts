@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activatePlan, recordAudit } from "./plan";
+import { activatePlan, publicAccess, recordAudit } from "./plan";
 import {
   emptyGlobal,
   type Workspace,
@@ -58,5 +58,30 @@ describe("recordAudit", () => {
       });
     expect(g.auditLog).toHaveLength(2000);
     expect(g.auditLog.at(-1)?.targetId).toBe("2004");
+  });
+});
+
+describe("publicAccess", () => {
+  const plan = (expiresAt?: string, id = "premium") =>
+    ({ id, status: "active", expiresAt }) as Workspace["plan"];
+  it("aktif selama paket berlaku, admin, atau tanpa tanggal", () => {
+    expect(publicAccess(plan(new Date(now + day).toISOString()), now)).toBe(
+      "active",
+    );
+    expect(publicAccess(plan(undefined), now)).toBe("active");
+    expect(
+      publicAccess(plan(new Date(now - 400 * day).toISOString(), "admin"), now),
+    ).toBe("active");
+  });
+  it("masa tenggang 30 hari lalu tidak aktif", () => {
+    expect(publicAccess(plan(new Date(now - 1 * day).toISOString()), now)).toBe(
+      "grace",
+    );
+    expect(
+      publicAccess(plan(new Date(now - 30 * day).toISOString()), now),
+    ).toBe("grace");
+    expect(
+      publicAccess(plan(new Date(now - 30 * day - 1000).toISOString()), now),
+    ).toBe("lapsed");
   });
 });

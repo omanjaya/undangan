@@ -1,0 +1,200 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { adminPage } from "../../../server/admin-page";
+import { adminGetOrder } from "../../../server/billing";
+import { DomainError } from "../../../modules/invitations/domain/invitation";
+import { formatDuration, formatRupiah } from "../../../modules/billing/catalog";
+import {
+  formatDate,
+  formatDateTime,
+} from "../../../modules/billing/plan-status";
+import "../../../styles/billing.css";
+
+export const prerender = false;
+
+const guard = await adminPage(Astro);
+if (guard instanceof Response) return guard;
+const actor = guard;
+
+let detail;
+try {
+  detail = await adminGetOrder(actor, Astro.params.number ?? "");
+} catch (error) {
+  if (error instanceof DomainError && error.status === 404)
+    return new Response("Pesanan tidak ditemukan.", {
+      status: 404,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  throw error;
+}
+const { order, customer } = detail;
+const base = `/api/admin/orders/${order.number}`;
+const canVerify = ["awaiting_verification", "pending", "expired"].includes(
+  order.status,
+);
+const canReject = order.status === "awaiting_verification";
+const canCancel = ["pending", "awaiting_verification", "rejected"].includes(
+  order.status,
+);
+---
+
+<AdminLayout
+  title={`Pesanan ${order.number}`}
+  active="orders"
+  adminName={actor.name}
+>
+  <a slot="actions" class="admin-button secondary" href="/admin/pesanan">
+    Semua pesanan
+  </a>
+
+  <div class="bill-grid" style="margin-top:0">
+    <div>
+      <section class="admin-card">
+        <p>
+          <span class="bill-badge" data-status={order.status}>
+            {order.statusLabel}
+          </span>
+          {order.createdByAdmin && (
+            <span class="admin-badge">dibuat admin</span>
+          )}
+        </p>
+        <dl class="bill-breakdown">
+          <dt>Paket</dt>
+          <dd>
+            {order.packageSnapshot.name} (
+            {formatDuration(order.packageSnapshot.durationDays)})
+          </dd>
+          <dt>Harga paket</dt>
+          <dd>{formatRupiah(order.amount)}</dd>
+          <dt>Kode unik</dt>
+          <dd>{order.uniqueCode || "-"}</dd>
+          <dt>Total yang harus masuk</dt>
+          <dd>
+            <strong>{formatRupiah(order.total)}</strong>
+          </dd>
+          <dt>Dibuat</dt>
+          <dd>{formatDateTime(order.createdAt)}</dd>
+          {order.status === "pending" && (
+            <>
+              <dt>Batas bayar</dt>
+              <dd>{formatDateTime(order.expiresAt)}</dd>
+            </>
+          )}
+          {order.paidAt && (
+            <>
+              <dt>Lunas</dt>
+              <dd>{formatDateTime(order.paidAt)}</dd>
+            </>
+          )}
+        </dl>
+        {order.rejectReason && (
+          <p class="bill-alert bad">
+            <strong>Alasan penolakan</strong>
+            {order.rejectReason}
+          </p>
+        )}
+      </section>
+
+      <section class="admin-card" style="margin-top:20px">
+        <h2 style="font:22px var(--serif);margin:0 0 10px">Bukti transfer</h2>
+        {order.proofUrl ? (
+          <>
+            <a href={order.proofUrl} target="_blank" rel="noopener">
+              <img
+                class="bill-proof"
+                style="max-width:min(100%,420px)"
+                src={order.proofUrl}
+                alt={`Bukti transfer ${order.number}`}
+              />
+            </a>
+            {order.proofNote && (
+              <p class="bill-muted">Catatan pelanggan: {order.proofNote}</p>
+            )}
+          </>
+        ) : (
+          <p class="bill-muted">Belum ada bukti transfer.</p>
+        )}
+      </section>
+    </div>
+
+    <aside>
+      <section class="admin-card">
+        <h2 style="font:22px var(--serif);margin:0 0 10px">Pelanggan</h2>
+        <p class="bill-muted" style="margin:0">
+          <strong>{customer.name}</strong>
+          <br />
+          {customer.email}
+          {customer.phone && (
+            <>
+              <br />
+              {customer.phone}
+            </>
+          )}
+          <br />
+          Paket sekarang:{" "}
+          {customer.plan?.status === "active" && customer.plan.expiresAt
+            ? `${customer.plan.id}, sampai ${formatDate(customer.plan.expiresAt)}`
+            : (customer.plan?.id ?? "-")}
+        </p>
+      </section>
+
+      <section class="admin-card" style="margin-top:20px">
+        <h2 style="font:22px var(--serif);margin:0 0 10px">Tindakan</h2>
+        {!canVerify && !canReject && !canCancel && (
+          <p class="bill-muted">Pesanan ini sudah selesai.</p>
+        )}
+        {canVerify && (
+          <form
+            data-ajax={`${base}/verify`}
+            data-confirm={`Verifikasi ${order.number} dan aktifkan paket ${order.packageSnapshot.name} (${formatRupiah(order.total)})?`}
+          >
+            <button class="admin-button" type="submit">
+              Verifikasi &amp; aktifkan paket
+            </button>
+          </form>
+        )}
+        {canReject && (
+          <form class="bill-form" data-ajax={`${base}/reject`}>
+            <label>
+              Alasan penolakan (dilihat pelanggan)
+              <textarea
+                name="reason"
+                required
+                maxlength="300"
+                placeholder="Mis. nominal tidak sesuai atau bukti tidak terbaca"
+              ></textarea>
+            </label>
+            <button class="admin-button danger" type="submit">
+              Tolak bukti
+            </button>
+          </form>
+        )}
+        {canCancel && (
+          <form
+            style="margin-top:14px"
+            data-ajax={`${base}/cancel`}
+            data-confirm="Batalkan pesanan ini?"
+          >
+            <button class="admin-button secondary" type="submit">
+              Batalkan pesanan
+            </button>
+          </form>
+        )}
+        {order.status === "paid" && (
+          <p style="margin-top:14px">
+            <a
+              class="admin-button secondary"
+              href={`/dashboard/tagihan/${order.number}/cetak`}
+            >
+              Lihat invoice
+            </a>
+          </p>
+        )}
+      </section>
+    </aside>
+  </div>
+</AdminLayout>
+<script>
+  import { bindAjaxForms } from "../../../components/billing/client";
+  bindAjaxForms();
+</script>

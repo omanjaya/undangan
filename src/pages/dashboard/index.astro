@@ -2,9 +2,11 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import InvitationEditor from "../../components/dashboard/InvitationEditor.astro";
 import Icon from "../../components/Icon.astro";
+import PlanBanner from "../../components/billing/PlanBanner.astro";
 import { getActor } from "../../server/auth";
 import { getDashboardData } from "../../server/services";
 import { getBudget } from "../../server/budget";
+import { getPlanSummary } from "../../server/billing";
 import { getGuests } from "../../server/guests";
 import {
   BUDGET_CATEGORIES,
@@ -20,6 +22,7 @@ const selected = Astro.url.searchParams.get("undangan") || undefined;
 const { invitation, invitations, stats, rsvps, wishes } =
   await getDashboardData(actor, selected);
 const budget = await getBudget(actor);
+const planSummary = await getPlanSummary(actor);
 const guestSummary = (await getGuests(actor, invitation.slug)).summary;
 const rupiah = (value: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -70,6 +73,9 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
           <Icon name="shield" size={19} /> Anggaran{" "}
           <span>{budget.summary.items}</span>
         </a>
+        <a href="/dashboard/paket">
+          <Icon name="spark" size={19} /> Paket &amp; tagihan
+        </a>
       </nav>
       <div class="sidebar-note">
         <Icon name="spark" size={24} />
@@ -117,6 +123,11 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
               <Icon name="eye" size={17} /> Pratinjau
             </a>
           </div>
+          <PlanBanner
+            plan={planSummary.plan}
+            packageName={planSummary.packageName}
+            openOrder={planSummary.openOrder}
+          />
           <section class="invitation-switcher" aria-label="Pilih undangan">
             <div class="invitation-switcher-list">
               {invitations.map((item) => (

@@ -1,0 +1,43 @@
+---
+/**
+ * Kerangka halaman pelanggan untuk paket dan tagihan. Pemanggil sudah
+ * memastikan pengguna masuk (lihat `requireCustomerPage`).
+ */
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import "../../styles/billing.css";
+
+interface Props {
+  title: string;
+  active?: "paket";
+}
+const { title, active = "paket" } = Astro.props;
+---
+
+<BaseLayout title={`${title} — Temu`} noindex>
+  <div class="bill-shell">
+    <header class="bill-top">
+      <a class="bill-brand" href="/">
+        temu.
+      </a>
+      <nav aria-label="Menu">
+        <a href="/dashboard">Dashboard</a>
+        <a
+          href="/dashboard/paket"
+          aria-current={active === "paket" ? "page" : undefined}
+        >
+          Paket &amp; tagihan
+        </a>
+      </nav>
+      <button type="button" id="bill-logout">
+        Keluar
+      </button>
+    </header>
+    <main class="bill-main" id="konten">
+      <slot />
+    </main>
+  </div>
+</BaseLayout>
+<script>
+  import { bindLogout } from "./client";
+  bindLogout();
+</script>

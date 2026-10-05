@@ -1,0 +1,184 @@
+---
+/** Formulir paket untuk admin: satu komponen untuk tambah dan ubah. */
+import type { PackageRecord } from "../../modules/invitations/infrastructure/global-state";
+
+interface Props {
+  pkg?: PackageRecord;
+}
+const { pkg } = Astro.props;
+const flags = [
+  ["music", "Musik latar"],
+  ["video", "Video YouTube"],
+  ["gift", "Amplop digital"],
+  ["guestList", "Daftar tamu"],
+  ["qrCheckin", "Check-in QR"],
+  ["customSlug", "Alamat kustom"],
+  ["removeBranding", "Tanpa branding Temu"],
+] as const;
+const mode = pkg ? "update" : "create";
+---
+
+<form class="bill-form" data-ajax="/api/admin/packages">
+  <input type="hidden" name="mode" value={mode} />
+  <div class="bill-two">
+    <label>
+      Kode paket
+      <input
+        type="text"
+        name="id"
+        value={pkg?.id ?? ""}
+        required
+        readonly={!!pkg}
+        pattern="[a-z0-9]+(-[a-z0-9]+)*"
+        title="Huruf kecil, angka, dan tanda hubung"
+      />
+    </label>
+    <label>
+      Nama
+      <input
+        type="text"
+        name="name"
+        value={pkg?.name ?? ""}
+        required
+        maxlength="60"
+      />
+    </label>
+  </div>
+  <label>
+    Tagline
+    <input
+      type="text"
+      name="tagline"
+      value={pkg?.tagline ?? ""}
+      maxlength="160"
+    />
+  </label>
+  <div class="bill-two">
+    <label>
+      Harga (Rp)
+      <input
+        type="number"
+        name="price"
+        min="0"
+        step="1000"
+        value={pkg?.price ?? ""}
+        required
+      />
+    </label>
+    <label>
+      Harga coret (Rp, opsional)
+      <input
+        type="number"
+        name="originalPrice"
+        min="0"
+        step="1000"
+        value={pkg?.originalPrice ?? ""}
+      />
+    </label>
+    <label>
+      Masa aktif (hari)
+      <input
+        type="number"
+        name="durationDays"
+        min="1"
+        max="3650"
+        value={pkg?.durationDays ?? 365}
+        required
+      />
+    </label>
+    <label>
+      Urutan tampil
+      <input
+        type="number"
+        name="sortOrder"
+        min="0"
+        max="1000"
+        value={pkg?.sortOrder ?? 100}
+      />
+    </label>
+  </div>
+  <label>
+    Keunggulan (satu per baris)
+    <textarea
+      name="features"
+      required
+    >{(pkg?.features ?? []).join("\n")}</textarea>
+  </label>
+  <div class="bill-two">
+    <label>
+      Maks. undangan
+      <input
+        type="number"
+        name="maxInvitations"
+        min="1"
+        value={pkg?.limits.maxInvitations ?? 1}
+        required
+      />
+    </label>
+    <label>
+      Maks. tamu per undangan
+      <input
+        type="number"
+        name="maxGuests"
+        min="1"
+        value={pkg?.limits.maxGuests ?? 150}
+        required
+      />
+    </label>
+    <label>
+      Ruang media (MB)
+      <input
+        type="number"
+        name="maxMediaMB"
+        min="1"
+        value={pkg?.limits.maxMediaMB ?? 100}
+        required
+      />
+    </label>
+  </div>
+  <fieldset style="border:0;padding:0;margin:14px 0 0">
+    <legend class="bill-muted">Fitur yang termasuk</legend>
+    <div class="bill-checks">
+      {flags.map(([key, label]) => (
+        <label>
+          <input
+            type="checkbox"
+            name={key}
+            checked={pkg?.flags[key] ?? false}
+          />
+          {label}
+        </label>
+      ))}
+    </div>
+  </fieldset>
+  <div class="bill-checks" style="margin-top:14px">
+    <label>
+      <input type="checkbox" name="active" checked={pkg?.active ?? true} />
+      Dijual (tampil di halaman harga)
+    </label>
+    <label>
+      <input
+        type="checkbox"
+        name="highlighted"
+        checked={pkg?.highlighted ?? false}
+      />
+      Disorot "Paling dipilih"
+    </label>
+  </div>
+  <div class="bill-actions">
+    <button class="admin-button" type="submit">
+      {pkg ? "Simpan perubahan" : "Tambah paket"}
+    </button>
+  </div>
+</form>
+{pkg && (
+  <form
+    data-ajax={`/api/admin/packages/${pkg.id}/delete`}
+    data-confirm={`Hapus paket ${pkg.name}? Pesanan lama tetap aman, tetapi paket tidak bisa dipilih lagi.`}
+    style="margin-top:10px"
+  >
+    <button class="admin-button danger" type="submit">
+      Hapus paket
+    </button>
+  </form>
+)}

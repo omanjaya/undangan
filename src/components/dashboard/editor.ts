@@ -32,7 +32,16 @@ const toast = document.querySelector<HTMLElement>("#toast")!;
 const state = document.querySelector<HTMLElement>("#save-state")!;
 let timer: ReturnType<typeof setTimeout>;
 function notify(message: string, error = false) {
-  toast.textContent = message;
+  // Petunjuk "/dashboard/paket" dari server menjadi tautan yang bisa diklik.
+  const [before, ...rest] = message.split("/dashboard/paket");
+  toast.replaceChildren(before);
+  if (rest.length) {
+    const link = document.createElement("a");
+    link.href = "/dashboard/paket";
+    link.textContent = "halaman Paket";
+    link.style.cssText = "color:inherit;text-decoration:underline";
+    toast.append(link, rest.join("/dashboard/paket"));
+  }
   toast.hidden = false;
   toast.classList.toggle("error", error);
   clearTimeout(timer);

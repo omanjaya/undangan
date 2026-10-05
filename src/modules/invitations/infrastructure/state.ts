@@ -31,6 +31,12 @@ export type MediaAsset = {
   createdAt: string;
   width?: number;
   height?: number;
+  /**
+   * Aset khusus (mis. bukti transfer) yang tidak muncul di pustaka media,
+   * tidak dipakai undangan, tidak menghabiskan kuota, dan hanya bisa dibaca
+   * pemilik ruang kerja dan admin.
+   */
+  purpose?: "payment-proof";
 };
 /**
  * Isi satu ruang kerja (workspace). Akun, sesi, dan indeks lintas ruang kerja

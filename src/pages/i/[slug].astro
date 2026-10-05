@@ -1,21 +1,26 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EditorialBotanical from "../../components/invitation/EditorialBotanical.astro";
-import { getInvitation } from "../../server/services";
+import { getInvitationAccess } from "../../server/services";
 import { getGuestForPage } from "../../server/guests";
 import { qrSvg } from "../../server/qr";
 import { getActor } from "../../server/auth";
 export const prerender = false;
 const preview = Astro.url.searchParams.get("preview") === "1";
-const invitation = await getInvitation(Astro.params.slug ?? "");
+const access = await getInvitationAccess(Astro.params.slug ?? "");
+const invitation = access.invitation;
 let permitted = true;
 if (preview) {
   const actor = await getActor(Astro.request);
   permitted =
     !!actor && !!invitation && actor.workspaceId === invitation.workspaceId;
 }
+// Paket pemilik berakhir lebih dari masa tenggang: tamu melihat halaman
+// "tidak aktif", sedangkan pemilik tetap dapat memratinjau drafnya.
+const inactive =
+  !preview && access.inactive && invitation?.status === "published";
 const content =
-  invitation && permitted
+  invitation && permitted && !inactive
     ? preview
       ? invitation.draft
       : invitation.status === "published"
@@ -42,7 +47,8 @@ const guestQr =
         `${checkinOrigin}/dashboard/checkin?undangan=${encodeURIComponent(invitation!.slug)}&kode=${guest.code}`,
       )
     : "";
-if (!content) Astro.response.status = 404;
+if (inactive) Astro.response.status = 410;
+else if (!content) Astro.response.status = 404;
 Astro.response.headers.set("Cache-Control", "private, no-store");
 Astro.response.headers.set("Referrer-Policy", "no-referrer");
 ---
@@ -51,7 +57,9 @@ Astro.response.headers.set("Referrer-Policy", "no-referrer");
   title={
     content
       ? `${content.groom} & ${content.bride} — Undangan Pernikahan`
-      : "Undangan tidak ditemukan"
+      : inactive
+        ? "Undangan tidak aktif"
+        : "Undangan tidak ditemukan"
   }
   description={content?.opening ?? "Undangan belum tersedia."}
   shareImage={
@@ -69,6 +77,16 @@ Astro.response.headers.set("Referrer-Policy", "no-referrer");
       guest={guest}
       guestQr={guestQr}
     />
+  ) : inactive ? (
+    <main style="min-height:80vh;display:grid;place-content:center;text-align:center;padding:32px">
+      <p>TEMU</p>
+      <h1>Undangan ini sudah tidak aktif.</h1>
+      <p>
+        Masa tayang undangan telah berakhir. Silakan hubungi pasangan pengundang
+        untuk informasi acara.
+      </p>
+      <a href="/">Kembali ke beranda</a>
+    </main>
   ) : (
     <main style="min-height:80vh;display:grid;place-content:center;text-align:center;padding:32px">
       <p>TEMU</p>
