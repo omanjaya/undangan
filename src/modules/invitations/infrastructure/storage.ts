@@ -28,6 +28,29 @@ export type BootstrapTx = {
   readLegacy(): Promise<Json | null>;
 };
 
+/**
+ * Skema minimum, idempoten (sama dengan db/migrations/0001 dan 0003). Dijalankan
+ * saat bootstrap agar instalasi yang lupa `npm run db:migrate` — misalnya
+ * Compose development dengan volume database lama — tetap bisa menyala alih-
+ * alih gagal 503 karena tabel baru belum ada.
+ */
+const SCHEMA = `
+CREATE TABLE IF NOT EXISTS app_state (
+  id text PRIMARY KEY CHECK (id = 'primary'),
+  payload jsonb NOT NULL CHECK (jsonb_typeof(payload) = 'object'),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS app_global (
+  id text PRIMARY KEY CHECK (id = 'primary'),
+  payload jsonb NOT NULL CHECK (jsonb_typeof(payload) = 'object'),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS workspace_state (
+  workspace_id text PRIMARY KEY,
+  payload jsonb NOT NULL CHECK (jsonb_typeof(payload) = 'object'),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);`;
+
 const WORKSPACE_ID = /^[A-Za-z0-9_-]{1,80}$/;
 const BOOTSTRAP_LOCK = 7311001;
 
@@ -200,6 +223,7 @@ export async function bootstrapRaw(
   if (db) {
     await db.begin(async (tx) => {
       await tx`SELECT pg_advisory_xact_lock(${BOOTSTRAP_LOCK})`;
+      await tx.unsafe(SCHEMA);
       const rows =
         await tx`SELECT payload FROM app_global WHERE id = 'primary'`;
       const next = await run(rows[0]?.payload ?? null, {
