@@ -2,7 +2,7 @@
 
 Website undangan pernikahan dan Pawiwahan Bali dengan Astro dan TypeScript. Temu menyediakan halaman tamu responsif, tiga tema dengan ornamen khusus, serta dashboard untuk mengelola konten, media, kehadiran, dan ucapan.
 
-Implementasi saat ini ditujukan untuk **satu pemilik dan satu instance aplikasi**. Satu instance dapat menampung beberapa undangan sekaligus, misalnya upacara dan tiap sesi resepsi, yang berbagi satu pustaka media dan satu anggaran. Rancangan platform multi-workspace di [PLANNING.md](PLANNING.md) merupakan pengembangan lanjutan, bukan fitur yang sudah tersedia.
+Temu adalah platform **multi-pelanggan**: pelanggan mendaftar sendiri, memperoleh ruang kerja (workspace) sendiri, dan menyusun undangan di sana, sedangkan **admin** (penjual) mengelola semuanya. Satu ruang kerja dapat menampung beberapa undangan, misalnya upacara dan tiap sesi resepsi, yang berbagi satu pustaka media, daftar tamu, dan anggaran. Data antar-ruang-kerja terisolasi penuh. Pembayaran transfer manual dan panel admin dibangun menyusul di atas fondasi ini; lihat [Multi-akun](#multi-akun-dan-paket).
 
 ## Daftar isi
 
@@ -14,6 +14,7 @@ Implementasi saat ini ditujukan untuk **satu pemilik dan satu instance aplikasi*
 - [Mengelola undangan](#mengelola-undangan)
 - [Tema dan aset desain](#tema-dan-aset-desain)
 - [Arsitektur dan penyimpanan](#arsitektur-dan-penyimpanan)
+- [Multi-akun dan paket](#multi-akun-dan-paket)
 - [Pemeriksaan kode](#pemeriksaan-kode)
 - [Deployment](#deployment)
 - [Keamanan dan batas implementasi](#keamanan-dan-batas-implementasi)
@@ -68,9 +69,9 @@ npm ci
 npm run dev -- --host 0.0.0.0
 ```
 
-Buka [http://localhost:4321](http://localhost:4321). Development dapat berjalan tanpa PostgreSQL: `DATABASE_URL` pada contoh environment sengaja dikomentari dan data disimpan di `.data/state.json`.
+Buka [http://localhost:4321](http://localhost:4321). Development dapat berjalan tanpa PostgreSQL: `DATABASE_URL` pada contoh environment sengaja dikomentari dan data disimpan di `.data/global.json` serta `.data/workspaces/<id>.json`. Jika `.data/state.json` lama (single-owner) ada, isinya dipindahkan otomatis pada start pertama dan berkas lamanya dibiarkan sebagai cadangan.
 
-Kredensial **khusus development**:
+Kredensial **khusus development** (admin yang dibuat otomatis pada penyimpanan file; pelanggan baru mendaftar lewat `/daftar`):
 
 | Kolom    | Nilai                  |
 | -------- | ---------------------- |
@@ -94,7 +95,9 @@ Migrasi dan seed mempertahankan data yang sudah ada. Seed membuat undangan conto
 | URL                        | Kegunaan                               |
 | -------------------------- | -------------------------------------- |
 | `/`                        | Landing page dan koleksi desain        |
-| `/login`                   | Login pemilik                          |
+| `/login`                   | Masuk                                  |
+| `/daftar`                  | Pendaftaran pelanggan baru             |
+| `/admin`                   | Panel admin (hanya admin; kerangka)    |
 | `/dashboard`               | Pengelolaan undangan                   |
 | `/themes/jepun-ivory`      | Contoh tema Jepun Ivory                |
 | `/themes/puri-emerald`     | Contoh tema Puri Emerald               |
@@ -155,17 +158,17 @@ Gunakan [.env.example](.env.example) untuk development dan [.env.production.exam
 
 | Variabel            | Kegunaan                                                                                               |
 | ------------------- | ------------------------------------------------------------------------------------------------------ |
-| `OWNER_EMAIL`       | Email login pemilik                                                                                    |
-| `OWNER_PASSWORD`    | Password pemilik; production minimal 16 karakter dan tidak boleh memakai nilai demo                    |
+| `OWNER_EMAIL`       | Email admin pertama; hanya dipakai membuat admin saat belum ada pengguna (bootstrap/migrasi)           |
+| `OWNER_PASSWORD`    | Password admin pertama; production minimal 16 karakter dan bukan nilai demo. Tidak berpengaruh setelah admin ada; ganti lewat akun |
 | `DATABASE_URL`      | Koneksi PostgreSQL; wajib pada production, disediakan otomatis oleh Compose                            |
 | `POSTGRES_PASSWORD` | Password PostgreSQL pada Compose; gunakan nilai aman untuk URI, misalnya hex acak                      |
 | `APP_URL`           | Origin HTTPS publik untuk validasi origin dan URL metadata; tidak perlu diisi saat pengujian lokal/LAN |
 | `APP_DOMAIN`        | Domain untuk Caddy pada konfigurasi HTTPS                                                              |
 | `WEB_PORT`          | Port host aplikasi; default `4321`                                                                     |
 | `WEB_BIND_ADDRESS`  | Bind address development; default `0.0.0.0`; Compose production selalu localhost                       |
-| `UPLOAD_STORAGE_MB` | Kuota total upload; default `1024` MB, contoh production memakai `2048` MB                             |
+| `UPLOAD_STORAGE_MB` | Batas atas upload **per ruang kerja**; default `1024` MB. Paket dapat membatasi lebih kecil (uji coba 200 MB) |
 | `UPLOAD_DIR`        | Direktori upload runtime; default `.data/uploads`, Compose memakai `/app/.data/uploads`                |
-| `DATA_DIR`          | Direktori state file development; default `.data`                                                      |
+| `DATA_DIR`          | Direktori state file development (`global.json`, `workspaces/`); default `.data`                       |
 | `TELEGRAM_BOT_TOKEN` | Opsional: token bot Telegram untuk notifikasi RSVP dan ucapan baru ke pemilik                         |
 | `TELEGRAM_CHAT_ID`  | Opsional: id chat Telegram penerima notifikasi; notifikasi nonaktif bila salah satu variabel kosong    |
 
@@ -283,6 +286,8 @@ src/
   modules/invitations/
     domain/                    Skema dan aturan konten
     infrastructure/            Persistence PostgreSQL / file development
+  modules/accounts/            Hash kata sandi (scrypt)
+  modules/billing/             Kontrak hak paket (entitlements)
   server/                      Use case, autentikasi, validasi request, media
   styles/                      Gaya bersama dan variasi tema
 assets/                        Aset sumber dan bahan desain
@@ -294,38 +299,29 @@ deploy/                        Konfigurasi Caddy
 
 Alur utama: **pages/komponen → services → domain dan infrastructure**. Komponen presentasi memakai komponen bersama; aturan bisnis dan validasi berada di server/domain. Draft dan snapshot publish disimpan terpisah.
 
-Runtime PostgreSQL memakai tabel **`app_state` berisi aggregate JSONB**, termasuk undangan, versi, RSVP, ucapan, dan hash sesi. Mutasi memakai penguncian baris dan transaksi. Ini belum merupakan skema relasional multi-tenant yang dirancang di planning.
+Penyimpanan dipecah menjadi dua jenis dokumen JSONB:
 
-Fallback file development menggunakan penulisan atomik ke `.data/state.json`. Jalankan satu proses saja dalam mode ini; production menolak fallback file. Detail implementasi tersedia di [db/README.md](db/README.md).
+- **Global** (`app_global`, satu baris): akun (`users`), sesi, daftar ruang kerja beserta paketnya, indeks slug (`slug → ruang kerja + undangan`, termasuk alamat lama), indeks media (`id aset → ruang kerja`), serta `orders`, `packages`, `siteSettings` yang disiapkan untuk penagihan dan panel admin.
+- **Per ruang kerja** (`workspace_state`, satu baris per pelanggan): undangan, revisi, RSVP, ucapan, tamu, anggaran, dan pustaka media milik pelanggan itu.
 
-## Pemeriksaan kode
+Mode file development memakai bentuk yang sama: `DATA_DIR/global.json` dan `DATA_DIR/workspaces/<id>.json`, ditulis atomik lewat rename dengan antrean per berkas (satu proses saja; production menolak fallback file).
 
-```sh
-npm run check
-npm test
-npm run build
-npm run format:check
-```
+**Urutan kunci.** Tiap `mutateGlobal` / `mutateWorkspace` memegang kunci baris (`SELECT ... FOR UPDATE`) hanya selama fungsinya berjalan. Kunci tidak boleh bersarang: operasi yang menyentuh kedua dokumen dijalankan sebagai langkah berurutan. Bila suatu saat terpaksa bersarang, urutannya **global dulu, baru ruang kerja**.
 
-Gunakan `npm run format` untuk merapikan kode. `npm run preview` tersedia untuk preview build lokal; production Docker menjalankan `dist/server/entry.mjs` secara langsung.
+**Slug unik global.** Slug adalah alamat publik, jadi indeks global menjadi sumber kebenaran keunikan. Membuat atau mengganti alamat: (1) pesan slug di indeks global (atomik, menolak jika dipakai), (2) tulis ruang kerja, (3) jika langkah 2 gagal, lepas pesanan. Menghapus undangan memakai urutan terbalik (ruang kerja dulu, indeks kemudian). Pesanan yatim akibat proses mati di antara langkah tidak berbahaya dan dapat diambil alih setelah 2 menit bila undangannya memang tidak ada. Halaman tamu, RSVP, ucapan, OG image, dan penyajian media menemukan ruang kerja lewat indeks ini, tanpa memindai semua ruang kerja.
 
-### Tes end-to-end (Playwright)
+**Migrasi data lama.** Pada start pertama (dan lewat `npm run db:migrate`), bila belum ada pengguna dan ada data lama (`app_state` / `state.json`), sistem membuat admin dari `OWNER_EMAIL`/`OWNER_PASSWORD`, memindahkan seluruh isi lama ke ruang kerja `workspace-demo` (id tidak berubah, sehingga `workspaceId` pada undangan dan media tetap sah), lalu membangun indeks slug dan media. Seluruhnya satu transaksi dengan advisory lock (aman dijalankan dua kali atau bersamaan), dan data lama tidak diubah sehingga menjadi cadangan. Tanpa data lama pada mode demo, admin `owner@undangan.local` dan undangan `amara-raka` dibuat otomatis.
 
-```sh
-npx playwright install chromium   # sekali saja
-npm run test:e2e
-```
+Detail implementasi tersedia di [db/README.md](db/README.md).
 
-Tes menyalakan dev server sendiri di port 4399 (ubah dengan `E2E_PORT`) dengan data terisolasi di `.data-e2e/` yang dihapus setiap kali dijalankan, jadi tidak menyentuh `.data/`. Cakupan: seluruh preview tema (desktop dan viewport 390x844), reduced motion, alur tamu (RSVP dan ucapan), alur pemilik (moderasi, keluar), dan lightbox galeri. Di CI laporan HTML diunggah sebagai artifact bila gagal.
+## Multi-akun dan paket
 
-Validasi Compose:
-
-```sh
-docker compose config --quiet
-docker compose --env-file .env.production -f compose.production.yaml -f compose.https.yaml config --quiet
-```
-
-Pemeriksaan terakhir fitur pada 3 Oktober 2026: **96 tes lulus**, Astro Check pada 82 file tanpa error/warning/hint, dan build berhasil. Riwayat verifikasi browser, Docker, serta batas pengujian ada di [VERIFICATION.md](VERIFICATION.md). Ini bukan klaim benchmark Core Web Vitals atau audit keamanan menyeluruh.
+- **Peran**: `admin` (penjual, memegang ruang kerja `workspace-demo`) dan `customer`. `requireAdmin(actor)` di `src/server/auth.ts` menjaga halaman/endpoint khusus admin; `/admin` baru berupa kerangka.
+- **Pendaftaran**: `/daftar` memanggil `POST /api/auth/register` (validasi origin, rate limit, kata sandi minimal 8 karakter). Pendaftaran membuat akun, ruang kerja berpaket uji coba, dan satu undangan awal berisi isian netral dengan alamat acak `undangan-xxxxxxxx`.
+- **Kata sandi dan sesi**: scrypt dengan salt per pengguna (`scrypt$N$r$p$salt$hash`), perbandingan `timingSafeEqual` yang selalu berjalan walau email tidak dikenal. Sesi berlaku 7 hari sejak login (tetap, tidak diperpanjang otomatis), hanya hash token yang disimpan, logout dan `setPassword` mencabut sesi. Akun yang ditangguhkan (`status: "suspended"`) tidak dapat masuk dan sesinya langsung tidak berlaku.
+- **Isolasi**: semua layanan pemilik hanya membaca dan menulis ruang kerja milik `actor`; `authorize` tetap menjadi lapisan pertahanan tambahan. Halaman tamu hanya menyajikan undangan terbit; media draf hanya untuk anggota ruang kerja pemiliknya.
+- **Hak paket**: `getEntitlements(workspace)` di `src/modules/billing/entitlements.ts` menentukan `canPublish`, `maxInvitations`, `maxGuests` (per undangan), `maxMediaBytes`, dan flag fitur. Ruang kerja admin dan paket `active` tanpa batas; `trial` tidak boleh menerbitkan, 1 undangan, 50 tamu, 200 MB, tanpa penghapusan branding. Dipaksakan pada publish, buat undangan, tambah/impor tamu, unggah media, check-in QR, dan alamat kustom.
+- **Belum ada** (dikerjakan menyusul): pembayaran, panel admin, reset kata sandi, verifikasi email, pengaturan akun.
 
 ## Deployment
 
@@ -347,20 +343,21 @@ Ikuti [DEPLOYMENT.md](DEPLOYMENT.md) untuk konfigurasi lengkap, backup, dan rest
 
 ## Keamanan dan batas implementasi
 
-- Sesi pemilik memakai token acak; server menyimpan hash, dengan masa berlaku 24 jam. Cookie production memakai `Secure`, `HttpOnly`, dan `SameSite=Lax`.
+- Sesi memakai token acak; server menyimpan hash, dengan masa berlaku 7 hari. Cookie production memakai `Secure`, `HttpOnly`, dan `SameSite=Lax`.
 - Mutasi memerlukan origin yang sesuai. Preview draft memerlukan autentikasi; media privat tidak dapat dibaca anonim.
 - Upload diperiksa berdasarkan signature, nama file dibuat server, dan akses publik terbatas pada media yang dipakai undangan terbit.
 - Ucapan publik hanya yang sudah disetujui pemilik. URL embed divalidasi dan halaman memakai security headers.
 - Rate limit masih berada dalam memori satu instance.
 - RSVP mengenali browser melalui cookie; tidak memverifikasi identitas dan tidak menyinkronkan respons lintas perangkat.
-- Belum tersedia pendaftaran akun, multi-owner, pembayaran, custom domain per undangan, S3, undangan privat bertoken, MFA, atau pengiriman pesan otomatis.
+- Belum tersedia pembayaran, panel admin, reset kata sandi, verifikasi email, custom domain per undangan, S3, undangan privat bertoken, MFA, atau pengiriman pesan otomatis. Notifikasi Telegram masih satu tujuan global.
 
 ## Pemecahan masalah
 
 | Gejala                                           | Tindakan                                                                                                       |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | Port 4321 terpakai                               | Gunakan `WEB_PORT=4322` pada Compose, atau `npm run dev -- --port 4322` lokal                                  |
-| Database belum siap / tabel belum ada            | Periksa `docker compose ps` dan log; jalankan migrasi lalu seed                                                |
+| Database belum siap / tabel belum ada            | Periksa `docker compose ps` dan log; jalankan migrasi (`db:migrate`) lalu seed                                 |
+| "Admin pertama belum dikonfigurasi"              | Isi `OWNER_EMAIL` dan `OWNER_PASSWORD` (production: minimal 16 karakter) untuk start pertama                   |
 | Perubahan kode tidak muncul di Docker            | Pastikan menjalankan `up --watch`; file harus berada dalam jalur Watch                                         |
 | Container development bermasalah setelah restart | Command bawaan memakai `--ignore-lock` untuk lock PID Astro; periksa log aplikasi sebelum mengubah konfigurasi |
 | Upload ditolak                                   | Periksa format, batas ukuran, kuota, sesi pemilik, dan ruang disk                                              |

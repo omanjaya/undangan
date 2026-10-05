@@ -1,4 +1,4 @@
-# Deployment single-owner
+# Deployment
 
 Paket ini siap dipasang pada satu server dengan Docker Compose. Belum ada domain/server publik yang dikonfigurasi. Gunakan DNS domain menuju server, buka port 80 dan 443, dan pastikan Docker aktif. PostgreSQL dan upload memakai volume persisten. Jalankan seluruh perintah dari direktori proyek.
 
@@ -22,6 +22,17 @@ docker compose --env-file .env.production -f compose.production.yaml -f compose.
 Preflight membutuhkan Node 24 di host; runtime aplikasi berjalan di Docker. Caddy menyediakan HTTPS otomatis setelah DNS dan konektivitas benar, serta security headers untuk halaman statis dan dinamis. Port aplikasi hanya dibind ke localhost. Jangan gunakan konfigurasi development di internet.
 
 Buka `/dashboard`, masuk dengan kredensial yang diisi, lengkapi identitas keluarga, jadwal WITA, lokasi, tema, foto dan media. Preview dahulu lalu Terbitkan. Seed hanya membuat data contoh jika belum ada; tidak menimpa undangan lama. Tanggal Bali diisi manual berdasarkan informasi keluarga.
+
+## Upgrade dari versi single-owner
+
+Versi multi-pelanggan memindahkan data `app_state` ke ruang kerja `workspace-demo` milik admin yang dibuat dari `OWNER_EMAIL`/`OWNER_PASSWORD`. Sebelum upgrade:
+
+1. Jalankan `scripts/backup.sh` dan simpan hasilnya di luar server.
+2. Pastikan `OWNER_EMAIL` dan `OWNER_PASSWORD` di `.env.production` sama dengan akun yang selama ini dipakai login (password minimal 16 karakter).
+3. Jalankan `migrate` (perintah di atas). Migrasi data berjalan otomatis, idempoten, dan tidak mengubah `app_state` (menjadi cadangan). Jika dilewati, aplikasi menjalankannya saat start pertama.
+4. Setelah start, login dengan akun yang sama; undangan, tamu, anggaran, dan media tetap ada. Sesi lama tidak berlaku, jadi semua pengguna perlu login ulang.
+
+Rollback: pulihkan backup database dan jalankan image versi sebelumnya; tabel baru (`app_global`, `workspace_state`) tidak dibaca versi lama.
 
 ## Notifikasi Telegram (opsional)
 

@@ -11,6 +11,9 @@ services:
     command: ["npm", "run", "db:migrate"]
     environment:
       DATABASE_URL: postgresql://undangan:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/undangan
+      # Dipakai memigrasikan data single-owner lama menjadi ruang kerja admin.
+      OWNER_EMAIL: ${OWNER_EMAIL:-}
+      OWNER_PASSWORD: ${OWNER_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy
