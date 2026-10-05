@@ -1,0 +1,100 @@
+---
+import { formatRupiah } from "../../modules/billing/catalog";
+
+interface Props {
+  months: { key: string; label: string; total: number; orders: number }[];
+}
+const { months } = Astro.props;
+const W = 600;
+const H = 220;
+const padLeft = 8;
+const padBottom = 30;
+const padTop = 22;
+const max = Math.max(1, ...months.map((m) => m.total));
+const slot = (W - padLeft * 2) / months.length;
+const barWidth = Math.min(54, slot * 0.6);
+const plotHeight = H - padBottom - padTop;
+const bars = months.map((m, i) => {
+  const height = Math.round((m.total / max) * plotHeight);
+  return {
+    ...m,
+    x: padLeft + i * slot + (slot - barWidth) / 2,
+    y: H - padBottom - height,
+    height,
+    center: padLeft + i * slot + slot / 2,
+    current: i === months.length - 1,
+  };
+});
+const short = (n: number) =>
+  n >= 1_000_000
+    ? `${(n / 1_000_000).toFixed(1).replace(".", ",").replace(",0", "")} jt`
+    : n >= 1000
+      ? `${Math.round(n / 1000)} rb`
+      : String(n);
+---
+
+<svg
+  class="admin-chart"
+  viewBox={`0 0 ${W} ${H}`}
+  role="img"
+  aria-label="Grafik batang pendapatan enam bulan terakhir. Rincian tersedia pada tabel di bawah."
+>
+  <line class="grid" x1="0" x2={W} y1={H - padBottom} y2={H - padBottom} />
+  {bars.map((b) => (
+    <g>
+      <rect
+        class:list={["bar", { current: b.current }]}
+        x={b.x}
+        y={b.y}
+        width={barWidth}
+        height={Math.max(b.height, b.total > 0 ? 2 : 0)}
+        rx="3"
+      >
+        <title>{`${b.label}: ${formatRupiah(b.total)}`}</title>
+      </rect>
+      {b.total > 0 && (
+        <text x={b.center} y={b.y - 6} text-anchor="middle">
+          {short(b.total)}
+        </text>
+      )}
+      <text x={b.center} y={H - 10} text-anchor="middle">
+        {b.label}
+      </text>
+    </g>
+  ))}
+</svg>
+<details class="admin-details">
+  <summary>Lihat sebagai tabel</summary>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <caption class="admin-muted" style="text-align:left">
+        Pendapatan dari pesanan lunas per bulan (WITA)
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Bulan</th>
+          <th scope="col" class="num">
+            Pesanan
+          </th>
+          <th scope="col" class="num">
+            Pendapatan
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {months.map((m) => (
+          <tr>
+            <th
+              scope="row"
+              style="text-transform:none;letter-spacing:0;font-size:13px;color:inherit;font-weight:400"
+            >
+              {m.label}
+            </th>
+            <td class="num">{m.orders}</td>
+            <td class="num">{formatRupiah(m.total)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</details>

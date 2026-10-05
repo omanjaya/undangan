@@ -1,0 +1,135 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import "../../components/admin/admin-ui.css";
+import { formatDateTime, withParams } from "../../components/admin/format";
+import { auditActions, filterAudit } from "../../modules/admin/audit";
+import { readGlobal } from "../../modules/invitations/infrastructure/global-store";
+import { adminPage } from "../../server/admin-page";
+
+const guard = await adminPage(Astro);
+if (guard instanceof Response) return guard;
+const actor = guard;
+
+const params = Astro.url.searchParams;
+const text = (name: string) => (params.get(name) || "").slice(0, 100);
+const query = {
+  action: text("action"),
+  actor: text("actor"),
+  target: text("target"),
+  from: text("from"),
+  to: text("to"),
+  page: Number(params.get("page")) || 1,
+};
+const global = await readGlobal();
+const result = filterAudit(global, query);
+const actions = auditActions(global);
+const people = new Map(global.users.map((u) => [u.id, u]));
+const label = (id: string) => {
+  const u = people.get(id);
+  return u ? `${u.name} (${u.email})` : id;
+};
+---
+
+<AdminLayout title="Log aktivitas" active="audit" adminName={actor.name}>
+  <section class="admin-card">
+    <form class="admin-filters" method="get">
+      <label class="admin-field">
+        Tindakan
+        <select name="action">
+          <option value="">Semua</option>
+          {actions.map((a) => (
+            <option value={a} selected={a === query.action}>
+              {a}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label class="admin-field">
+        Pelaku (nama, email, id)
+        <input name="actor" value={query.actor} maxlength="100" />
+      </label>
+      <label class="admin-field">
+        Target (id, nama, email)
+        <input name="target" value={query.target} maxlength="100" />
+      </label>
+      <label class="admin-field">
+        Dari
+        <input type="date" name="from" value={query.from} />
+      </label>
+      <label class="admin-field">
+        Sampai
+        <input type="date" name="to" value={query.to} />
+      </label>
+      <button class="admin-button secondary" type="submit">
+        Terapkan
+      </button>
+      <a class="admin-link" href="/admin/log">
+        Atur ulang
+      </a>
+    </form>
+    <p class="admin-muted" aria-live="polite">
+      {result.matched} catatan
+    </p>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th scope="col">Waktu (WITA)</th>
+            <th scope="col">Pelaku</th>
+            <th scope="col">Tindakan</th>
+            <th scope="col">Target</th>
+            <th scope="col">Rincian</th>
+          </tr>
+        </thead>
+        <tbody>
+          {result.entries.length === 0 && (
+            <tr>
+              <td colspan="5" class="admin-muted">
+                Tidak ada catatan yang cocok.
+              </td>
+            </tr>
+          )}
+          {result.entries.map((e) => (
+            <tr>
+              <td>{formatDateTime(e.at)}</td>
+              <td>{label(e.actorUserId)}</td>
+              <td>
+                <code>{e.action}</code>
+              </td>
+              <td>
+                {e.targetType === "user" && people.has(e.targetId) ? (
+                  <a class="admin-link" href={`/admin/pelanggan/${e.targetId}`}>
+                    {label(e.targetId)}
+                  </a>
+                ) : (
+                  <>
+                    {e.targetType}: {e.targetId}
+                  </>
+                )}
+              </td>
+              <td>{e.detail || "-"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    {result.pages > 1 && (
+      <nav class="admin-pager" aria-label="Halaman">
+        {result.page > 1 && (
+          <a href={withParams(Astro.url, { page: result.page - 1 })}>
+            Sebelumnya
+          </a>
+        )}
+        <span>
+          Halaman {result.page} dari {result.pages}
+        </span>
+        {result.page < result.pages && (
+          <a href={withParams(Astro.url, { page: result.page + 1 })}>
+            Berikutnya
+          </a>
+        )}
+      </nav>
+    )}
+    <p class="admin-muted">Log menyimpan 2.000 catatan terbaru.</p>
+  </section>
+</AdminLayout>

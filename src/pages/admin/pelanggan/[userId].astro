@@ -1,0 +1,387 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import AdminActions from "../../../components/admin/AdminActions.astro";
+import {
+  PLAN_LABEL,
+  PLAN_TONE,
+  formatDate,
+  formatDateTime,
+} from "../../../components/admin/format";
+import { formatRupiah } from "../../../modules/billing/catalog";
+import { DomainError } from "../../../modules/invitations/domain/invitation";
+import { adminPage } from "../../../server/admin-page";
+import { getCustomerDetail } from "../../../server/admin";
+
+const guard = await adminPage(Astro);
+if (guard instanceof Response) return guard;
+const actor = guard;
+
+let detail: Awaited<ReturnType<typeof getCustomerDetail>>;
+try {
+  detail = await getCustomerDetail(actor, Astro.params.userId || "");
+} catch (error) {
+  if (error instanceof DomainError)
+    return new Response("Pelanggan tidak ditemukan.", {
+      status: error.status === 404 ? 404 : 403,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  throw error;
+}
+const { user, workspace, plan, invitations, orders, audit, packages } = detail;
+const notice = Astro.url.searchParams.get("notice")?.slice(0, 200);
+const api = `/api/admin/pelanggan/${user.id}`;
+const suspended = user.status === "suspended";
+const orderStatus: Record<string, string> = {
+  pending: "Menunggu pembayaran",
+  awaiting_verification: "Menunggu verifikasi",
+  paid: "Lunas",
+  rejected: "Ditolak",
+  cancelled: "Dibatalkan",
+  expired: "Kedaluwarsa",
+};
+const planDate = workspace?.plan.expiresAt?.slice(0, 10) ?? "";
+---
+
+<AdminLayout title={user.name} active="customers" adminName={actor.name}>
+  <a slot="actions" class="admin-link" href="/admin/pelanggan">
+    Semua pelanggan
+  </a>
+  {notice && (
+    <p class="admin-notice" role="status">
+      {notice}
+    </p>
+  )}
+
+  <div class="admin-grid">
+    <section class="admin-card">
+      <h2>Profil</h2>
+      <dl class="admin-dl">
+        <dt>Email</dt>
+        <dd>{user.email}</dd>
+        <dt>Telepon</dt>
+        <dd>{user.phone || "-"}</dd>
+        <dt>Terdaftar</dt>
+        <dd>{formatDateTime(user.createdAt)}</dd>
+        <dt>Terakhir masuk</dt>
+        <dd>{formatDateTime(user.lastLoginAt)}</dd>
+        <dt>Akun</dt>
+        <dd>
+          <span class:list={["admin-badge", suspended ? "bad" : "ok"]}>
+            {suspended ? "Ditangguhkan" : "Aktif"}
+          </span>
+        </dd>
+        <dt>Ruang kerja</dt>
+        <dd>{workspace?.name ?? "-"}</dd>
+        <dt>Paket</dt>
+        <dd>
+          <span class:list={["admin-badge", PLAN_TONE[plan]]}>
+            {PLAN_LABEL[plan]}
+          </span>
+          {workspace &&
+            workspace.plan.id !== "trial" &&
+            ` ${workspace.plan.id}`}
+          {workspace?.plan.expiresAt &&
+            `, sampai ${formatDate(workspace.plan.expiresAt)}`}
+        </dd>
+      </dl>
+    </section>
+
+    <section class="admin-card">
+      <h2>Tindakan</h2>
+      <div class="admin-actions">
+        {!suspended && (
+          <form data-admin-form action={`${api}/impersonate`} method="post">
+            <button class="admin-button" type="submit">
+              Masuk sebagai pelanggan
+            </button>
+            <p class="admin-error" role="alert" data-error></p>
+          </form>
+        )}
+        <form
+          data-admin-form
+          action={`${api}/status`}
+          method="post"
+          data-confirm={
+            suspended
+              ? undefined
+              : "Tangguhkan akun ini? Semua sesinya akan dicabut."
+          }
+          data-notice={
+            suspended ? "Akun diaktifkan kembali." : "Akun ditangguhkan."
+          }
+        >
+          <input
+            type="hidden"
+            name="status"
+            value={suspended ? "active" : "suspended"}
+          />
+          <button class="admin-button secondary" type="submit">
+            {suspended ? "Aktifkan kembali" : "Tangguhkan"}
+          </button>
+          <p class="admin-error" role="alert" data-error></p>
+        </form>
+        <form
+          data-admin-form
+          action={`${api}/password`}
+          method="post"
+          data-result="#reset-result"
+          data-confirm="Buat kata sandi sementara baru? Kata sandi lama dan semua sesi pelanggan akan dicabut."
+        >
+          <button class="admin-button secondary" type="submit">
+            Reset kata sandi
+          </button>
+          <p class="admin-error" role="alert" data-error></p>
+        </form>
+      </div>
+      {suspended && (
+        <p class="admin-muted">
+          Akun ditangguhkan tidak dapat masuk. Undangan yang sudah terbit tetap
+          dapat dibuka tamu.
+        </p>
+      )}
+      <div class="admin-secret" id="reset-result" hidden>
+        <strong>Kata sandi sementara, tampil sekali saja:</strong>
+        <code data-field="password" id="reset-password"></code>
+        <div class="admin-actions">
+          <button
+            class="admin-button secondary"
+            type="button"
+            data-copy="#reset-password"
+          >
+            Salin
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="admin-card" style="margin-bottom:24px">
+    <h2>Atur paket manual</h2>
+    <p class="admin-muted">
+      Untuk penjualan offline atau jasa. Isi tanggal berakhir untuk menimpa
+      durasi; mengaktifkan paket yang sama memperpanjang dari tanggal berakhir
+      lama.
+    </p>
+    <form
+      data-admin-form
+      action={`${api}/plan`}
+      method="post"
+      data-notice="Paket diperbarui."
+    >
+      <div class="admin-form-grid">
+        <label class="admin-field">
+          Tindakan
+          <select name="mode">
+            <option value="package">Aktifkan paket</option>
+            <option value="trial">Kembalikan ke uji coba</option>
+          </select>
+        </label>
+        <label class="admin-field">
+          Paket
+          <select name="packageId">
+            {packages.map((p) => (
+              <option value={p.id} selected={p.id === workspace?.plan.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label class="admin-field">
+          Durasi (hari)
+          <input
+            name="durationDays"
+            type="number"
+            min="1"
+            max="3650"
+            placeholder="Bawaan paket"
+          />
+        </label>
+        <label class="admin-field">
+          atau berakhir pada
+          <input name="expiresOn" type="date" value="" />
+        </label>
+        <label class="admin-field">
+          Catatan (audit)
+          <input name="note" maxlength="200" />
+        </label>
+        <button class="admin-button" type="submit" disabled={!workspace}>
+          Terapkan
+        </button>
+      </div>
+      <p class="admin-error" role="alert" data-error></p>
+    </form>
+    {planDate && <p class="admin-muted">Paket saat ini berakhir {planDate}.</p>}
+  </section>
+
+  <section class="admin-card" style="margin-bottom:24px">
+    <h2>Undangan</h2>
+    {invitations.length === 0 ? (
+      <p class="admin-muted">Belum ada undangan.</p>
+    ) : (
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th scope="col">Undangan</th>
+              <th scope="col">Status</th>
+              <th scope="col">Diubah</th>
+              <th scope="col">Tautan</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invitations.map((i) => (
+              <tr>
+                <td>
+                  {i.title}
+                  <div class="admin-muted">/i/{i.slug}</div>
+                </td>
+                <td>
+                  <span
+                    class:list={[
+                      "admin-badge",
+                      i.status === "published" && "ok",
+                    ]}
+                  >
+                    {i.status === "published" ? "Terbit" : "Draf"}
+                  </span>
+                </td>
+                <td>{formatDate(i.updatedAt)}</td>
+                <td>
+                  {i.status === "published" && (
+                    <a
+                      class="admin-link"
+                      href={`/i/${i.slug}`}
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      Halaman tamu
+                    </a>
+                  )}{" "}
+                  <a
+                    class="admin-link"
+                    href={`/i/${i.slug}?preview=1`}
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Pratinjau
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+    <p class="admin-muted">
+      Pratinjau draf memakai sesi pemilik; gunakan "Masuk sebagai pelanggan"
+      untuk melihat atau mengubah draf klien.
+    </p>
+  </section>
+
+  <section class="admin-card" style="margin-bottom:24px">
+    <h2>Riwayat pesanan</h2>
+    {orders.length === 0 ? (
+      <p class="admin-muted">Belum ada pesanan.</p>
+    ) : (
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th scope="col">Nomor</th>
+              <th scope="col">Paket</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="num">
+                Total
+              </th>
+              <th scope="col">Tanggal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((o) => (
+              <tr>
+                <td>{o.number}</td>
+                <td>{o.packageSnapshot?.name ?? o.packageId}</td>
+                <td>
+                  <span
+                    class:list={["admin-badge", o.status === "paid" && "ok"]}
+                  >
+                    {orderStatus[o.status] ?? o.status}
+                  </span>
+                </td>
+                <td class="num">{formatRupiah(o.total)}</td>
+                <td>{formatDate(o.createdAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </section>
+
+  <section class="admin-card" style="margin-bottom:24px">
+    <h2>Jejak aktivitas</h2>
+    {audit.length === 0 ? (
+      <p class="admin-muted">Belum ada catatan untuk pelanggan ini.</p>
+    ) : (
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th scope="col">Waktu</th>
+              <th scope="col">Tindakan</th>
+              <th scope="col">Rincian</th>
+            </tr>
+          </thead>
+          <tbody>
+            {audit.map((e) => (
+              <tr>
+                <td>{formatDateTime(e.at)}</td>
+                <td>
+                  <code>{e.action}</code>
+                </td>
+                <td>{e.detail || "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+    <p class="admin-muted">
+      <a class="admin-link" href={`/admin/log?target=${user.id}`}>
+        Lihat di log aktivitas
+      </a>
+    </p>
+  </section>
+
+  <section class="admin-card admin-danger-zone">
+    <h2>Hapus pelanggan</h2>
+    <p class="admin-muted">
+      Menghapus akun, ruang kerja, semua undangan, tamu, anggaran, dan berkas
+      media secara permanen. Pesanan tetap disimpan untuk pembukuan. Tidak dapat
+      dibatalkan.
+    </p>
+    <form
+      data-admin-form
+      action={`${api}/delete`}
+      method="post"
+      data-confirm="Hapus pelanggan ini beserta seluruh datanya secara permanen?"
+    >
+      <div class="admin-form-grid">
+        <label class="admin-field">
+          Ketik email pelanggan untuk konfirmasi
+          <input
+            name="confirm"
+            required
+            autocomplete="off"
+            placeholder={user.email}
+          />
+        </label>
+        <button class="admin-button danger" type="submit">
+          Hapus permanen
+        </button>
+      </div>
+      <p class="admin-error" role="alert" data-error></p>
+    </form>
+  </section>
+  <AdminActions />
+</AdminLayout>

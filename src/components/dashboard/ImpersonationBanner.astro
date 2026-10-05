@@ -1,0 +1,97 @@
+---
+/**
+ * Pita tetap di atas layar selama admin menyamar sebagai pelanggan.
+ * Tidak merender apa pun untuk sesi biasa.
+ */
+interface Props {
+  actor: { name: string; impersonatorUserId?: string };
+}
+const { actor } = Astro.props;
+---
+
+{actor.impersonatorUserId && (
+  <div class="impersonation-banner" role="status">
+    <span>
+      Anda masuk sebagai <strong>{actor.name}</strong>
+    </span>
+    <button type="button" data-end-impersonation>
+      Kembali ke admin
+    </button>
+    <span class="impersonation-error" role="alert" data-impersonation-error />
+  </div>
+)}
+
+<style is:global>
+  /* Pita penuh di atas layar; isi halaman digeser sebesar tingginya. */
+  :root:has(.impersonation-banner) {
+    --impersonation-height: 48px;
+  }
+  body:has(.impersonation-banner) {
+    padding-top: var(--impersonation-height);
+  }
+  body:has(.impersonation-banner) .sidebar {
+    top: var(--impersonation-height);
+  }
+  .impersonation-banner {
+    position: fixed;
+    z-index: 1000;
+    inset: 0 0 auto 0;
+    min-height: var(--impersonation-height);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 14px;
+    padding: 6px 16px;
+    background: #7a2e1d;
+    color: #fff;
+    font-size: 13px;
+  }
+  .impersonation-banner button {
+    font: inherit;
+    font-weight: 600;
+    min-height: 32px;
+    padding: 4px 14px;
+    border-radius: 999px;
+    border: 1px solid #fff;
+    background: #fff;
+    color: #7a2e1d;
+    cursor: pointer;
+  }
+  .impersonation-error:empty {
+    display: none;
+  }
+  @media (max-width: 560px) {
+    :root:has(.impersonation-banner) {
+      --impersonation-height: 84px;
+    }
+  }
+</style>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>(
+    "[data-end-impersonation]",
+  );
+  button?.addEventListener("click", async () => {
+    const error = document.querySelector<HTMLElement>(
+      "[data-impersonation-error]",
+    );
+    button.disabled = true;
+    try {
+      const response = await fetch("/api/impersonation/end", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && String(data.redirect).startsWith("/")) {
+        location.href = data.redirect;
+        return;
+      }
+      if (error) error.textContent = data.error || "Gagal kembali ke admin.";
+    } catch {
+      if (error) error.textContent = "Jaringan bermasalah.";
+    }
+    button.disabled = false;
+  });
+</script>

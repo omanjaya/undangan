@@ -16,6 +16,7 @@ Temu adalah platform **multi-pelanggan**: pelanggan mendaftar sendiri, memperole
 - [Arsitektur dan penyimpanan](#arsitektur-dan-penyimpanan)
 - [Multi-akun dan paket](#multi-akun-dan-paket)
 - [Pemeriksaan kode](#pemeriksaan-kode)
+- [Panel admin](#panel-admin)
 - [Deployment](#deployment)
 - [Keamanan dan batas implementasi](#keamanan-dan-batas-implementasi)
 - [Pemecahan masalah](#pemecahan-masalah)
@@ -97,7 +98,7 @@ Migrasi dan seed mempertahankan data yang sudah ada. Seed membuat undangan conto
 | `/`                        | Landing page dan koleksi desain        |
 | `/login`                   | Masuk                                  |
 | `/daftar`                  | Pendaftaran pelanggan baru             |
-| `/admin`                   | Panel admin (hanya admin; kerangka)    |
+| `/admin`                   | Panel admin (hanya admin)              |
 | `/dashboard`               | Pengelolaan undangan                   |
 | `/themes/jepun-ivory`      | Contoh tema Jepun Ivory                |
 | `/themes/puri-emerald`     | Contoh tema Puri Emerald               |
@@ -322,12 +323,28 @@ Detail implementasi tersedia di [db/README.md](db/README.md).
 
 ## Multi-akun dan paket
 
-- **Peran**: `admin` (penjual, memegang ruang kerja `workspace-demo`) dan `customer`. `requireAdmin(actor)` di `src/server/auth.ts` menjaga halaman/endpoint khusus admin; `/admin` baru berupa kerangka.
+- **Peran**: `admin` (penjual, memegang ruang kerja `workspace-demo`) dan `customer`. `requireAdmin(actor)` di `src/server/auth.ts` menjaga halaman/endpoint khusus admin; panel admin dijelaskan di [Panel admin](#panel-admin).
 - **Pendaftaran**: `/daftar` memanggil `POST /api/auth/register` (validasi origin, rate limit, kata sandi minimal 8 karakter). Pendaftaran membuat akun, ruang kerja berpaket uji coba, dan satu undangan awal berisi isian netral dengan alamat acak `undangan-xxxxxxxx`.
 - **Kata sandi dan sesi**: scrypt dengan salt per pengguna (`scrypt$N$r$p$salt$hash`), perbandingan `timingSafeEqual` yang selalu berjalan walau email tidak dikenal. Sesi berlaku 7 hari sejak login (tetap, tidak diperpanjang otomatis), hanya hash token yang disimpan, logout dan `setPassword` mencabut sesi. Akun yang ditangguhkan (`status: "suspended"`) tidak dapat masuk dan sesinya langsung tidak berlaku.
 - **Isolasi**: semua layanan pemilik hanya membaca dan menulis ruang kerja milik `actor`; `authorize` tetap menjadi lapisan pertahanan tambahan. Halaman tamu hanya menyajikan undangan terbit; media draf hanya untuk anggota ruang kerja pemiliknya.
 - **Hak paket**: `getEntitlements(workspace)` di `src/modules/billing/entitlements.ts` menentukan `canPublish`, `maxInvitations`, `maxGuests` (per undangan), `maxMediaBytes`, dan flag fitur. Ruang kerja admin dan paket `active` tanpa batas; `trial` tidak boleh menerbitkan, 1 undangan, 50 tamu, 200 MB, tanpa penghapusan branding. Dipaksakan pada publish, buat undangan, tambah/impor tamu, unggah media, check-in QR, dan alamat kustom.
-- **Belum ada** (dikerjakan menyusul): pembayaran, panel admin, reset kata sandi, verifikasi email, pengaturan akun.
+- **Belum ada** (dikerjakan menyusul): pembayaran, reset kata sandi, verifikasi email, pengaturan akun.
+
+## Panel admin
+
+Hanya untuk peran `admin`; pelanggan mendapat 403 di semua halaman dan API admin. Admin melihat tautan "Panel admin" di sidebar dashboard-nya.
+
+- **Ringkasan** (`/admin`): jumlah pelanggan (baru 7/30 hari), paket berbayar aktif, uji coba, akan berakhir 14 hari, undangan terbit, pendapatan bulan ini dan total (pesanan `paid`), pesanan menunggu verifikasi, grafik batang 6 bulan (SVG, dengan tabel pengganti), pendaftar dan pesanan lunas terbaru. Rumusnya murni di `src/modules/admin/metrics.ts` (bulan menurut WITA). Hitungan undangan per ruang kerja butuh membaca dokumen tiap ruang kerja, jadi di-cache 60 detik di memori dan dibatasi 200 pembacaan baru per permintaan; sisanya dilengkapi bertahap dan ditandai "perkiraan".
+- **Pelanggan** (`/admin/pelanggan`): pencarian nama/email/telepon, filter status, halaman 20 baris. Detail (`/admin/pelanggan/{id}`): profil, paket, undangan (tautan halaman tamu dan pratinjau), pesanan, jejak audit, serta aksi:
+  - **Tangguhkan/Aktifkan**: akun ditangguhkan tidak bisa masuk dan sesinya dicabut. Undangan yang sudah terbit **tetap tampil bagi tamu** (acara tetap berjalan).
+  - **Masuk sebagai pelanggan**: membuat sesi berlabel `impersonatorUserId`; sesi admin lama dicabut. Pita merah di atas dashboard memuat "Anda masuk sebagai X" dan tombol "Kembali ke admin" yang mencabut sesi pelanggan dan membuat sesi admin baru. Admin lain dan akun ditangguhkan tidak dapat disamari; awal dan akhir dicatat di audit. Halaman `/admin` tidak dapat dibuka selama menyamar (aktornya pelanggan).
+  - **Atur paket manual**: pilih paket + durasi, atau tanggal berakhir, atau kembali ke uji coba (paket dari `global.packages`, cadangan `DEFAULT_PACKAGES`). Tidak membuat pesanan.
+  - **Reset kata sandi**: kata sandi sementara acak ditampilkan sekali; semua sesi dicabut.
+  - **Hapus pelanggan**: harus mengetik email; menghapus akun, sesi, ruang kerja, indeks slug dan media, dokumen ruang kerja, dan berkas media. Pesanan dipertahankan dengan catatan `deletedCustomer`. Admin tidak dapat dihapus.
+- **Akun klien (mode jasa)**: formulir di `/admin/pelanggan` memakai `register` yang sama dengan pendaftaran mandiri, kata sandi sementara acak, paket opsional, dan templat pesan WhatsApp beserta tautan `wa.me`.
+- **Log aktivitas** (`/admin/log`): filter tindakan, pelaku, target, rentang tanggal (WITA), halaman 25 baris; menyimpan 2.000 catatan terbaru.
+
+Setiap mutasi admin lewat `requireAdmin` (di layanan `src/server/admin.ts`), `guardMutation`, dan `recordAudit`.
 
 ## Deployment
 

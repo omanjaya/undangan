@@ -1,0 +1,238 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import AdminActions from "../../../components/admin/AdminActions.astro";
+import {
+  PLAN_LABEL,
+  PLAN_TONE,
+  formatDate,
+  withParams,
+} from "../../../components/admin/format";
+import {
+  CUSTOMER_FILTERS,
+  queryCustomers,
+} from "../../../modules/admin/customers";
+import { adminPage } from "../../../server/admin-page";
+import { assignablePackages, getCustomerList } from "../../../server/admin";
+
+const guard = await adminPage(Astro);
+if (guard instanceof Response) return guard;
+const actor = guard;
+
+const params = Astro.url.searchParams;
+const q = (params.get("q") || "").slice(0, 100);
+const filter = params.get("filter") || "";
+const { rows, partial, global } = await getCustomerList(actor);
+const result = queryCustomers(rows, {
+  q,
+  filter,
+  page: Number(params.get("page")) || 1,
+});
+const packages = assignablePackages(global);
+const notice = params.get("notice")?.slice(0, 200);
+const filterLabels: Record<string, string> = {
+  trial: "Uji coba",
+  active: "Paket aktif",
+  expired: "Kedaluwarsa",
+  suspended: "Ditangguhkan",
+};
+---
+
+<AdminLayout title="Pelanggan" active="customers" adminName={actor.name}>
+  {notice && (
+    <p class="admin-notice" role="status">
+      {notice}
+    </p>
+  )}
+
+  <section class="admin-card" style="margin-bottom:24px">
+    <h2>Buat akun untuk klien</h2>
+    <p class="admin-muted">
+      Untuk penjualan jasa: akun dibuat dengan kata sandi sementara acak yang
+      hanya tampil sekali. Setelah itu Anda dapat masuk sebagai klien untuk
+      menyusun undangannya.
+    </p>
+    <form
+      data-admin-form
+      data-result="#client-result"
+      action="/api/admin/pelanggan"
+      method="post"
+    >
+      <div class="admin-form-grid">
+        <label class="admin-field">
+          Nama klien
+          <input name="name" required minlength="2" maxlength="100" />
+        </label>
+        <label class="admin-field">
+          Email
+          <input name="email" type="email" required maxlength="254" />
+        </label>
+        <label class="admin-field">
+          Telepon / WhatsApp
+          <input name="phone" type="tel" maxlength="30" inputmode="tel" />
+        </label>
+        <label class="admin-field">
+          Aktifkan paket (opsional)
+          <select name="packageId">
+            <option value="">Uji coba saja</option>
+            {packages.map((p) => (
+              <option value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </label>
+        <button class="admin-button" type="submit">
+          Buat akun
+        </button>
+      </div>
+      <p class="admin-error" role="alert" data-error></p>
+    </form>
+    <div class="admin-secret" id="client-result" hidden>
+      <strong>
+        Akun dibuat. Catat sekarang, kata sandi tidak ditampilkan lagi.
+      </strong>
+      <div>
+        Email: <code data-field="email"></code>
+      </div>
+      <div>
+        Kata sandi sementara:{" "}
+        <code data-field="password" id="client-password"></code>
+      </div>
+      <label class="admin-field">
+        Pesan WhatsApp
+        <textarea data-field="message" id="client-message" readonly></textarea>
+      </label>
+      <div class="admin-actions">
+        <button
+          class="admin-button secondary"
+          type="button"
+          data-copy="#client-message"
+        >
+          Salin pesan
+        </button>
+        <a
+          class="admin-button secondary"
+          data-field="whatsappUrl"
+          href="#"
+          target="_blank"
+          rel="noopener"
+        >
+          Buka WhatsApp
+        </a>
+        <a class="admin-button" data-field="detailUrl" href="/admin/pelanggan">
+          Buka detail klien
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="admin-card">
+    <form class="admin-filters" method="get">
+      <label class="admin-field" style="flex:1 1 220px">
+        Cari nama, email, atau telepon
+        <input type="search" name="q" value={q} maxlength="100" />
+      </label>
+      <label class="admin-field">
+        Status
+        <select name="filter">
+          <option value="">Semua</option>
+          {CUSTOMER_FILTERS.map((f) => (
+            <option value={f} selected={f === filter}>
+              {filterLabels[f]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button class="admin-button secondary" type="submit">
+        Terapkan
+      </button>
+    </form>
+    {partial && (
+      <p class="admin-muted">
+        Jumlah undangan baru dihitung sebagian (cache bertahap); muat ulang
+        beberapa saat lagi untuk angka lengkap.
+      </p>
+    )}
+    <p class="admin-muted" aria-live="polite">
+      {result.matched} pelanggan
+    </p>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th scope="col">Pelanggan</th>
+            <th scope="col">Telepon</th>
+            <th scope="col">Terdaftar</th>
+            <th scope="col">Terakhir masuk</th>
+            <th scope="col">Paket</th>
+            <th scope="col" class="num">
+              Undangan
+            </th>
+            <th scope="col">Akun</th>
+          </tr>
+        </thead>
+        <tbody>
+          {result.rows.length === 0 && (
+            <tr>
+              <td colspan="7" class="admin-muted">
+                Tidak ada pelanggan yang cocok.
+              </td>
+            </tr>
+          )}
+          {result.rows.map((r) => (
+            <tr>
+              <td>
+                <a class="admin-link" href={`/admin/pelanggan/${r.user.id}`}>
+                  {r.user.name}
+                </a>
+                <div class="admin-muted">{r.user.email}</div>
+              </td>
+              <td>{r.user.phone || "-"}</td>
+              <td>{formatDate(r.user.createdAt)}</td>
+              <td>{formatDate(r.user.lastLoginAt)}</td>
+              <td>
+                <span class:list={["admin-badge", PLAN_TONE[r.plan]]}>
+                  {PLAN_LABEL[r.plan]}
+                </span>
+                <div class="admin-muted">
+                  {r.planId !== "trial" && `${r.planId}`}
+                  {r.expiresAt && ` sampai ${formatDate(r.expiresAt)}`}
+                </div>
+              </td>
+              <td class="num">
+                {r.invitations.published}/{r.invitations.total}
+              </td>
+              <td>
+                <span
+                  class:list={[
+                    "admin-badge",
+                    r.user.status === "active" ? "ok" : "bad",
+                  ]}
+                >
+                  {r.user.status === "active" ? "Aktif" : "Ditangguhkan"}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    {result.pages > 1 && (
+      <nav class="admin-pager" aria-label="Halaman">
+        {result.page > 1 && (
+          <a href={withParams(Astro.url, { page: result.page - 1 })}>
+            Sebelumnya
+          </a>
+        )}
+        <span>
+          Halaman {result.page} dari {result.pages}
+        </span>
+        {result.page < result.pages && (
+          <a href={withParams(Astro.url, { page: result.page + 1 })}>
+            Berikutnya
+          </a>
+        )}
+      </nav>
+    )}
+    <p class="admin-muted">Undangan: terbit/total.</p>
+  </section>
+  <AdminActions />
+</AdminLayout>

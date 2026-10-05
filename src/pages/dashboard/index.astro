@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import InvitationEditor from "../../components/dashboard/InvitationEditor.astro";
 import Icon from "../../components/Icon.astro";
+import ImpersonationBanner from "../../components/dashboard/ImpersonationBanner.astro";
 import { getActor } from "../../server/auth";
 import { getDashboardData } from "../../server/services";
 import { getBudget } from "../../server/budget";
@@ -37,6 +38,7 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
 ---
 
 <BaseLayout title="Ruang Undangan — Temu" noindex>
+  <ImpersonationBanner actor={actor} />
   <div class="dashboard-shell">
     <aside class="sidebar">
       <a class="dash-brand" href="/">
@@ -70,6 +72,11 @@ const eventDate = new Intl.DateTimeFormat("id-ID", {
           <Icon name="shield" size={19} /> Anggaran{" "}
           <span>{budget.summary.items}</span>
         </a>
+        {actor.role === "admin" && (
+          <a href="/admin">
+            <Icon name="grid" size={19} /> Panel admin
+          </a>
+        )}
       </nav>
       <div class="sidebar-note">
         <Icon name="spark" size={24} />

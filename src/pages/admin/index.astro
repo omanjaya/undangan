@@ -1,14 +1,146 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import RevenueChart from "../../components/admin/RevenueChart.astro";
+import "../../components/admin/admin-ui.css";
+import { formatDate } from "../../components/admin/format";
+import { formatRupiah } from "../../modules/billing/catalog";
 import { adminPage } from "../../server/admin-page";
+import { getOverview } from "../../server/admin";
 
 const guard = await adminPage(Astro);
 if (guard instanceof Response) return guard;
 const actor = guard;
+const m = await getOverview(actor);
+const kpis = [
+  {
+    label: "Pelanggan",
+    value: m.totalCustomers,
+    sub: `${m.newLast7Days} baru 7 hari, ${m.newLast30Days} baru 30 hari`,
+    href: "/admin/pelanggan",
+  },
+  {
+    label: "Paket berbayar aktif",
+    value: m.activePaid,
+    sub: `${m.expiringSoon} berakhir dalam 14 hari`,
+    href: "/admin/pelanggan?filter=active",
+  },
+  {
+    label: "Uji coba",
+    value: m.trial,
+    sub: `${m.expired} kedaluwarsa`,
+    href: "/admin/pelanggan?filter=trial",
+  },
+  {
+    label: "Undangan terbit",
+    value: m.publishedInvitations,
+    sub: m.invitationCountsPartial
+      ? `dari ${m.totalInvitations} undangan (perkiraan)`
+      : `dari ${m.totalInvitations} undangan`,
+  },
+  {
+    label: "Pendapatan bulan ini",
+    value: formatRupiah(m.revenueThisMonth),
+    sub: "Pesanan lunas",
+  },
+  {
+    label: "Pendapatan total",
+    value: formatRupiah(m.revenueAllTime),
+    sub: "Sejak awal",
+  },
+  {
+    label: "Menunggu verifikasi",
+    value: m.awaitingVerification,
+    sub: "Pesanan dengan bukti transfer",
+    href: "/admin/pesanan?status=awaiting_verification",
+    attention: m.awaitingVerification > 0,
+  },
+];
 ---
 
 <AdminLayout title="Ringkasan" active="overview" adminName={actor.name}>
-  <section class="admin-card">
-    <p>Ringkasan pendapatan, pesanan, dan pelanggan akan tampil di sini.</p>
+  <section class="admin-kpis" aria-label="Indikator utama">
+    {kpis.map((k) => {
+      const Tag = k.href ? "a" : "div";
+      return (
+        <Tag
+          class:list={["admin-card", "admin-kpi", { attention: k.attention }]}
+          href={k.href}
+        >
+          <span class="label">{k.label}</span>
+          <span class="value">{k.value}</span>
+          <span class="sub">{k.sub}</span>
+        </Tag>
+      );
+    })}
   </section>
+
+  <section class="admin-card" style="margin-bottom:24px">
+    <h2>Pendapatan 6 bulan terakhir</h2>
+    <RevenueChart months={m.monthlyRevenue} />
+  </section>
+
+  <div class="admin-grid">
+    <section class="admin-card">
+      <h2>Pendaftar terbaru</h2>
+      {m.latestSignups.length === 0 ? (
+        <p class="admin-muted">Belum ada pelanggan.</p>
+      ) : (
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Nama</th>
+                <th scope="col">Daftar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {m.latestSignups.map((u) => (
+                <tr>
+                  <td>
+                    <a class="admin-link" href={`/admin/pelanggan/${u.id}`}>
+                      {u.name}
+                    </a>
+                    <div class="admin-muted">{u.email}</div>
+                  </td>
+                  <td>{formatDate(u.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+    <section class="admin-card">
+      <h2>Pesanan lunas terbaru</h2>
+      {m.latestPaidOrders.length === 0 ? (
+        <p class="admin-muted">Belum ada pesanan lunas.</p>
+      ) : (
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Pesanan</th>
+                <th scope="col" class="num">
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {m.latestPaidOrders.map((o) => (
+                <tr>
+                  <td>
+                    {o.number}
+                    <div class="admin-muted">
+                      {o.customerName}, {formatDate(o.paidAt || o.updatedAt)}
+                    </div>
+                  </td>
+                  <td class="num">{formatRupiah(o.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  </div>
 </AdminLayout>

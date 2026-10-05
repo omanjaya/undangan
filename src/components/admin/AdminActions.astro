@@ -1,0 +1,99 @@
+---
+/**
+ * Skrip bersama formulir aksi admin. Formulir bertanda `data-admin-form`
+ * dikirim lewat fetch (urlencoded) ke `action`-nya:
+ *   - `data-confirm`: teks konfirmasi sebelum kirim
+ *   - respons `redirect` mengarahkan halaman
+ *   - `data-result="#id"`: panel hasil (mis. kata sandi sementara) diisi dari
+ *     kunci JSON lewat `[data-field]`
+ *   - selain itu, halaman dimuat ulang dengan `?notice=` dari `data-notice`
+ */
+import "./admin-ui.css";
+---
+
+<script>
+  const field = (root: ParentNode, name: string) =>
+    root.querySelector<HTMLElement>(`[data-field="${name}"]`);
+
+  document
+    .querySelectorAll<HTMLFormElement>("form[data-admin-form]")
+    .forEach((form) => {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const confirmText = form.dataset.confirm;
+        if (confirmText && !window.confirm(confirmText)) return;
+        const error = form.querySelector<HTMLElement>("[data-error]");
+        const button = form.querySelector<HTMLButtonElement>(
+          "button[type=submit]",
+        );
+        if (error) error.textContent = "";
+        if (button) button.disabled = true;
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams(
+              new FormData(form) as unknown as Record<string, string>,
+            ),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            if (error) error.textContent = data.error || "Permintaan gagal.";
+            return;
+          }
+          if (
+            typeof data.redirect === "string" &&
+            data.redirect.startsWith("/")
+          ) {
+            location.href = data.redirect;
+            return;
+          }
+          const target = form.dataset.result
+            ? document.querySelector<HTMLElement>(form.dataset.result)
+            : null;
+          if (target) {
+            for (const [key, value] of Object.entries(data)) {
+              const el = field(target, key);
+              if (!el) continue;
+              if (el instanceof HTMLTextAreaElement) el.value = String(value);
+              else if (el instanceof HTMLAnchorElement) {
+                if (value) el.href = String(value);
+                else el.hidden = true;
+              } else el.textContent = String(value);
+            }
+            target.hidden = false;
+            target.scrollIntoView({ block: "nearest" });
+            form.reset();
+            return;
+          }
+          const url = new URL(location.href);
+          url.searchParams.set("notice", form.dataset.notice || "Tersimpan.");
+          location.href = url.href;
+        } catch {
+          if (error) error.textContent = "Jaringan bermasalah. Coba lagi.";
+        } finally {
+          if (button) button.disabled = false;
+        }
+      });
+    });
+
+  document.querySelectorAll<HTMLElement>("[data-copy]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const source = document.querySelector<HTMLElement>(
+        button.dataset.copy || "",
+      );
+      const text =
+        source instanceof HTMLTextAreaElement
+          ? source.value
+          : (source?.textContent ?? "");
+      try {
+        await navigator.clipboard.writeText(text);
+        const label = button.textContent;
+        button.textContent = "Tersalin";
+        setTimeout(() => (button.textContent = label), 1500);
+      } catch {
+        if (source instanceof HTMLTextAreaElement) source.select();
+      }
+    });
+  });
+</script>

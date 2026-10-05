@@ -84,6 +84,8 @@ export type Order = {
   number: string;
   workspaceId: string;
   userId: string;
+  /** Terisi saat admin menghapus pelanggan; pesanan tetap disimpan untuk pembukuan. */
+  deletedCustomer?: { name: string; email: string; deletedAt: string };
   packageId: string;
   /** Salinan paket saat dipesan; harga/hak tidak berubah walau paket diedit. */
   packageSnapshot: PackageDefinition;
