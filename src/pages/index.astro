@@ -1,10 +1,20 @@
 ---
-export const prerender = true;
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Icon from "../components/Icon.astro";
+import PricingTable from "../components/landing/PricingTable.astro";
+import SiteFooter from "../components/landing/SiteFooter.astro";
+import WhatsAppButton from "../components/landing/WhatsAppButton.astro";
+import { getSiteConfig } from "../config/site";
+import { buildLandingJsonLd, serializeJsonLd } from "../config/seo";
+import { DEFAULT_PACKAGES } from "../modules/billing/catalog";
 import "../styles/landing.css";
+import "../styles/site.css";
 import { themes } from "../modules/invitations/domain/themes";
 const collections = themes;
+const site = getSiteConfig();
+// Nanti diganti dengan paket dari penyimpanan admin; komponen hanya butuh daftar.
+const packages = DEFAULT_PACKAGES;
+const jsonLd = serializeJsonLd(buildLandingJsonLd(site, packages));
 const features = [
   {
     icon: "edit",
@@ -39,13 +49,42 @@ const faqs = [
     "Bagaimana tamu mengonfirmasi kehadiran?",
     "Tamu mengisi nama dan kehadiran melalui formulir RSVP. Respons tampil di dashboard, sedangkan ucapan baru tampil di undangan setelah disetujui pemilik.",
   ],
+  [
+    "Bagaimana cara pembayarannya?",
+    "Lewat transfer bank manual. Setelah mendaftar dan memilih paket, Anda mendapat nomor rekening tujuan. Unggah bukti transfer, lalu admin memverifikasi pembayaran, biasanya dalam 1 hari kerja. Draft undangan boleh disusun gratis sebelum membayar.",
+  ],
+  [
+    "Berapa lama undangan aktif?",
+    "Masa aktif tertera pada tiap paket, umumnya 12 bulan sejak pembayaran diverifikasi. Selama aktif, tamu dapat membuka undangan dan mengirim RSVP serta ucapan.",
+  ],
+  [
+    "Apakah bisa ganti tema setelah dibuat?",
+    "Bisa. Isi undangan tersimpan terpisah dari tampilan, jadi tema dapat diganti kapan saja selama masa aktif tanpa mengetik ulang.",
+  ],
+  [
+    "Apakah bisa revisi setelah diterbitkan?",
+    "Bisa. Ubah teks, jadwal, foto, atau musik dari dashboard, periksa di preview, lalu terbitkan ulang. Tautan undangan tetap sama, jadi tamu tidak perlu menerima tautan baru.",
+  ],
+  [
+    "Bagaimana kebijakan refund?",
+    "Refund penuh dapat diajukan bila undangan belum diterbitkan, atau bila kendala teknis dari kami tidak dapat diselesaikan. Ketentuan lengkap ada di halaman Kebijakan refund.",
+  ],
+  [
+    "Apakah data tamu saya aman?",
+    "Data tamu hanya dapat dilihat pemilik undangan dan tidak dijual atau dibagikan ke pihak lain. Halaman tamu tidak diindeks mesin pencari. Penjelasan lengkap ada di Kebijakan privasi.",
+  ],
+  [
+    "Bisakah undangan dibuatkan oleh admin?",
+    "Bisa. Jika tidak ingin menyusun sendiri, hubungi kami lewat WhatsApp. Tim kami dapat membantu menyiapkan undangan berdasarkan data yang Anda kirim, dengan biaya jasa terpisah yang disepakati lebih dulu.",
+  ],
 ];
 ---
 
 <BaseLayout
   title="Temu — Undangan Pawiwahan, dirangkai dengan rasa."
-  description="Tiga nuansa undangan Pawiwahan Bali. Personalisasikan cerita, ornamen, foto, musik, dan detail hari bahagia dalam satu ruang."
+  description="Undangan pernikahan digital bernuansa Bali. Pilih tema Pawiwahan, atur cerita, foto, musik, RSVP, dan tamu. Paket mulai Rp99.000."
 >
+  <script slot="head" type="application/ld+json" set:html={jsonLd}></script>
   <a class="landing-skip" href="#main">
     Lewati ke konten
   </a>
@@ -54,13 +93,16 @@ const faqs = [
       temu<span>.</span>
     </a>
     <nav aria-label="Navigasi utama">
+      <a href="#harga">Harga</a>
       <a href="#koleksi">Koleksi</a>
-      <a href="#pengalaman">Pengalaman</a>
-      <a href="#cara-kerja">Cara kerja</a>
+      <a href="#pertanyaan">FAQ</a>
     </nav>
-    <a class="header-entry" href="/dashboard">
-      Ruang undangan <Icon name="arrow" size={17} />
-    </a>
+    <div class="header-account">
+      <a href="/login">Masuk</a>
+      <a class="header-signup" href="/daftar">
+        Daftar
+      </a>
+    </div>
   </header>
   <main id="main">
     <section class="landing-hero shell" aria-labelledby="hero-title">
@@ -291,8 +333,8 @@ const faqs = [
           <br />
           <em>Bahagia dibagikan.</em>
         </h2>
-        <a href="/dashboard" class="quiet-link">
-          Buka ruang undangan <Icon name="arrow" size={18} />
+        <a href="/daftar" class="quiet-link">
+          Buat undangan gratis <Icon name="arrow" size={18} />
         </a>
       </div>
       <ol>
@@ -320,6 +362,7 @@ const faqs = [
         ))}
       </ol>
     </section>
+    <PricingTable packages={packages} />
     <section class="shell faq-section" id="pertanyaan" data-reveal>
       <div>
         <p class="eyebrow">SEBELUM MEMULAI</p>
@@ -356,31 +399,17 @@ const faqs = [
           <br />
           <em>dimulai dari sini.</em>
         </h2>
-        <a class="landing-button light" href="/dashboard">
+        <a class="landing-button light" href="/daftar">
           Mulai merangkai undangan <Icon name="arrow" size={19} />
         </a>
         <p class="closing-note">
-          Simpan sebagai draft. Sempurnakan saat kalian siap.
+          Susun draft gratis. Bayar hanya saat kalian siap menerbitkan.
         </p>
       </div>
     </section>
   </main>
-  <footer class="landing-footer shell">
-    <a class="landing-brand" href="/">
-      temu<span>.</span>
-    </a>
-    <p>
-      Dirangkai dengan rasa.
-      <br />
-      Dibagikan dengan cinta.
-    </p>
-    <nav aria-label="Navigasi footer">
-      <a href="#koleksi">Koleksi desain</a>
-      <a href="#pertanyaan">Pertanyaan umum</a>
-      <a href="/dashboard">Ruang undangan</a>
-    </nav>
-    <small>© {new Date().getFullYear()} Temu</small>
-  </footer>
+  <SiteFooter />
+  <WhatsAppButton />
 </BaseLayout>
 <script>
   import "../components/landing/reveal";

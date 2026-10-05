@@ -25,8 +25,7 @@
   gap: 32px;
   font-size: 12px;
 }
-.landing-header nav a:hover,
-.landing-footer a:hover {
+.landing-header nav a:hover {
   color: var(--olive);
 }
 .header-entry {
@@ -597,28 +596,6 @@ h2 {
   color: #bec9b3;
   margin: 20px 0 0;
 }
-.landing-footer {
-  padding-block: 45px;
-  display: flex;
-  gap: 35px;
-  align-items: center;
-  justify-content: space-between;
-}
-.landing-footer p {
-  font-size: 10px;
-  line-height: 1.8;
-  color: var(--muted);
-  margin: 0;
-}
-.landing-footer nav {
-  display: flex;
-  gap: 24px;
-  font-size: 10px;
-}
-.landing-footer small {
-  font-size: 10px;
-  color: var(--muted);
-}
 .landing-skip {
   position: absolute;
   top: -100px;
@@ -660,9 +637,6 @@ section[id] {
   }
   .experience-layout {
     gap: 40px;
-  }
-  .landing-footer {
-    flex-wrap: wrap;
   }
   .landing-header nav {
     gap: 18px;
@@ -851,23 +825,6 @@ section[id] {
   }
   .landing-closing h2 {
     font-size: 40px;
-  }
-  .landing-footer {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 25px;
-    padding-block: 35px;
-  }
-  .landing-footer nav {
-    flex-direction: column;
-    gap: 15px;
-  }
-  .landing-footer small {
-    align-self: end;
-    justify-self: end;
-  }
-  .landing-footer p {
-    text-align: right;
   }
 }
 @media (prefers-reduced-motion: reduce) {

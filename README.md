@@ -171,6 +171,12 @@ Gunakan [.env.example](.env.example) untuk development dan [.env.production.exam
 | `DATA_DIR`          | Direktori state file development (`global.json`, `workspaces/`); default `.data`                       |
 | `TELEGRAM_BOT_TOKEN` | Opsional: token bot Telegram untuk notifikasi RSVP dan ucapan baru ke pemilik                         |
 | `TELEGRAM_CHAT_ID`  | Opsional: id chat Telegram penerima notifikasi; notifikasi nonaktif bila salah satu variabel kosong    |
+| `SITE_NAME`         | Nama merek di footer, judul, dan JSON-LD; default `Temu`                                               |
+| `SITE_URL`          | Origin publik untuk canonical, sitemap, dan Open Graph; jatuh ke `APP_URL`                             |
+| `CONTACT_WHATSAPP`  | Nomor WhatsApp format internasional tanpa `+` (mis. `6281234567890`)                                   |
+| `CONTACT_EMAIL`     | Email kontak di halaman kontak, legal, dan JSON-LD                                                     |
+| `BUSINESS_NAME`     | Nama badan usaha/penjual di syarat, privasi, dan footer                                                |
+| `BUSINESS_ADDRESS`  | Alamat usaha di halaman legal dan kontak                                                               |
 
 Compose memakai environment yang tercantum pada service. Mengubah lokasi data lewat variabel host saja tidak mengganti mount volume di dalam container.
 

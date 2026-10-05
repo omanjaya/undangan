@@ -1,0 +1,58 @@
+---
+import InfoLayout from "../layouts/InfoLayout.astro";
+import {
+  formatPhoneDisplay,
+  getSiteConfig,
+  whatsappLink,
+} from "../config/site";
+const site = getSiteConfig();
+const wa = whatsappLink(
+  site.whatsapp,
+  `Halo ${site.name}, saya ingin bertanya tentang undangan digital.`,
+);
+---
+
+<InfoLayout
+  title="Kontak"
+  eyebrow="HUBUNGI KAMI"
+  description={`Hubungi ${site.name} lewat WhatsApp atau email untuk pertanyaan paket, pembayaran, dan bantuan pembuatan undangan.`}
+>
+  <!-- Templat — tinjau dengan penasihat hukum sebelum dipakai -->
+  <p>
+    Ada pertanyaan soal paket, pembayaran, atau butuh bantuan menyusun undangan?
+    Tim kami membalas pada hari kerja, biasanya dalam beberapa jam.
+  </p>
+  <div class="contact-cards">
+    <a class="contact-card" href={wa} target="_blank" rel="noopener noreferrer">
+      <small>WhatsApp</small>
+      <strong>{formatPhoneDisplay(site.whatsapp)}</strong>
+      <span>Cara tercepat. Klik untuk mulai chat.</span>
+    </a>
+    <a class="contact-card" href={`mailto:${site.email}`}>
+      <small>Email</small>
+      <strong>{site.email}</strong>
+      <span>Untuk pertanyaan rinci atau permintaan data.</span>
+    </a>
+  </div>
+
+  <h2>Data usaha</h2>
+  <p>
+    {site.businessName}
+    <br />
+    {site.businessAddress}
+  </p>
+
+  <h2>Bantuan lain</h2>
+  <ul>
+    <li>
+      Pertanyaan umum ada di <a href="/#pertanyaan">FAQ</a>.
+    </li>
+    <li>
+      Pengembalian dana: <a href="/kebijakan-refund">Kebijakan Refund</a>.
+    </li>
+    <li>
+      Permintaan akses atau penghapusan data pribadi:{" "}
+      <a href="/kebijakan-privasi">Kebijakan Privasi</a>.
+    </li>
+  </ul>
+</InfoLayout>

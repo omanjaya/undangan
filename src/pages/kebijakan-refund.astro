@@ -1,0 +1,92 @@
+---
+import InfoLayout from "../layouts/InfoLayout.astro";
+import { getSiteConfig } from "../config/site";
+const site = getSiteConfig();
+---
+
+<InfoLayout
+  title="Kebijakan Refund"
+  eyebrow="LEGAL"
+  updated="1 Oktober 2026"
+  description={`Kebijakan pengembalian dana ${site.name}: syarat, pengecualian, dan cara mengajukan refund untuk pembayaran transfer bank manual.`}
+>
+  <!-- Templat — tinjau dengan penasihat hukum sebelum dipakai -->
+  <p>
+    Kebijakan ini menjelaskan kapan pembayaran paket {site.name} dapat
+    dikembalikan. Pembayaran dilakukan melalui transfer bank manual dan
+    diverifikasi admin, sehingga pengembalian dana juga dilakukan manual ke
+    rekening Anda.
+  </p>
+
+  <h2>1. Refund penuh</h2>
+  <p>Anda berhak atas pengembalian 100% dari harga paket bila:</p>
+  <ul>
+    <li>
+      undangan <strong>belum diterbitkan</strong> dan permintaan diajukan paling
+      lambat 7 hari sejak pembayaran diverifikasi;
+    </li>
+    <li>
+      terjadi kendala teknis dari pihak Kami yang menghalangi pemakaian Layanan
+      dan tidak dapat Kami perbaiki dalam 7 hari sejak dilaporkan;
+    </li>
+    <li>
+      Anda membayar dua kali untuk paket yang sama atau transfer melebihi
+      nominal (kelebihan dikembalikan).
+    </li>
+  </ul>
+
+  <h2>2. Refund sebagian</h2>
+  <p>
+    Bila undangan sudah diterbitkan namun Anda meminta berhenti dalam 7 hari
+    sejak penerbitan, Kami dapat mengembalikan sebagian dana setelah dikurangi
+    biaya jasa yang sudah berjalan (misalnya jasa pembuatan undangan oleh admin,
+    bila ada) dan biaya transfer bank. Kebijakan ini dinilai kasus per kasus.
+  </p>
+
+  <h2>3. Tidak dapat di-refund</h2>
+  <ul>
+    <li>
+      Permintaan setelah 7 hari sejak pembayaran diverifikasi atau sejak
+      penerbitan, kecuali ada kendala teknis dari Kami.
+    </li>
+    <li>
+      Undangan yang sudah dipakai atau dibagikan kepada tamu dan acara telah
+      berlangsung.
+    </li>
+    <li>
+      Akun yang ditangguhkan karena melanggar{" "}
+      <a href="/syarat-ketentuan">Syarat & Ketentuan</a>.
+    </li>
+    <li>
+      Perubahan keinginan terkait tema atau isi, karena tema dan isi dapat
+      diganti selama masa aktif tanpa biaya tambahan.
+    </li>
+    <li>Biaya jasa tambahan yang telah selesai dikerjakan.</li>
+  </ul>
+
+  <h2>4. Cara mengajukan</h2>
+  <ol>
+    <li>
+      Hubungi Kami lewat <a href="/kontak">halaman Kontak</a> atau WhatsApp,
+      sertakan email akun, paket, tanggal transfer, dan alasan permintaan.
+    </li>
+    <li>Kami memeriksa permintaan dan memberi jawaban dalam 3 hari kerja.</li>
+    <li>
+      Bila disetujui, dana dikirim ke rekening atas nama yang sama dengan
+      pengirim paling lambat 7 hari kerja sejak persetujuan. Mohon sertakan
+      nomor rekening tujuan.
+    </li>
+  </ol>
+
+  <h2>5. Setelah refund</h2>
+  <p>
+    Paket dinonaktifkan dan undangan yang sudah terbit diturunkan. Data Anda
+    diperlakukan sesuai <a href="/kebijakan-privasi">Kebijakan Privasi</a>.
+  </p>
+
+  <h2>6. Kontak</h2>
+  <p>
+    {site.businessName}, {site.businessAddress}. Email{" "}
+    <a href={`mailto:${site.email}`}>{site.email}</a>.
+  </p>
+</InfoLayout>

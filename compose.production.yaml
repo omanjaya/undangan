@@ -37,6 +37,12 @@ services:
       APP_URL: ${APP_URL:?Set APP_URL to your public HTTPS origin}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      SITE_NAME: ${SITE_NAME:-}
+      SITE_URL: ${SITE_URL:-}
+      CONTACT_WHATSAPP: ${CONTACT_WHATSAPP:-}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      BUSINESS_NAME: ${BUSINESS_NAME:-}
+      BUSINESS_ADDRESS: ${BUSINESS_ADDRESS:-}
     volumes:
       - app_data:/app/.data
     depends_on:

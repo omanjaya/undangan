@@ -1,0 +1,162 @@
+---
+import InfoLayout from "../layouts/InfoLayout.astro";
+import { getSiteConfig } from "../config/site";
+const site = getSiteConfig();
+---
+
+<InfoLayout
+  title="Syarat & Ketentuan"
+  eyebrow="LEGAL"
+  updated="1 Oktober 2026"
+  description={`Syarat dan ketentuan penggunaan layanan undangan digital ${site.name}: akun, paket, pembayaran, konten, dan tanggung jawab.`}
+>
+  <!-- Templat — tinjau dengan penasihat hukum sebelum dipakai -->
+  <p>
+    Dokumen ini mengatur penggunaan layanan undangan digital {site.name}
+    ("Layanan") yang disediakan oleh {site.businessName}, beralamat di{" "}
+    {site.businessAddress} ("Kami"). Dengan mendaftar atau memakai Layanan, Anda
+    ("Pengguna") menyatakan telah membaca dan menyetujui ketentuan berikut.
+  </p>
+
+  <h2>1. Layanan</h2>
+  <p>
+    Layanan memungkinkan Pengguna menyusun, menerbitkan, dan membagikan undangan
+    pernikahan digital, mengelola daftar tamu, serta menerima RSVP dan ucapan
+    dari tamu. Fitur yang tersedia bergantung pada paket yang dipilih.
+  </p>
+
+  <h2>2. Akun</h2>
+  <ul>
+    <li>
+      Pengguna wajib memberikan data pendaftaran yang benar dan menjaga
+      kerahasiaan kata sandi.
+    </li>
+    <li>
+      Pengguna bertanggung jawab atas seluruh aktivitas yang terjadi melalui
+      akunnya.
+    </li>
+    <li>
+      Pengguna harus berusia minimal 17 tahun atau mendapat persetujuan wali.
+    </li>
+  </ul>
+
+  <h2>3. Paket, harga, dan masa aktif</h2>
+  <ul>
+    <li>
+      Harga, batas fitur, dan masa aktif tiap paket tercantum pada halaman Harga
+      dan dinyatakan dalam rupiah.
+    </li>
+    <li>
+      Pembayaran bersifat sekali bayar untuk satu masa aktif dan tidak
+      diperpanjang otomatis.
+    </li>
+    <li>
+      Menyusun draft undangan tidak dipungut biaya. Undangan baru dapat
+      diterbitkan setelah pembayaran paket diverifikasi.
+    </li>
+    <li>
+      Kami dapat mengubah harga atau isi paket. Perubahan tidak berlaku surut
+      bagi paket yang sudah dibayar.
+    </li>
+  </ul>
+
+  <h2>4. Pembayaran</h2>
+  <p>
+    Pembayaran dilakukan melalui transfer bank manual ke rekening yang tertera
+    pada halaman pembayaran. Pengguna mengunggah bukti transfer, dan admin Kami
+    memverifikasinya, biasanya dalam 1 (satu) hari kerja. Paket aktif sejak
+    pembayaran dinyatakan terverifikasi. Pengguna bertanggung jawab memastikan
+    nominal dan rekening tujuan sudah benar. Ketentuan pengembalian dana diatur
+    dalam <a href="/kebijakan-refund">Kebijakan Refund</a>.
+  </p>
+
+  <h2>5. Konten Pengguna</h2>
+  <ul>
+    <li>
+      Pengguna memegang hak atas teks, foto, video, dan musik yang diunggah, dan
+      menjamin berhak memakainya (termasuk hak cipta lagu dan foto orang lain).
+    </li>
+    <li>
+      Pengguna memberi Kami izin terbatas untuk menyimpan, memproses, dan
+      menampilkan konten tersebut semata-mata untuk menjalankan Layanan.
+    </li>
+    <li>
+      Dilarang mengunggah konten yang melanggar hukum, mengandung SARA,
+      pornografi, ujaran kebencian, penipuan, atau melanggar hak pihak lain.
+      Kami berhak menurunkan konten semacam itu dan menangguhkan akun terkait.
+    </li>
+    <li>
+      Pemilik undangan bertanggung jawab atas ucapan tamu yang ia setujui untuk
+      tampil.
+    </li>
+  </ul>
+
+  <h2>6. Data tamu</h2>
+  <p>
+    Pengguna yang memasukkan nama dan kontak tamu bertindak sebagai pengendali
+    data atas data tersebut, dan Kami sebagai pemroses. Pengguna wajib hanya
+    memasukkan data tamu yang sah dan memakainya untuk keperluan undangan.
+    Rincian ada pada <a href="/kebijakan-privasi">Kebijakan Privasi</a>.
+  </p>
+
+  <h2>7. Penggunaan yang dilarang</h2>
+  <ul>
+    <li>
+      Mengganggu keamanan atau ketersediaan Layanan, atau mencoba mengakses data
+      pengguna lain.
+    </li>
+    <li>
+      Menyalahgunakan formulir RSVP atau ucapan untuk spam atau pengiriman
+      massal otomatis.
+    </li>
+    <li>
+      Menjual kembali atau menyalin tema dan desain Kami tanpa izin tertulis.
+    </li>
+  </ul>
+
+  <h2>8. Ketersediaan dan batas tanggung jawab</h2>
+  <p>
+    Kami berupaya menjaga Layanan tetap tersedia, namun tidak menjamin bebas
+    gangguan sepenuhnya. Sejauh diizinkan hukum, tanggung jawab Kami terbatas
+    pada jumlah yang dibayarkan Pengguna untuk paket yang berlaku. Kami tidak
+    bertanggung jawab atas kerugian tidak langsung, termasuk akibat kesalahan
+    informasi acara yang dimasukkan Pengguna atau gangguan layanan pihak ketiga
+    (peta, video, jaringan internet).
+  </p>
+
+  <h2>9. Masa aktif berakhir dan penghapusan</h2>
+  <p>
+    Setelah masa aktif berakhir, undangan tidak lagi dapat dibuka tamu. Data
+    dapat Kami simpan untuk jangka waktu terbatas sebagaimana dijelaskan dalam
+    Kebijakan Privasi, lalu dihapus. Pengguna dapat mengekspor datanya sebelum
+    masa aktif berakhir.
+  </p>
+
+  <h2>10. Penangguhan dan penghentian</h2>
+  <p>
+    Kami dapat menangguhkan atau menghentikan akun yang melanggar ketentuan ini.
+    Pengguna dapat berhenti memakai Layanan kapan saja; pengembalian dana
+    mengikuti Kebijakan Refund.
+  </p>
+
+  <h2>11. Perubahan ketentuan</h2>
+  <p>
+    Kami dapat memperbarui ketentuan ini. Perubahan penting akan diberitahukan
+    melalui email atau pemberitahuan di Layanan. Memakai Layanan setelah
+    perubahan berlaku berarti Pengguna menyetujuinya.
+  </p>
+
+  <h2>12. Hukum yang berlaku</h2>
+  <p>
+    Ketentuan ini tunduk pada hukum Republik Indonesia. Perselisihan diupayakan
+    diselesaikan secara musyawarah; bila tidak berhasil, diselesaikan melalui
+    pengadilan negeri yang berwenang di wilayah domisili Kami.
+  </p>
+
+  <h2>13. Kontak</h2>
+  <p>
+    Pertanyaan tentang ketentuan ini dapat dikirim ke{" "}
+    <a href={`mailto:${site.email}`}>{site.email}</a> atau melalui halaman{" "}
+    <a href="/kontak">Kontak</a>.
+  </p>
+</InfoLayout>

@@ -1,0 +1,53 @@
+---
+/**
+ * Tanda merek untuk undangan pada paket gratis/percobaan.
+ *
+ * Pemakaian (dipasang oleh halaman undangan sesuai entitlement, mis. hanya bila
+ * paket tidak punya `flags.removeBranding`):
+ *
+ *   {!entitlements.removeBranding && <BrandingBadge />}
+ *
+ * Warna mengikuti variabel tema undangan (`--iv-*`), sehingga menyatu dengan
+ * tema apa pun. Prop `href` opsional untuk mengarahkan ke halaman lain.
+ *
+ * Catatan: `EditorialBotanical.astro` masih punya kredit tetap
+ * `.invite-brand-credit` ("Dibuat dengan sepenuh hati · Temu"). Kredit itu
+ * belum diganti agar entitlement tetap dikendalikan agen lain; saat badge
+ * dipasang, kredit lama sebaiknya dihapus supaya tidak dobel.
+ */
+interface Props {
+  href?: string;
+}
+const { href = "/" } = Astro.props;
+---
+
+<a class="branding-badge" {href} rel="noopener">
+  Dibuat dengan Temu <span aria-hidden="true">·</span>
+  <u>Buat undanganmu</u>
+</a>
+
+<style>
+  .branding-badge {
+    display: block;
+    max-width: 1050px;
+    margin: 36px auto 0;
+    padding: 18px 20px 6px;
+    border-top: 1px solid var(--iv-line, #dbd9cc);
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    text-align: center;
+    color: var(--iv-muted, #77796e);
+  }
+  .branding-badge u {
+    color: var(--iv-olive, #4c593f);
+    text-underline-offset: 3px;
+  }
+  .branding-badge:hover u,
+  .branding-badge:focus-visible u {
+    color: var(--iv-gold, #a18a62);
+  }
+  .branding-badge:focus-visible {
+    outline: 2px solid var(--iv-olive, #4c593f);
+    outline-offset: 2px;
+  }
+</style>

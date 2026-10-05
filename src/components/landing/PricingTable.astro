@@ -1,0 +1,107 @@
+---
+import Icon from "../Icon.astro";
+import {
+  formatDuration,
+  formatRupiah,
+  type PackageDefinition,
+} from "../../modules/billing/catalog";
+
+interface Props {
+  packages: PackageDefinition[];
+  /** Tujuan tombol; parameter `paket=<id>` ditambahkan otomatis. */
+  ctaHref?: string;
+}
+const { packages, ctaHref = "/daftar" } = Astro.props;
+const hrefFor = (id: string) =>
+  `${ctaHref}${ctaHref.includes("?") ? "&" : "?"}paket=${encodeURIComponent(id)}`;
+const steps = [
+  [
+    "Daftar & buat undangan gratis",
+    "Buat akun, pilih tema, dan isi undangan. Menyusun draft tidak dipungut biaya.",
+  ],
+  [
+    "Pilih paket & transfer",
+    "Pilih paket yang sesuai, lalu transfer ke rekening kami dan unggah bukti pembayaran.",
+  ],
+  [
+    "Admin verifikasi, undangan terbit",
+    "Kami memeriksa pembayaran, biasanya dalam 1 hari kerja. Setelah itu undangan siap diterbitkan dan dibagikan.",
+  ],
+];
+---
+
+<section
+  id="harga"
+  class="shell section-pad pricing-section"
+  aria-labelledby="harga-title"
+  data-reveal
+>
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">04 / HARGA SEKALI BAYAR</p>
+      <h2 id="harga-title">
+        Paket yang jelas.
+        <br />
+        <em>Tanpa biaya tersembunyi.</em>
+      </h2>
+    </div>
+    <p>
+      Bayar sekali, tanpa langganan otomatis.
+      <br />
+      Masa aktif mengikuti paket yang dipilih.
+    </p>
+  </div>
+  <ul class="pricing-grid" data-reveal-stagger>
+    {packages.map((pkg) => (
+      <li>
+        <article
+          class:list={["pricing-card", { "is-highlighted": pkg.highlighted }]}
+          aria-labelledby={`paket-${pkg.id}`}
+        >
+          {pkg.highlighted && <span class="pricing-badge">Paling dipilih</span>}
+          <h3 id={`paket-${pkg.id}`}>{pkg.name}</h3>
+          <p class="pricing-tagline">{pkg.tagline}</p>
+          <p class="pricing-price">
+            {pkg.originalPrice && pkg.originalPrice > pkg.price && (
+              <span class="pricing-original">
+                <span class="sr-only">Harga normal </span>
+                <del>{formatRupiah(pkg.originalPrice)}</del>
+              </span>
+            )}
+            <strong>{formatRupiah(pkg.price)}</strong>
+            <small>aktif {formatDuration(pkg.durationDays)}</small>
+          </p>
+          <ul class="pricing-features">
+            {pkg.features.map((feature) => (
+              <li>
+                <Icon name="check" size={16} />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+          <a
+            class="pricing-cta"
+            href={hrefFor(pkg.id)}
+            aria-label={`Mulai sekarang dengan paket ${pkg.name}`}
+          >
+            Mulai sekarang <Icon name="arrow" size={18} />
+          </a>
+        </article>
+      </li>
+    ))}
+  </ul>
+  <div class="pricing-flow" aria-labelledby="alur-bayar-title">
+    <h3 id="alur-bayar-title">Cara bayar: transfer bank manual</h3>
+    <ol>
+      {steps.map(([title, text], index) => (
+        <li>
+          <span>0{index + 1}</span>
+          <div>
+            <h4>{title}</h4>
+            <p>{text}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
