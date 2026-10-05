@@ -40,6 +40,16 @@ describe("konfigurasi email", () => {
     ).toBe(true);
   });
 
+  it("hasil build produksi tidak pernah masuk mode lokal, sekalipun NODE_ENV kosong", () => {
+    vi.stubEnv("PROD", true);
+    try {
+      expect(isLocalDevelopment({})).toBe(false);
+      expect(isLocalDevelopment({ NODE_ENV: "development" })).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("mode lokal hanya bila bukan production dan tanpa DATABASE_URL", () => {
     expect(isLocalDevelopment({ NODE_ENV: "development" })).toBe(true);
     expect(isLocalDevelopment({ NODE_ENV: "production" })).toBe(false);

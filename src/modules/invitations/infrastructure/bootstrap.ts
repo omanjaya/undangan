@@ -27,7 +27,11 @@ export class MissingOwnerCredentials extends DomainError {
 
 /** Pengembangan lokal tanpa PostgreSQL: akun demo dibuat otomatis. */
 export const isDemoMode = () =>
-  !process.env.DATABASE_URL && process.env.NODE_ENV !== "production";
+  !process.env.DATABASE_URL &&
+  process.env.NODE_ENV !== "production" &&
+  // Build produksi (`astro build`) tidak pernah masuk mode demo, sekalipun
+  // NODE_ENV lupa diisi: akun demo berkata sandi publik.
+  !import.meta.env?.PROD;
 
 export function ownerCredentials() {
   const demo = isDemoMode();

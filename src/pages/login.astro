@@ -4,13 +4,13 @@ import Icon from "../components/Icon.astro";
 import PasswordField from "../components/auth/PasswordField.astro";
 import { safeNextPath } from "../modules/accounts/next-path";
 import { getActor } from "../server/auth";
+import { isDemoMode } from "../modules/invitations/infrastructure/bootstrap";
 import "../styles/auth.css";
 Astro.response.headers.set("Cache-Control", "private, no-store");
 // Hanya jalur relatif satu origin yang dipakai; selain itu kembali ke dashboard.
 const next = safeNextPath(Astro.url.searchParams.get("next"));
 if (await getActor(Astro.request)) return Astro.redirect("/dashboard");
-const demo =
-  process.env.NODE_ENV !== "production" && !process.env.OWNER_PASSWORD;
+const demo = isDemoMode() && !process.env.OWNER_PASSWORD;
 const justReset = Astro.url.searchParams.get("reset") === "1";
 ---
 
