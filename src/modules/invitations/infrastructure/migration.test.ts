@@ -238,6 +238,7 @@ describe("ketahanan penyimpanan global", () => {
       orders: [],
       packages: [],
       siteSettings: {},
+      auditLog: [],
     });
   });
 });

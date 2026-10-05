@@ -1,6 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { loginAsOwner } from "./helpers";
 
+// Pendaftaran dibatasi 5/menit per IP. Tiap tes memakai IP samaran berbeda
+// (lewat X-Forwarded-For, sama seperti di belakang reverse proxy) agar
+// pengulangan cepat tidak tertahan batas itu.
+test.beforeEach(async ({ context }) => {
+  const octet = () => Math.floor(Math.random() * 250) + 1;
+  await context.setExtraHTTPHeaders({
+    "x-forwarded-for": `10.${octet()}.${octet()}.${octet()}`,
+  });
+});
+
 // Email unik per proyek dan per eksekusi; state file dipakai bersama.
 const unique = (label: string) =>
   `${label}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}@example.test`;
