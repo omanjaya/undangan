@@ -1,6 +1,6 @@
 # Deployment
 
-Paket ini siap dipasang pada satu server dengan Docker Compose. Belum ada domain/server publik yang dikonfigurasi. Gunakan DNS domain menuju server, buka port 80 dan 443, dan pastikan Docker aktif. PostgreSQL dan upload memakai volume persisten. Jalankan seluruh perintah dari direktori proyek.
+Paket ini siap dipasang pada satu server dengan Docker Compose. Gunakan DNS domain menuju server, buka port 80 dan 443, dan pastikan Docker aktif. PostgreSQL dan upload memakai volume persisten. Jalankan seluruh perintah dari direktori proyek.
 
 ## Persiapan
 
@@ -62,6 +62,46 @@ docker compose --env-file .env.production -f compose.production.yaml -f compose.
 
 Restore di atas mengasumsikan database tujuan kosong, bukan database produksi yang masih terisi. Periksa health, login, undangan publik dan playback media setelah pemulihan. Restore menyeluruh belum diuji otomatis pada server publik.
 
+## Reverse proxy di host (Caddy sudah berjalan)
+
+Bila server sudah punya Caddy/Nginx di level host untuk situs lain, **jangan** memakai `compose.https.yaml` (Caddy di dalamnya akan merebut port 80/443). Jalankan hanya `compose.production.yaml` — aplikasi terikat ke `127.0.0.1:${WEB_PORT}` — lalu tambahkan satu blok di Caddyfile host:
+
+```caddy
+undangan.domain-anda.id {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:4321
+}
+```
+
+Header keamanan (CSP, X-Frame-Options, Permissions-Policy kamera khusus `/dashboard/checkin`) sudah dikirim aplikasi sendiri. Cadangkan Caddyfile dan jalankan `caddy validate` sebelum `systemctl reload caddy`.
+
+Perintah update rutin:
+
+```sh
+sh scripts/backup.sh
+git pull
+npm run deploy:check            # di host, butuh Node 24
+docker compose --env-file .env.production -f compose.production.yaml run --build --rm migrate
+docker compose --env-file .env.production -f compose.production.yaml up --build -d web
+curl -fsS https://undangan.domain-anda.id/api/health
+```
+
+Jika build gagal dengan `Cannot find module '../lightningcss.linux-…-musl.node'`, itu cache layer Docker yang basi: ulangi dengan `docker compose ... build --no-cache web`.
+
+## Checklist sebelum mulai berjualan
+
+1. **Environment** (`npm run deploy:check` menampilkan peringatan bila belum): `CONTACT_WHATSAPP`, `CONTACT_EMAIL`, `BUSINESS_NAME`, `BUSINESS_ADDRESS`, `SITE_URL`, SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`) dan Telegram (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`).
+2. **Panel admin** `/admin`: kotak "Persiapan sebelum berjualan" harus bersih. Isi rekening tujuan di `/admin/pengaturan`, periksa nama/harga/isi paket di `/admin/paket`.
+3. **Uji satu transaksi nyata**: daftar sebagai pelanggan dari halaman harga, pilih paket, transfer nominal kecil (atau buat paket uji Rp1.000 lalu nonaktifkan), unggah bukti, verifikasi dari `/admin/pesanan`, pastikan email/Telegram masuk dan undangan bisa terbit.
+4. **Halaman legal**: `/syarat-ketentuan`, `/kebijakan-privasi`, `/kebijakan-refund` adalah templat — tinjau dan sesuaikan dengan usaha Anda (sebaiknya dengan penasihat hukum) sebelum dipublikasikan.
+5. **Backup terjadwal**: pasang cron harian, misalnya `0 3 * * * cd /opt/undangan && sh scripts/backup.sh >> backups/backup.log 2>&1`, dan salin hasilnya ke penyimpanan di luar server. Uji pemulihan sekali (lihat di atas).
+6. **Pantau**: `/api/health` dari layanan uptime monitor; log `docker compose ... logs -f web`.
+
 ## Batas operasional
 
-Satu owner, satu undangan, satu instance aplikasi. Rate limit berada dalam memori. Multi-owner, pembayaran, private invitation bertoken, dan object storage belum tersedia. RSVP publik tidak membuktikan identitas tamu. Ganti password environment untuk membatalkan sesi yang ada. Benchmark Core Web Vitals produksi dan uji beban belum dilakukan.
+- Satu instance aplikasi. Rate limit disimpan di memori proses (hilang saat restart, tidak dibagi antar-instance); bila kelak menjalankan beberapa instance, pindahkan ke penyimpanan bersama.
+- Data global (akun, sesi, indeks slug/media, pesanan) adalah satu dokumen JSONB yang dibaca di banyak permintaan. Cukup untuk ribuan pelanggan; pada skala lebih besar dokumen ini perlu dipecah atau di-cache.
+- Media disimpan di disk server (volume `.data/uploads`), belum di object storage. Pantau ruang disk; kuota per paket membatasi pertumbuhan per pelanggan.
+- Pembayaran hanya transfer manual dengan verifikasi admin; tidak ada payment gateway atau penagihan berulang otomatis. Paket yang berakhir masih tampil 30 hari (masa tenggang), lalu undangan menjadi tidak aktif bagi tamu tanpa menghapus data.
+- RSVP publik tidak membuktikan identitas tamu (kecuali lewat tautan pribadi dengan kode tamu).
+- Benchmark Core Web Vitals produksi dan uji beban belum dilakukan.
