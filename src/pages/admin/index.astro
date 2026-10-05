@@ -6,11 +6,16 @@ import { formatDate } from "../../components/admin/format";
 import { formatRupiah } from "../../modules/billing/catalog";
 import { adminPage } from "../../server/admin-page";
 import { getOverview } from "../../server/admin";
+import { salesReadiness } from "../../modules/admin/readiness";
+import { readGlobal } from "../../modules/invitations/infrastructure/global-store";
 
 const guard = await adminPage(Astro);
 if (guard instanceof Response) return guard;
 const actor = guard;
 const m = await getOverview(actor);
+const readiness = salesReadiness(await readGlobal());
+const pending = readiness.filter((item) => !item.done);
+const requiredPending = pending.filter((item) => item.level === "required");
 const kpis = [
   {
     label: "Pelanggan",
@@ -58,6 +63,51 @@ const kpis = [
 ---
 
 <AdminLayout title="Ringkasan" active="overview" adminName={actor.name}>
+  {pending.length > 0 && (
+    <section
+      class:list={[
+        "admin-card",
+        "admin-readiness",
+        { urgent: requiredPending.length > 0 },
+      ]}
+      aria-labelledby="readiness-title"
+    >
+      <h2 id="readiness-title">Persiapan sebelum berjualan</h2>
+      <p class="admin-muted">
+        {requiredPending.length > 0
+          ? `${requiredPending.length} hal wajib belum siap. Pelanggan bisa kebingungan saat membayar sampai semuanya diisi.`
+          : "Hal wajib sudah siap. Lengkapi yang disarankan agar layanan lebih mulus."}
+      </p>
+      <ul>
+        {readiness.map((item) => (
+          <li class:list={{ done: item.done }}>
+            <span class="mark" aria-hidden="true">
+              {item.done ? "✓" : item.level === "required" ? "!" : "·"}
+            </span>
+            <div>
+              <strong>
+                {item.href && !item.done ? (
+                  <a class="admin-link" href={item.href}>
+                    {item.label}
+                  </a>
+                ) : (
+                  item.label
+                )}
+              </strong>
+              <span class="admin-badge">
+                {item.done
+                  ? "Siap"
+                  : item.level === "required"
+                    ? "Wajib"
+                    : "Disarankan"}
+              </span>
+              {!item.done && <p class="admin-muted">{item.hint}</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
   <section class="admin-kpis" aria-label="Indikator utama">
     {kpis.map((k) => {
       const Tag = k.href ? "a" : "div";
@@ -144,3 +194,57 @@ const kpis = [
     </section>
   </div>
 </AdminLayout>
+
+<style>
+  .admin-readiness {
+    margin-bottom: 24px;
+    border-left: 4px solid #b9c3a6;
+  }
+  .admin-readiness.urgent {
+    border-left-color: #c9a227;
+    background: #fffbea;
+  }
+  .admin-readiness h2 {
+    margin: 0 0 6px;
+  }
+  .admin-readiness ul {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+  }
+  .admin-readiness li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .admin-readiness li strong {
+    font-size: 14px;
+    margin-right: 8px;
+  }
+  .admin-readiness li p {
+    margin: 4px 0 0;
+    font-size: 12px;
+  }
+  .admin-readiness .mark {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f1dcc0;
+    color: #7a4d14;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .admin-readiness li.done .mark {
+    background: #dfe9d3;
+    color: #3f5a24;
+  }
+  .admin-readiness li.done strong {
+    color: var(--muted);
+    font-weight: 500;
+  }
+</style>
